@@ -1,0 +1,63 @@
+{
+  "tests": [
+    {
+      "name": "P1 borrower/amount by-construction trace",
+      "execute_inputs": "uint64, uint64, bytes, bytes32, tuple[], bytes32, bytes32[]",
+      "has_borrower_input": "false",
+      "has_amount_input": "false",
+      "has_loanId_input": "false",
+      "note": "only proof bytes are forwarded; borrower/loanId/amount are derived on-chain from the USC-verified transaction"
+    },
+    {
+      "name": "P3 loan binding: emitter check (decodeRepayment view)",
+      "decoded_borrower": "0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0",
+      "decoded_loanId": "2",
+      "decoded_amount": "987654321",
+      "emitter_matches_SourceLoanMarket": "true",
+      "note": "decodeRepayment only returns if log.address_ == configured SourceLoanMarket address (0x3f6379b59213FeE0D628Cc687dAdb6e70eAA4389); SourceLoanMarket.repayLoan only emits for active loans owned by the caller, so the loanId is bound to a real loan of the borrower"
+    },
+    {
+      "name": "P1/P3/P4 valid submission (real pipeline)",
+      "tx": "0x95f635f8bbf066eb76671c76e681c25c183cf1874eba48a37f2adf4902937f2c",
+      "block": 5321385,
+      "status": 1,
+      "queryId": "0xfc5bcadef84099cd0d689426e2454738dede81476a22f31e820888edd92db30c",
+      "registry_repayments_before": "2",
+      "registry_repayments_after": "3",
+      "registry_totalRepaid_after": "2962962963",
+      "delta": "1",
+      "elapsed_s": "4.8"
+    },
+    {
+      "name": "P1 replay protection (same query resubmitted)",
+      "reverted": true,
+      "response": "transaction execution reverted"
+    },
+    {
+      "name": "P2 borrower binding (tampered borrower topic)",
+      "tampered_topics1": "0x000000000000000000000000deaddeaddeaddeaddeaddeaddeaddeaddeaddead",
+      "verifier": "Merkle proof validation failed",
+      "fresh_uc_execute": "Merkle proof validation failed"
+    },
+    {
+      "name": "P4 amount integrity (tampered amount word)",
+      "tampered_data": "0x000000000000000000000000000000000000000000000000000000003ade68b2",
+      "verifier": "Merkle proof validation failed",
+      "fresh_uc_execute": "Merkle proof validation failed"
+    },
+    {
+      "name": "P2 borrower binding: direct registry call from non-UC address",
+      "reverted": true,
+      "response": "Only TRUUniversalContract"
+    },
+    {
+      "name": "P1/P5 final state (no double count)",
+      "registry_repayments": "3",
+      "registry_totalRepaid": "2962962963",
+      "uc.processedQueries[queryId]": "true",
+      "registry.processedRepayments[queryId]": "true"
+    }
+  ],
+  "repayTx": "0xc8cec9bdc43f977afab3f2a50e1997fd95b720cd3ea518e4e9fb1d6834457ea4",
+  "blockNumber": 11503090
+}

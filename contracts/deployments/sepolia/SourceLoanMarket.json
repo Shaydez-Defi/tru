@@ -1,0 +1,153 @@
+{
+  "address": "0x3f6379b59213FeE0D628Cc687dAdb6e70eAA4389",
+  "chainId": 11155111,
+  "chain": "sepolia",
+  "deployTxHash": "0xa8c0983502a32ab21ebb5ce066440ca637eed3d68ad6c49590b3efd63a7fb0c5",
+  "abi": [
+    {
+      "type": "function",
+      "name": "createLoan",
+      "inputs": [
+        {
+          "name": "principal",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "dueTimestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "loanCounter",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "loans",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "id",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "principal",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "due",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "repayLoan",
+      "inputs": [
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "payable"
+    },
+    {
+      "type": "event",
+      "name": "LoanCreated",
+      "inputs": [
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "borrower",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "principal",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "due",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "LoanRepaid",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    }
+  ]
+}

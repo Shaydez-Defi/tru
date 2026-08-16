@@ -1,0 +1,51 @@
+{
+  "address": "0x9048e558b7ee928029301435fc19572941d6b3a6",
+  "chainId": 11155111,
+  "chain": "sepolia",
+  "deployTxHash": "0xedaf4cd9dcc311f5541c7d68bc7cd9c3edc9e9e2c5a65f43b2485c3b78e06f63",
+  "abi": [
+    {
+      "type": "function",
+      "name": "repay",
+      "inputs": [
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "Repayment",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    }
+  ]
+}

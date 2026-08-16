@@ -1,0 +1,55 @@
+{
+  "tests": [
+    {
+      "name": "BASELINE valid submission",
+      "tx": "0x059b52508c7bc93ee65222477a10dbdfb9e8a6928f9a4474c618dd974468b8d2",
+      "block": 5317087,
+      "status": 1,
+      "queryId": "0x1f4be96b08b098c9fccc2ac264ba935051e190ea6ba6245d53542ab6147d773b",
+      "elapsed_s": "8.9"
+    },
+    {
+      "name": "TEST 3 replayed query (same proof resubmitted)",
+      "reverted": true,
+      "response": "execution reverted: \"Query already processed\"",
+      "data": "0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001751"
+    },
+    {
+      "name": "TEST 1 fake borrower (log topic[1] -> dead...dead)",
+      "tampered_topics1": "0x000000000000000000000000deaddeaddeaddeaddeaddeaddeaddeaddeaddead",
+      "verifier": "execution reverted: \"Merkle proof validation failed\"",
+      "consumer_execute": "execution reverted: \"Merkle proof validation failed\""
+    },
+    {
+      "name": "TEST 2 tampered amount (999000000 -> 999000001)",
+      "tampered_data": "0x000000000000000000000000000000000000000000000000000000003b8b87c1",
+      "verifier": "execution reverted: \"Merkle proof validation failed\"",
+      "consumer_execute": "execution reverted: \"Merkle proof validation failed\""
+    },
+    {
+      "name": "TEST 5 wrong loan ID (42 -> 43)",
+      "tampered_topics2": "0x000000000000000000000000000000000000000000000000000000000000002b",
+      "verifier": "execution reverted: \"Merkle proof validation failed\"",
+      "consumer_execute": "execution reverted: \"Merkle proof validation failed\""
+    },
+    {
+      "name": "TEST 4a nonexistent txHash (proof builder)",
+      "returned_success": false,
+      "error": "Failed to generate proof via API: Error: Failed to fetch proof: AxiosError: Request failed with status code 404"
+    },
+    {
+      "name": "TEST 4b valid proof of non-repayment tx (txIndex 0 in block 11497681)",
+      "other_tx": "0xfd6a9838954281ce9a1dfc8f3ef3005e4cb4ce595d7a2520b2616efc6d845447",
+      "verifier": "true",
+      "consumer_execute": "execution reverted: \"No Repayment event found\""
+    },
+    {
+      "name": "FINAL on-chain state",
+      "verifiedCount": "1",
+      "lastBorrower": "0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0",
+      "lastLoanId": "42",
+      "lastAmount": "999000000"
+    }
+  ],
+  "sourceTx": "0xbd0cdaf5ed7c37ca8472b60fc9f1fcadfd829368a943465b7951b5e2ed781c9c"
+}

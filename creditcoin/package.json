@@ -1,0 +1,17 @@
+{
+  "name": "tru-creditcoin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 spike worker: prove a real Sepolia event through Creditcoin USC/Attestcoin.",
+  "scripts": {
+    "list-chains": "node src/list-chains.mjs",
+    "prove-and-verify": "node src/prove-and-verify.mjs",
+    "decode-tx": "node src/decode-tx.mjs"
+  },
+  "dependencies": {
+    "@gluwa/usc-sdk": "^0.18.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.15.0"
+  }
+}

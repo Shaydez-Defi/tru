@@ -1,0 +1,15 @@
+# secrets — never commit
+.env
+creds/
+
+# node
+node_modules/
+
+# foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+contracts/lib/
+
+# misc
+*.log
