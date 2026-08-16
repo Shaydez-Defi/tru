@@ -6,9 +6,11 @@ import { ITRUCreditRegistry } from "./interfaces/ITRUCreditRegistry.sol";
 /// @title TRUCreditRegistry
 /// @notice Creditcoin-side credit history registry. Receives ONLY verified
 ///         repayment facts from TRUUniversalContract and updates credit profiles.
-///         Per AGENTS.md rule 6 this contract contains NO proof/verification logic
-///         and no credit-scoring logic (creditLimit is a stub until build-order
-///         step 6).
+///         Per AGENTS.md rule 6 this contract contains NO proof/verification logic.
+///         Credit logic (build-order step 6) is deterministic and explainable in
+///         one sentence: creditLimit = baseLimit + (repayments * incrementPerRepayment),
+///         with baseLimit = 0 and incrementPerRepayment = 100, both in the same
+///         base unit as totalRepaid (the source chain's msg.value, i.e. wei).
 contract TRUCreditRegistry is ITRUCreditRegistry {
     struct CreditProfile {
         uint256 repayments;
@@ -16,6 +18,10 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         uint256 activeLoans;
         uint256 creditLimit;
     }
+
+    /// @dev Deterministic credit rule. Public so the formula is readable on-chain.
+    uint256 public constant BASE_LIMIT = 0;
+    uint256 public constant INCREMENT_PER_REPAYMENT = 100;
 
     address public owner;
     address public universalContract;
@@ -69,7 +75,7 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         CreditProfile storage profile = profiles[borrower];
         profile.repayments += 1;
         profile.totalRepaid += amount;
-        // activeLoans / creditLimit are intentionally left at 0 (build-order step 6).
+        profile.creditLimit = BASE_LIMIT + profile.repayments * INCREMENT_PER_REPAYMENT;
 
         emit RepaymentRecorded(queryId, borrower, loanId, amount);
     }

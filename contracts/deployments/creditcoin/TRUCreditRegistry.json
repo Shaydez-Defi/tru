@@ -1,13 +1,39 @@
 {
-  "address": "0xbD8f54c97ba81e5719708dfF49b72E66cA5ADCFE",
+  "address": "0x52B7eAd2769B3449Fa213B9fb40f94B4f17915bA",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x2d64defcb405befb5d98512bafeef23082f76ac272edfa8ef9852a4fc8fb4626",
+  "deployTxHash": "0x391708c7092c2c63f06f1319e754dedcf169953ab98e8ec0949d4c32221c9357",
   "abi": [
     {
       "type": "constructor",
       "inputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "BASE_LIMIT",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "INCREMENT_PER_REPAYMENT",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",

@@ -227,7 +227,7 @@ const has = (flag) => args.includes(flag);
 if (has('--tx')) {
   const txHash = get('--tx');
   console.log(`processing specific tx ${txHash}`);
-  const receipt = await SEPSource.getReceipt(txHash);
+  const receipt = await SEPSource.getTransactionReceipt(txHash);
   if (!receipt) {
     console.error(`tx not found on Sepolia: ${txHash}`);
     process.exit(1);
