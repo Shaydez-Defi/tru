@@ -27,10 +27,9 @@ contract TRUCreditRegistryTest is Test {
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(QUERY_ID_1, borrower, 42, 500);
 
-        (uint256 repayments, uint256 totalRepaid, uint256 activeLoans, uint256 creditLimit) = registry.profiles(borrower);
+        (uint256 repayments, uint256 totalRepaid, uint256 creditLimit) = registry.profiles(borrower);
         assertEq(repayments, 1);
         assertEq(totalRepaid, 500);
-        assertEq(activeLoans, 0); // stub, build-order step 6
         // Credit rule (step 6): creditLimit = BASE_LIMIT + repayments * INCREMENT_PER_REPAYMENT.
         assertEq(creditLimit, registry.BASE_LIMIT() + 1 * registry.INCREMENT_PER_REPAYMENT());
         assertEq(creditLimit, 100); // first verified repayment: 0 -> 100
@@ -43,7 +42,7 @@ contract TRUCreditRegistryTest is Test {
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(QUERY_ID_2, borrower, 43, 300);
 
-        (uint256 repayments, uint256 totalRepaid, , uint256 creditLimit) = registry.profiles(borrower);
+        (uint256 repayments, uint256 totalRepaid, uint256 creditLimit) = registry.profiles(borrower);
         assertEq(repayments, 2);
         assertEq(totalRepaid, 800);
         assertEq(creditLimit, 200); // 2 verified repayments * 100
@@ -61,18 +60,18 @@ contract TRUCreditRegistryTest is Test {
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(q3, borrower, 44, 100);
 
-        (, , , uint256 creditLimit) = registry.profiles(borrower);
+        (, , uint256 creditLimit) = registry.profiles(borrower);
         assertEq(creditLimit, 300); // 3 verified repayments * 100
 
         // A fourth verified repayment (distinct loan, distinct query) keeps scaling.
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(q4, borrower, 45, 100);
-        (, , , creditLimit) = registry.profiles(borrower);
+        (, , creditLimit) = registry.profiles(borrower);
         assertEq(creditLimit, 400);
 
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(q5, borrower, 46, 100);
-        (, , , creditLimit) = registry.profiles(borrower);
+        (, , creditLimit) = registry.profiles(borrower);
         assertEq(creditLimit, 500);
     }
 
@@ -131,7 +130,7 @@ contract TRUCreditRegistryTest is Test {
         vm.expectRevert("Repayment already recorded");
         registry.recordVerifiedRepayment(QUERY_ID_1, borrower, 42, 500);
 
-        (uint256 repayments, uint256 totalRepaid, uint256 activeLoans, uint256 creditLimit) = registry.profiles(borrower);
+        (uint256 repayments, uint256 totalRepaid, uint256 creditLimit) = registry.profiles(borrower);
         assertEq(repayments, 1);
         assertEq(totalRepaid, 500);
     }
@@ -152,7 +151,7 @@ contract TRUCreditRegistryTest is Test {
         vm.expectRevert("Loan already credited");
         registry.recordVerifiedRepayment(QUERY_ID_2, borrower, 42, 600);
 
-        (uint256 repayments, uint256 totalRepaid, , ) = registry.profiles(borrower);
+        (uint256 repayments, uint256 totalRepaid, ) = registry.profiles(borrower);
         assertEq(repayments, 1);
         assertEq(totalRepaid, 500);
     }
@@ -168,7 +167,7 @@ contract TRUCreditRegistryTest is Test {
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(QUERY_ID_2, otherBorrower, 42, 700);
 
-        (uint256 repayments, uint256 totalRepaid, , ) = registry.profiles(otherBorrower);
+        (uint256 repayments, uint256 totalRepaid, ) = registry.profiles(otherBorrower);
         assertEq(repayments, 1);
         assertEq(totalRepaid, 700);
     }
@@ -182,7 +181,7 @@ contract TRUCreditRegistryTest is Test {
         vm.prank(universalContract);
         registry.recordVerifiedRepayment(QUERY_ID_2, borrower, 2, 200);
 
-        (uint256 repayments, uint256 totalRepaid, , ) = registry.profiles(borrower);
+        (uint256 repayments, uint256 totalRepaid, ) = registry.profiles(borrower);
         assertEq(repayments, 2);
         assertEq(totalRepaid, 300);
     }

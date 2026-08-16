@@ -15,7 +15,6 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     struct CreditProfile {
         uint256 repayments;
         uint256 totalRepaid;
-        uint256 activeLoans;
         uint256 creditLimit;
     }
 

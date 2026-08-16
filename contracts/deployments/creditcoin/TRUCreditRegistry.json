@@ -1,8 +1,8 @@
 {
-  "address": "0x52B7eAd2769B3449Fa213B9fb40f94B4f17915bA",
+  "address": "0x91193a9762083FB7A8382bef0835270021881D1E",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x391708c7092c2c63f06f1319e754dedcf169953ab98e8ec0949d4c32221c9357",
+  "deployTxHash": "0x6c0ea7cf44285df197a4376071e5ed4b0bc1892fe92c8c2b7eb8e13a23c68c2b",
   "abi": [
     {
       "type": "constructor",
@@ -109,11 +109,6 @@
         },
         {
           "name": "totalRepaid",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "activeLoans",
           "type": "uint256",
           "internalType": "uint256"
         },

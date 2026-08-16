@@ -189,6 +189,9 @@ contract TRUUniversalContract {
         require(receipt.receiptStatus == 1, "Transaction did not succeed");
 
         IEvmV1Decoder.LogEntry[] memory logs = receipt.receiptLogs;
+        // NOTE: the deployed EvmV1Decoder's getLogsByEventSignature reverts on valid
+        // input on CC3 testnet (see docs/phase-0-report.md), so we filter the decoded
+        // receiptLogs in-contract instead. This is intentional, not an odd design choice.
         uint256 matchIndex = type(uint256).max;
         for (uint256 i = 0; i < logs.length; i++) {
             if (logs[i].topics.length == 3 && logs[i].topics[0] == REPAYMENT_EVENT_SIGNATURE) {

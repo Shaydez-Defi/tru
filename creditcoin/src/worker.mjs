@@ -153,7 +153,7 @@ async function processLoanRepaid(log) {
   timings.registry = Date.now() - r0;
   console.log(`[registry] profile for ${log.args.borrower} @ ${ts()}:`);
   console.log(
-    `  repayments=${profile.repayments} totalRepaid=${profile.totalRepaid} activeLoans=${profile.activeLoans} creditLimit=${profile.creditLimit}`
+    `  repayments=${profile.repayments} totalRepaid=${profile.totalRepaid} creditLimit=${profile.creditLimit}`
   );
 
   timings.total = Date.now() - t0;
