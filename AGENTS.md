@@ -29,6 +29,18 @@ profile updates.
    - TRUCreditRegistry (Creditcoin): receives only verified events, updates 
      credit profiles. Contains NO proof/verification logic.
 
+## Code standards
+- All NEW off-chain JavaScript/TypeScript code (frontend, new scripts, new 
+  tooling) must be written in TypeScript (.ts/.tsx), not plain JS/.mjs.
+- Existing working .mjs files (worker.mjs, deploy-production.mjs, 
+  prove-and-verify.mjs, security-tests.mjs, and similar proven/tested files) 
+  are NOT to be migrated to TS. They are stable and evidenced — do not touch 
+  them for a language-only rewrite. Only modify them for actual functional 
+  changes, and even then keep the existing file as .mjs unless a functional 
+  change already requires touching most of the file.
+- This rule applies going forward from this point in the project, not 
+  retroactively.
+
 ## Build order (do not reorder)
 1. Integration spike: prove a real Ethereum event can be verified through USC 
    and consumed by a Creditcoin contract, before writing any application code.
