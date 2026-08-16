@@ -36,7 +36,7 @@ SourceLoanMarket
         │                                         ▲  verifyAndEmit(proof)
         │  tx hash                                │  "Merkle proof validation
         ▼                                         │   failed" on any tamper
-   worker (off-chain, infrasstructure only)       │
+   worker (off-chain, infrastructure only)       │
         │  polls /api/v1/attested-height/1        │
         │  waits ~35 blocks of Sepolia            │
         │  ProofBuilder.getProof(txHash)          │
@@ -74,6 +74,10 @@ frontend, or an attacker could stuff with a different borrower or amount.
 Current deployments, from `contracts/deployments/*` (the single source of truth
 loaded by the worker; SourceLoanMarket is redeployed fresh on each
 `deploy-production.mjs` run, so the Sepolia address below is the latest):
+
+Addresses below reflect the current deployment as of 2026-08-16, which supersedes
+the addresses cited in earlier phase reports (phase-4/5/6), since the contracts
+were redeployed after the activeLoans cleanup.
 
 | Component | Chain | Address |
 | --- | --- | --- |
