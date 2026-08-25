@@ -1,8 +1,8 @@
 {
-  "address": "0x91193a9762083FB7A8382bef0835270021881D1E",
+  "address": "0xFd7BF70EDCC4E1739957D50d67Aa8E1AB3038E40",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x6c0ea7cf44285df197a4376071e5ed4b0bc1892fe92c8c2b7eb8e13a23c68c2b",
+  "deployTxHash": "0x8431de8def31a20de9b55bd269c920b68077ca4ae383b997ee328ef1bd9b31f4",
   "abi": [
     {
       "type": "constructor",
@@ -37,6 +37,70 @@
     },
     {
       "type": "function",
+      "name": "borrowerEvents",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "eventId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "sourceChain",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "sourceBlock",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "eventType",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.EventType"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "verifiedAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "countedLoans",
       "inputs": [
         {
@@ -55,6 +119,101 @@
           "name": "",
           "type": "bool",
           "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getEventCount",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getEvents",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "offset",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "limit",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct ITRUCreditRegistry.VerifiedFinancialEvent[]",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "borrower",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "sourceChain",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "sourceTxHash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "sourceBlock",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "loanId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "eventType",
+              "type": "uint8",
+              "internalType": "enum ITRUCreditRegistry.EventType"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         }
       ],
       "stateMutability": "view"
@@ -143,6 +302,21 @@
           "name": "amount",
           "type": "uint256",
           "internalType": "uint256"
+        },
+        {
+          "name": "sourceChain",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "sourceBlock",
+          "type": "uint64",
+          "internalType": "uint64"
         }
       ],
       "outputs": [],

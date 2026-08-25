@@ -127,6 +127,7 @@ contract TRUUniversalContract {
         uint64 chainKey,
         uint64 blockHeight,
         bytes calldata encodedTransaction,
+        bytes32 sourceTxHash,
         bytes32 merkleRoot,
         INativeQueryVerifier.MerkleProofEntry[] calldata siblings,
         bytes32 lowerEndpointDigest,
@@ -151,7 +152,7 @@ contract TRUUniversalContract {
 
         emit RepaymentVerified(chainKey, blockHeight, transactionIndex, borrower, loanId, amount);
 
-        registry.recordVerifiedRepayment(queryId, borrower, loanId, amount);
+        registry.recordVerifiedRepayment(queryId, borrower, loanId, amount, chainKey, sourceTxHash, blockHeight);
 
         return true;
     }

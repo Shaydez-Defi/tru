@@ -11,7 +11,7 @@ carry them are marked with `[SCREENSHOT: ...]` placeholders.
 **TRU**
 
 - Verified on-chain behavior becomes portable credit history on Creditcoin.
-- Repay on any supported chain, get credit that travels with you.
+- Repay on Ethereum, get verified credit on Creditcoin.
 - Track: DeFi
 
 ---

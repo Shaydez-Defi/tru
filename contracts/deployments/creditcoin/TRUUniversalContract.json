@@ -1,8 +1,8 @@
 {
-  "address": "0xb634e1a30f29cb5F3b9274B7b62D48c9E30cA0d7",
+  "address": "0xe7CcCc48bDcC5eD546AD367E32a2dae7f0D79a49",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x9aab4abf59874a8481cefa63bf3265adedb501a7d8adaa3be68a118ae3c49ec1",
+  "deployTxHash": "0x91c2de076d515343d1d3cef9e8033d16628de0455d4ec6d62fabda0eaeeb911b",
   "abi": [
     {
       "type": "constructor",
@@ -111,6 +111,11 @@
           "name": "encodedTransaction",
           "type": "bytes",
           "internalType": "bytes"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
         },
         {
           "name": "merkleRoot",

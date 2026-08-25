@@ -102,6 +102,7 @@ async function processLoanRepaid(log) {
       d.chainKey,
       d.headerNumber,
       d.txBytes,
+      log.transactionHash,  // sourceTxHash for event record
       d.merkleProof.root,
       d.merkleProof.siblings,
       d.continuityProof.lowerEndpointDigest,
