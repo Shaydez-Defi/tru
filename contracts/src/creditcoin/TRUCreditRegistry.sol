@@ -18,6 +18,14 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         uint256 creditLimit;
     }
 
+    // CreditState thresholds (deterministic, documented):
+    //   NEW         = 0 repayments
+    //   BUILDING    = 1-2 repayments
+    //   ESTABLISHED = 3-5 repayments
+    //   VERIFIED    = 6+ repayments
+    // Do not change these thresholds without updating the comment above and the
+    // corresponding Forge boundary tests.
+
     
 
     /// @dev Deterministic credit rule. Public so the formula is readable on-chain.
@@ -131,5 +139,58 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
             result[i] = events[total - 1 - offset - i];
         }
         return result;
+    }
+
+    /// @notice Returns credit evidence for a borrower, derived entirely from
+    ///         verified facts. Every field traces back to the event history or
+    ///         the existing profile struct. No speculative or AI-derived field
+    ///         is included.
+    function getCreditEvidence(address borrower) external view returns (CreditEvidence memory) {
+        CreditProfile storage profile = profiles[borrower];
+        uint256 reps = profile.repayments;
+
+        CreditState state;
+        if (reps == 0) state = CreditState.NEW;
+        else if (reps <= 2) state = CreditState.BUILDING;
+        else if (reps <= 5) state = CreditState.ESTABLISHED;
+        else state = CreditState.VERIFIED;
+
+        // distinctLoansRepaid: count unique loanIds in the borrower's event
+        // history. Derived from the phase-7 event log; no new storage.
+        uint256 distinct = 0;
+        VerifiedFinancialEvent[] storage evts = borrowerEvents[borrower];
+        uint256 n = evts.length;
+        for (uint256 i = 0; i < n; i++) {
+            bool seen = false;
+            for (uint256 j = 0; j < i; j++) {
+                if (evts[j].loanId == evts[i].loanId) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) distinct++;
+        }
+
+        // failedOrRejectedEvents is definitionally 0: only USC-verified events
+        // ever reach storage (AGENTS.md rules 1-3). Nothing recorded here was
+        // ever a failed or rejected attempt; rejected proofs never write state.
+        // We return 0 explicitly rather than fabricating a counter that could
+        // imply otherwise.
+        return CreditEvidence({
+            creditState: state,
+            repayments: profile.repayments,
+            totalRepaid: profile.totalRepaid,
+            creditLimit: profile.creditLimit,
+            distinctLoansRepaid: distinct,
+            failedOrRejectedEvents: 0
+        });
+    }
+
+    /// @notice View helper to derive CreditState for a given repayment count.
+    function getCreditState(uint256 repayments) external pure returns (CreditState) {
+        if (repayments == 0) return CreditState.NEW;
+        if (repayments <= 2) return CreditState.BUILDING;
+        if (repayments <= 5) return CreditState.ESTABLISHED;
+        return CreditState.VERIFIED;
     }
 }

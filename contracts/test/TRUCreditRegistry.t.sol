@@ -294,4 +294,120 @@ contract TRUCreditRegistryTest is Test {
         assertEq(events2[0].loanId, 42);
         assertEq(events2[0].borrower, otherBorrower);
     }
+
+    // ===== Credit Model Tests (Phase 8) =====
+
+    function test_creditStateBoundaries() public {
+        // 0 repayments -> NEW
+        ITRUCreditRegistry.CreditEvidence memory e0 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e0.creditState), uint8(ITRUCreditRegistry.CreditState.NEW));
+        assertEq(e0.repayments, 0);
+
+        // 1 repayment -> BUILDING
+        _recordRepayment(QUERY_ID_1, borrower, 42, 500, SOURCE_TX_HASH_1);
+        ITRUCreditRegistry.CreditEvidence memory e1 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e1.creditState), uint8(ITRUCreditRegistry.CreditState.BUILDING));
+
+        // 2 repayments -> BUILDING
+        _recordRepayment(QUERY_ID_2, borrower, 43, 500, SOURCE_TX_HASH_2);
+        ITRUCreditRegistry.CreditEvidence memory e2 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e2.creditState), uint8(ITRUCreditRegistry.CreditState.BUILDING));
+
+        // 3 repayments -> ESTABLISHED
+        bytes32 q3 = keccak256("chain-1-height-1-tx-3");
+        _recordRepayment(q3, borrower, 44, 500, keccak256("tx-3"));
+        ITRUCreditRegistry.CreditEvidence memory e3 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e3.creditState), uint8(ITRUCreditRegistry.CreditState.ESTABLISHED));
+
+        // 5 repayments -> ESTABLISHED (upper boundary)
+        bytes32 q4 = keccak256("chain-1-height-1-tx-4");
+        bytes32 q5 = keccak256("chain-1-height-1-tx-5");
+        _recordRepayment(q4, borrower, 45, 500, keccak256("tx-4"));
+        _recordRepayment(q5, borrower, 46, 500, keccak256("tx-5"));
+        ITRUCreditRegistry.CreditEvidence memory e5 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e5.creditState), uint8(ITRUCreditRegistry.CreditState.ESTABLISHED));
+        assertEq(e5.repayments, 5);
+
+        // 6 repayments -> VERIFIED
+        bytes32 q6 = keccak256("chain-1-height-1-tx-6");
+        _recordRepayment(q6, borrower, 47, 500, keccak256("tx-6"));
+        ITRUCreditRegistry.CreditEvidence memory e6 = registry.getCreditEvidence(borrower);
+        assertEq(uint8(e6.creditState), uint8(ITRUCreditRegistry.CreditState.VERIFIED));
+    }
+
+    function test_creditStatePureHelper() public view {
+        assertEq(uint8(registry.getCreditState(0)), uint8(ITRUCreditRegistry.CreditState.NEW));
+        assertEq(uint8(registry.getCreditState(1)), uint8(ITRUCreditRegistry.CreditState.BUILDING));
+        assertEq(uint8(registry.getCreditState(2)), uint8(ITRUCreditRegistry.CreditState.BUILDING));
+        assertEq(uint8(registry.getCreditState(3)), uint8(ITRUCreditRegistry.CreditState.ESTABLISHED));
+        assertEq(uint8(registry.getCreditState(5)), uint8(ITRUCreditRegistry.CreditState.ESTABLISHED));
+        assertEq(uint8(registry.getCreditState(6)), uint8(ITRUCreditRegistry.CreditState.VERIFIED));
+        assertEq(uint8(registry.getCreditState(100)), uint8(ITRUCreditRegistry.CreditState.VERIFIED));
+    }
+
+    function test_getCreditEvidenceReturnsCorrectValues() public {
+        _recordRepayment(QUERY_ID_1, borrower, 42, 500, SOURCE_TX_HASH_1);
+        _recordRepayment(QUERY_ID_2, borrower, 43, 300, SOURCE_TX_HASH_2);
+
+        ITRUCreditRegistry.CreditEvidence memory ev = registry.getCreditEvidence(borrower);
+        assertEq(ev.repayments, 2);
+        assertEq(ev.totalRepaid, 800);
+        assertEq(ev.creditLimit, 200); // 2 * 100, phase-6 formula unchanged
+        assertEq(ev.distinctLoansRepaid, 2);
+        assertEq(ev.failedOrRejectedEvents, 0);
+        assertEq(uint8(ev.creditState), uint8(ITRUCreditRegistry.CreditState.BUILDING));
+    }
+
+    function test_distinctLoansRepaidAcrossMultipleLoans() public {
+        bytes32 q3 = keccak256("chain-1-height-1-tx-3");
+        _recordRepayment(QUERY_ID_1, borrower, 10, 100, SOURCE_TX_HASH_1);
+        _recordRepayment(QUERY_ID_2, borrower, 11, 100, SOURCE_TX_HASH_2);
+        _recordRepayment(q3, borrower, 12, 100, keccak256("tx-3"));
+
+        ITRUCreditRegistry.CreditEvidence memory ev = registry.getCreditEvidence(borrower);
+        assertEq(ev.distinctLoansRepaid, 3);
+        assertEq(ev.repayments, 3);
+        // distinct loans equals repayments because each loan is credited once
+        assertEq(ev.distinctLoansRepaid, ev.repayments);
+    }
+
+    function test_creditLimitFormulaUnchanged() public {
+        // Phase-6 formula: creditLimit = BASE_LIMIT + repayments * INCREMENT_PER_REPAYMENT
+        // Verify byte-for-byte identical values at each count.
+        assertEq(registry.BASE_LIMIT(), 0);
+        assertEq(registry.INCREMENT_PER_REPAYMENT(), 100);
+
+        ITRUCreditRegistry.CreditEvidence memory e0 = registry.getCreditEvidence(borrower);
+        assertEq(e0.creditLimit, 0);
+
+        _recordRepayment(QUERY_ID_1, borrower, 42, 999, SOURCE_TX_HASH_1);
+        ITRUCreditRegistry.CreditEvidence memory e1 = registry.getCreditEvidence(borrower);
+        assertEq(e1.creditLimit, 100);
+        assertEq(e1.creditLimit, registry.BASE_LIMIT() + 1 * registry.INCREMENT_PER_REPAYMENT());
+
+        _recordRepayment(QUERY_ID_2, borrower, 43, 1, SOURCE_TX_HASH_2);
+        ITRUCreditRegistry.CreditEvidence memory e2 = registry.getCreditEvidence(borrower);
+        assertEq(e2.creditLimit, 200);
+        assertEq(e2.creditLimit, registry.BASE_LIMIT() + 2 * registry.INCREMENT_PER_REPAYMENT());
+
+        // Also check profiles directly matches evidence
+        (, , uint256 directLimit) = registry.profiles(borrower);
+        assertEq(directLimit, e2.creditLimit);
+    }
+
+    function test_failedOrRejectedEventsAlwaysZero() public {
+        _recordRepayment(QUERY_ID_1, borrower, 42, 500, SOURCE_TX_HASH_1);
+        ITRUCreditRegistry.CreditEvidence memory ev = registry.getCreditEvidence(borrower);
+        assertEq(ev.failedOrRejectedEvents, 0);
+
+        // Even with multiple repayments, still 0
+        _recordRepayment(QUERY_ID_2, borrower, 43, 500, SOURCE_TX_HASH_2);
+        ev = registry.getCreditEvidence(borrower);
+        assertEq(ev.failedOrRejectedEvents, 0);
+
+        // And for a borrower with no history
+        address fresh = makeAddr("fresh");
+        ev = registry.getCreditEvidence(fresh);
+        assertEq(ev.failedOrRejectedEvents, 0);
+    }
 }

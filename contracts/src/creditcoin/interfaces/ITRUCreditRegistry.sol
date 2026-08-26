@@ -39,4 +39,27 @@ interface ITRUCreditRegistry {
         uint256 amount;
         uint256 verifiedAt;
     }
+
+    // CreditState thresholds (deterministic, documented):
+    //   NEW         = 0 repayments
+    //   BUILDING    = 1-2 repayments
+    //   ESTABLISHED = 3-5 repayments
+    //   VERIFIED    = 6+ repayments
+    enum CreditState {
+        NEW,
+        BUILDING,
+        ESTABLISHED,
+        VERIFIED
+    }
+
+    struct CreditEvidence {
+        CreditState creditState;
+        uint256 repayments;
+        uint256 totalRepaid;
+        uint256 creditLimit;
+        uint256 distinctLoansRepaid;
+        uint256 failedOrRejectedEvents;
+    }
+
+    function getCreditEvidence(address borrower) external view returns (CreditEvidence memory);
 }

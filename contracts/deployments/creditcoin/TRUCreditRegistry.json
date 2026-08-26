@@ -1,8 +1,8 @@
 {
-  "address": "0xFd7BF70EDCC4E1739957D50d67Aa8E1AB3038E40",
+  "address": "0x5bC66B68Fc353616036C560b535D7ccfDb3d7688",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x8431de8def31a20de9b55bd269c920b68077ca4ae383b997ee328ef1bd9b31f4",
+  "deployTxHash": "0x284a82db0d360df62b412509dbd29dffc1a3344b16fc3142411b26bd5e827e93",
   "abi": [
     {
       "type": "constructor",
@@ -122,6 +122,76 @@
         }
       ],
       "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCreditEvidence",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ITRUCreditRegistry.CreditEvidence",
+          "components": [
+            {
+              "name": "creditState",
+              "type": "uint8",
+              "internalType": "enum ITRUCreditRegistry.CreditState"
+            },
+            {
+              "name": "repayments",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "totalRepaid",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "creditLimit",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "distinctLoansRepaid",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "failedOrRejectedEvents",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCreditState",
+      "inputs": [
+        {
+          "name": "repayments",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.CreditState"
+        }
+      ],
+      "stateMutability": "pure"
     },
     {
       "type": "function",
