@@ -84,6 +84,10 @@ contract TRUUniversalContract {
     bytes32 public constant REPAYMENT_EVENT_SIGNATURE =
         0xc7ce0a35f17b490de2a317e7fecb2cae86b1abffb03800b2f492823521382698;
 
+    /// @dev keccak256("LoanCreated(uint256,address,uint256,uint256)") — loan origination event.
+    bytes32 public constant LOAN_CREATED_EVENT_SIGNATURE =
+        0x3373919ad665425d2cddb4072830e5935b6ee308440fa99b23383648da473bc0;
+
     /// @dev Replay protection keyed on keccak(chainKey, blockHeight, txIndex) so the
     ///      same source-chain event can never be verified/credited twice.
     mapping(bytes32 => bool) public processedQueries;
@@ -95,6 +99,16 @@ contract TRUUniversalContract {
         address indexed borrower,
         uint256 indexed loanId,
         uint256 amount
+    );
+
+    event LoanOriginationVerified(
+        uint64 chainKey,
+        uint64 blockHeight,
+        uint64 transactionIndex,
+        address indexed borrower,
+        uint256 indexed loanId,
+        uint256 principal,
+        uint256 dueTimestamp
     );
 
     modifier onlyOwner() {
@@ -153,6 +167,47 @@ contract TRUUniversalContract {
         emit RepaymentVerified(chainKey, blockHeight, transactionIndex, borrower, loanId, amount);
 
         registry.recordVerifiedRepayment(queryId, borrower, loanId, amount, chainKey, sourceTxHash, blockHeight);
+
+        return true;
+    }
+
+    /// @notice Verifies a USC proof of a source-chain LoanCreated transaction,
+    ///         extracts the verified origination and forwards it to the registry.
+    ///         Same USC proof path as `execute`, branched on event signature,
+    ///         same emitter check, same replay guard, new UC-gated registry entry.
+    function executeLoanOrigination(
+        uint64 chainKey,
+        uint64 blockHeight,
+        bytes calldata encodedTransaction,
+        bytes32 sourceTxHash,
+        bytes32 merkleRoot,
+        INativeQueryVerifier.MerkleProofEntry[] calldata siblings,
+        bytes32 lowerEndpointDigest,
+        bytes32[] calldata continuityRoots
+    ) external returns (bool) {
+        INativeQueryVerifier.MerkleProof memory merkleProof =
+            INativeQueryVerifier.MerkleProof({root: merkleRoot, siblings: siblings});
+
+        uint64 transactionIndex = VERIFIER.calculateTxIndex(merkleProof);
+
+        bytes32 queryId = _computeQueryId(chainKey, blockHeight, transactionIndex);
+        require(!processedQueries[queryId], "Query already processed");
+
+        bool verified = _verifyProof(
+            chainKey, blockHeight, encodedTransaction, merkleProof, lowerEndpointDigest, continuityRoots
+        );
+        require(verified, "Proof of inclusion verification failed");
+
+        processedQueries[queryId] = true;
+
+        (address borrower, uint256 loanId, uint256 principal, uint256 dueTimestamp) =
+            _decodeLoanCreated(encodedTransaction);
+
+        emit LoanOriginationVerified(chainKey, blockHeight, transactionIndex, borrower, loanId, principal, dueTimestamp);
+
+        registry.recordVerifiedLoanOrigination(
+            queryId, borrower, loanId, principal, dueTimestamp, chainKey, sourceTxHash, blockHeight
+        );
 
         return true;
     }
@@ -226,6 +281,47 @@ contract TRUUniversalContract {
         returns (address borrower, uint256 loanId, uint256 amount)
     {
         return _decodeRepayment(encodedTransaction);
+    }
+
+    /// @dev Decodes LoanCreated from verified transaction receipt logs.
+    function _decodeLoanCreated(bytes memory encodedTransaction)
+        internal
+        view
+        returns (address borrower, uint256 loanId, uint256 principal, uint256 dueTimestamp)
+    {
+        uint8 txType = DECODER.getTransactionType(encodedTransaction);
+        require(DECODER.isValidTransactionType(txType), "Unsupported transaction type");
+
+        IEvmV1Decoder.ReceiptFields memory receipt = DECODER.decodeReceiptFields(encodedTransaction);
+        require(receipt.receiptStatus == 1, "Transaction did not succeed");
+
+        IEvmV1Decoder.LogEntry[] memory logs = receipt.receiptLogs;
+        uint256 matchIndex = type(uint256).max;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics.length == 3 && logs[i].topics[0] == LOAN_CREATED_EVENT_SIGNATURE) {
+                matchIndex = i;
+                break;
+            }
+        }
+        require(matchIndex != type(uint256).max, "No LoanCreated event found");
+
+        IEvmV1Decoder.LogEntry memory log = logs[matchIndex];
+        require(log.topics.length == 3, "Invalid LoanCreated topics");
+        require(log.topics[0] == LOAN_CREATED_EVENT_SIGNATURE, "Not LoanCreated event");
+        require(log.address_ == sourceLoanMarket, "Not SourceLoanMarket emitter");
+
+        loanId = uint256(log.topics[1]);
+        borrower = address(uint160(uint256(log.topics[2])));
+        (principal, dueTimestamp) = abi.decode(log.data, (uint256, uint256));
+    }
+
+    /// @notice View-only decode for LoanCreated, mirrors decodeRepayment.
+    function decodeLoanCreated(bytes calldata encodedTransaction)
+        external
+        view
+        returns (address borrower, uint256 loanId, uint256 principal, uint256 dueTimestamp)
+    {
+        return _decodeLoanCreated(encodedTransaction);
     }
 
     function _computeQueryId(uint64 chainKey, uint64 blockHeight, uint64 transactionIndex)

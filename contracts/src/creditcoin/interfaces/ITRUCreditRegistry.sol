@@ -24,8 +24,10 @@ interface ITRUCreditRegistry {
 
     // VerifiedFinancialEvent struct must be known to callers.
     // Defined here for interface compatibility.
+    // EventType extensible; Repayment is first, Origination added for loan lifecycle (phase 9).
     enum EventType {
-        Repayment
+        Repayment,
+        Origination
     }
 
     struct VerifiedFinancialEvent {
@@ -62,4 +64,33 @@ interface ITRUCreditRegistry {
     }
 
     function getCreditEvidence(address borrower) external view returns (CreditEvidence memory);
+
+    // Loan lifecycle (phase 9): verified origination -> Active, verified repayment -> Repaid
+    enum LoanStatus {
+        NONE,
+        ACTIVE,
+        REPAID
+    }
+
+    struct CreditPassport {
+        CreditEvidence evidence;
+        VerifiedFinancialEvent[] loanHistory;
+        uint256 outstandingObligations;
+        uint64[] verifiedSourceChains;
+    }
+
+    function recordVerifiedLoanOrigination(
+        bytes32 queryId,
+        address borrower,
+        uint256 loanId,
+        uint256 principal,
+        uint256 dueTimestamp,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external;
+
+    function getLoanStatus(address borrower, uint256 loanId) external view returns (LoanStatus);
+    function getOutstandingObligations(address borrower) external view returns (uint256);
+    function getCreditPassport(address borrower) external view returns (CreditPassport memory);
 }

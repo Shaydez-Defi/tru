@@ -49,6 +49,8 @@ contract TRUUniversalContractTest is Test {
 
     bytes32 internal constant SIG =
         0xc7ce0a35f17b490de2a317e7fecb2cae86b1abffb03800b2f492823521382698; // LoanRepaid(address,uint256,uint256)
+    bytes32 internal constant LOAN_CREATED_SIG =
+        0x3373919ad665425d2cddb4072830e5935b6ee308440fa99b23383648da473bc0; // LoanCreated(uint256,address,uint256,uint256)
 
     function setUp() public {
         decoder = new MockDecoder();
@@ -104,5 +106,44 @@ contract TRUUniversalContractTest is Test {
         vm.prank(makeAddr("random"));
         vm.expectRevert("Only owner");
         uc.setSourceLoanMarket(otherContract);
+    }
+
+    function test_decodeLoanCreatedAcceptsSourceLoanMarketEmitter() public {
+        bytes32[] memory topics = new bytes32[](3);
+        topics[0] = LOAN_CREATED_SIG;
+        topics[1] = bytes32(uint256(LOAN_ID));
+        topics[2] = bytes32(uint256(uint160(borrower)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: sourceLoanMarket, topics: topics, data: abi.encode(uint256(1000), uint256(9999999999))})
+        );
+        (address b, uint256 l, uint256 p, uint256 d) = uc.decodeLoanCreated(hex"1234");
+        assertEq(b, borrower);
+        assertEq(l, LOAN_ID);
+        assertEq(p, 1000);
+        assertEq(d, 9999999999);
+    }
+
+    function test_decodeLoanCreatedRejectsForeignEmitter() public {
+        bytes32[] memory topics = new bytes32[](3);
+        topics[0] = LOAN_CREATED_SIG;
+        topics[1] = bytes32(uint256(LOAN_ID));
+        topics[2] = bytes32(uint256(uint160(borrower)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: otherContract, topics: topics, data: abi.encode(uint256(1000), uint256(9999999999))})
+        );
+        vm.expectRevert("Not SourceLoanMarket emitter");
+        uc.decodeLoanCreated(hex"1234");
+    }
+
+    function test_decodeLoanCreatedRejectsNonCreatedSignature() public {
+        bytes32[] memory topics = new bytes32[](3);
+        topics[0] = keccak256("SomeOtherEvent(uint256,address,uint256,uint256)");
+        topics[1] = bytes32(uint256(LOAN_ID));
+        topics[2] = bytes32(uint256(uint160(borrower)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: sourceLoanMarket, topics: topics, data: abi.encode(uint256(1000), uint256(9999999999))})
+        );
+        vm.expectRevert("No LoanCreated event found");
+        uc.decodeLoanCreated(hex"1234");
     }
 }

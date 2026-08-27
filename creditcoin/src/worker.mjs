@@ -7,7 +7,7 @@ import { chainInfo, blockProver, proofProvider } from '@gluwa/usc-sdk';
 
 // TRU pipeline worker (AGENTS.md build-order step 4).
 // Infrastructure only — no decision-making. It:
-//   [detected]   listens for LoanRepaid events on SourceLoanMarket (Sepolia)
+//   [detected]   listens for LoanCreated / LoanRepaid events on SourceLoanMarket (Sepolia)
 //   [attesting]  waits for Creditcoin attestation of the source block
 //   [proof-ready] requests an inclusion proof from the proof builder
 //   [verified]   sanity-checks the proof against the on-chain precompile (eth_call)
@@ -16,7 +16,7 @@ import { chainInfo, blockProver, proofProvider } from '@gluwa/usc-sdk';
 //
 // CLI:
 //   node src/worker.mjs --listen [--from-block N] [--process-count N] [--until-tx HASH]
-//   node src/worker.mjs --tx HASH      (process a single specific repayment tx)
+//   node src/worker.mjs --tx HASH      (process a single specific tx — auto-detects LoanCreated or LoanRepaid)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
@@ -53,6 +53,106 @@ const prover = new blockProver.PrecompileBlockProver(ccProvider);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ts = () => new Date().toISOString();
 const fmt = (ms) => `${(ms / 1000).toFixed(1)}s`;
+
+async function processLog(log, eventName) {
+  if (eventName === 'LoanCreated') return processLoanCreated(log);
+  return processLoanRepaid(log);
+}
+
+async function processLoanCreated(log) {
+  const t0 = Date.now();
+  const timings = {};
+
+  console.log(`\n[detected] LoanCreated event @ ${ts()}`);
+  console.log(`  tx       : ${log.transactionHash}`);
+  console.log(`  block    : ${log.blockNumber}`);
+  console.log(`  logIndex : ${log.index}`);
+  console.log(`  borrower : ${log.args.borrower}`);
+  console.log(`  loanId   : ${log.args.loanId.toString()}`);
+  console.log(`  principal: ${log.args.principal.toString()}`);
+  console.log(`  due      : ${log.args.due.toString()}`);
+
+  console.log(`[attesting] waiting for Creditcoin attestation of Sepolia block ${log.blockNumber} @ ${ts()}...`);
+  const a0 = Date.now();
+  await proofBuilder.waitUntilHeightAttested(chainKey, log.blockNumber, 10000, 900000, 2000);
+  timings.attesting = Date.now() - a0;
+  console.log(`[attesting] block ${log.blockNumber} attested @ ${ts()} (waited ${fmt(timings.attesting)})`);
+
+  console.log(`[proof-ready] requesting proof for ${log.transactionHash} @ ${ts()}...`);
+  const p0 = Date.now();
+  const result = await proofBuilder.getProof(log.transactionHash);
+  timings.proof = Date.now() - p0;
+  if (!result.success || !result.data) {
+    throw new Error(`proof generation failed: ${result.error}`);
+  }
+  const d = result.data;
+  console.log(
+    `[proof-ready] header=${d.headerNumber} txIndex=${d.txIndex} cached=${d.cached} @ ${ts()} (${fmt(timings.proof)})`
+  );
+
+  const verified = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
+  console.log(`[verified] precompile verifySingle (eth_call): ${verified}`);
+  if (!verified) throw new Error('on-chain verification FAILED');
+
+  console.log(`[submitted] submitting LoanCreated proof to TRUUniversalContract @ ${ts()}...`);
+  const s0 = Date.now();
+  let submitTx;
+  try {
+    submitTx = await uc.executeLoanOrigination(
+      d.chainKey,
+      d.headerNumber,
+      d.txBytes,
+      log.transactionHash,
+      d.merkleProof.root,
+      d.merkleProof.siblings,
+      d.continuityProof.lowerEndpointDigest,
+      d.continuityProof.roots
+    );
+  } catch (e) {
+    const reason = e.reason ?? e.shortMessage ?? String(e);
+    if (/Query already processed/.test(reason) || /already recorded|already originated/.test(reason)) {
+      timings.submit = Date.now() - s0;
+      console.log(`[replay-rejected] TRUUniversalContract rejected resubmission: "${reason}"`);
+      return { status: 'replay-rejected', timings };
+    }
+    throw new Error(`TRUUniversalContract.executeLoanOrigination failed: ${reason}`);
+  }
+  const receipt = await submitTx.wait();
+  timings.submit = Date.now() - s0;
+  console.log(
+    `[submitted] tx=${receipt.hash} block=${receipt.blockNumber} gasUsed=${receipt.gasUsed} @ ${ts()} (${fmt(timings.submit)})`
+  );
+
+  const parsedLogs = [];
+  for (const l of receipt.logs) {
+    try {
+      const parsed = uc.interface.parseLog(l);
+      if (parsed) parsedLogs.push(parsed);
+    } catch {}
+  }
+  const ev = parsedLogs.find((p) => p.name === 'LoanOriginationVerified');
+  if (ev) {
+    const match =
+      ev.args.borrower.toLowerCase() === log.args.borrower.toLowerCase() &&
+      ev.args.loanId.toString() === log.args.loanId.toString() &&
+      ev.args.principal.toString() === log.args.principal.toString();
+    console.log(`[verified] LoanOriginationVerified emitted:`);
+    console.log(`  chainKey=${ev.args.chainKey} blockHeight=${ev.args.blockHeight} txIndex=${ev.args.transactionIndex}`);
+    console.log(`  borrower=${ev.args.borrower} loanId=${ev.args.loanId} principal=${ev.args.principal} due=${ev.args.dueTimestamp}`);
+    console.log(`  matches source LoanCreated event: ${match ? 'YES' : 'NO'}`);
+  } else {
+    console.log('[warn] no LoanOriginationVerified event parsed in receipt');
+  }
+
+  const r0 = Date.now();
+  const status = await registry.loanStatus(log.args.borrower, log.args.loanId);
+  const out = await registry.outstandingObligations(log.args.borrower);
+  timings.registry = Date.now() - r0;
+  console.log(`[registry] loan ${log.args.loanId} status=${status} outstanding=${out} @ ${ts()}`);
+
+  timings.total = Date.now() - t0;
+  return { status: 'verified', timings };
+}
 
 async function processLoanRepaid(log) {
   const t0 = Date.now();
@@ -167,25 +267,29 @@ async function listen({ fromBlock, untilTx, processCount }) {
   const seen = new Set();
   const results = [];
 
-  console.log(`listening for LoanRepaid on SourceLoanMarket ${sourceMeta.address} (chainKey=${chainKey})`);
+  console.log(`listening for LoanCreated/LoanRepaid on SourceLoanMarket ${sourceMeta.address} (chainKey=${chainKey})`);
   console.log(`fromBlock=${start} processCount=${processCount} untilTx=${untilTx ?? '-'}`);
 
   while (processed < processCount) {
     const latest = await SEPSource.getBlockNumber();
     if (latest < start) {
-      // Public RPCs behind load balancers can briefly report a lower head height.
-      // Do not build an invalid [start, latest] range; just wait and retry.
       await sleep(6000);
       continue;
     }
-    const logs = await source.queryFilter(source.filters.LoanRepaid(), start, latest);
-    for (const log of logs) {
+    const [repaidLogs, createdLogs] = await Promise.all([
+      source.queryFilter(source.filters.LoanRepaid(), start, latest),
+      source.queryFilter(source.filters.LoanCreated(), start, latest),
+    ]);
+    const logs = [...repaidLogs, ...createdLogs]
+      .map((l) => ({ log: l, name: l.fragment?.name ?? (l.args?.principal !== undefined ? 'LoanCreated' : 'LoanRepaid') }))
+      .sort((a, b) => a.log.blockNumber !== b.log.blockNumber ? a.log.blockNumber - b.log.blockNumber : a.log.index - b.log.index);
+    for (const { log, name } of logs) {
       const key = `${log.transactionHash}:${log.index}`;
       if (seen.has(key)) continue;
       seen.add(key);
       try {
-        const res = await processLoanRepaid(log);
-        results.push({ tx: log.transactionHash, ...res });
+        const res = await processLog(log, name);
+        results.push({ tx: log.transactionHash, event: name, ...res });
       } catch (e) {
         console.error(`[error] processing ${key}: ${e.message}`);
         results.push({ tx: log.transactionHash, status: 'error', error: e.message, timings: {} });
@@ -233,14 +337,21 @@ if (has('--tx')) {
     console.error(`tx not found on Sepolia: ${txHash}`);
     process.exit(1);
   }
-  const logs = await source.queryFilter(source.filters.LoanRepaid(), receipt.blockNumber, receipt.blockNumber);
-  const log = logs.find((l) => l.transactionHash.toLowerCase() === txHash.toLowerCase());
-  if (!log) {
-    console.error(`no LoanRepaid event in tx ${txHash}`);
+  const [repaidLogs, createdLogs] = await Promise.all([
+    source.queryFilter(source.filters.LoanRepaid(), receipt.blockNumber, receipt.blockNumber),
+    source.queryFilter(source.filters.LoanCreated(), receipt.blockNumber, receipt.blockNumber),
+  ]);
+  const all = [
+    ...repaidLogs.map((l) => ({ log: l, name: 'LoanRepaid' })),
+    ...createdLogs.map((l) => ({ log: l, name: 'LoanCreated' })),
+  ];
+  const found = all.find((x) => x.log.transactionHash.toLowerCase() === txHash.toLowerCase());
+  if (!found) {
+    console.error(`no LoanCreated/LoanRepaid event in tx ${txHash}`);
     process.exit(1);
   }
-  const res = await processLoanRepaid(log);
-  printSummary([res]);
+  const res = await processLog(found.log, found.name);
+  printSummary([{ tx: txHash, event: found.name, ...res }]);
   process.exit(res.status === 'verified' ? 0 : 2);
 } else {
   const fromBlock = has('--from-block') ? parseInt(get('--from-block'), 10) : undefined;

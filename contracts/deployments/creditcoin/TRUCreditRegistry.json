@@ -1,8 +1,8 @@
 {
-  "address": "0x5bC66B68Fc353616036C560b535D7ccfDb3d7688",
+  "address": "0xdd808b032599bCdF1f5038e50192513b8BfF2EB9",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x284a82db0d360df62b412509dbd29dffc1a3344b16fc3142411b26bd5e827e93",
+  "deployTxHash": "0x204a52fc9c1809b1ab9fd84a189282dc95329810f9b27e74beb5396e44702c38",
   "abi": [
     {
       "type": "constructor",
@@ -176,6 +176,126 @@
     },
     {
       "type": "function",
+      "name": "getCreditPassport",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ITRUCreditRegistry.CreditPassport",
+          "components": [
+            {
+              "name": "evidence",
+              "type": "tuple",
+              "internalType": "struct ITRUCreditRegistry.CreditEvidence",
+              "components": [
+                {
+                  "name": "creditState",
+                  "type": "uint8",
+                  "internalType": "enum ITRUCreditRegistry.CreditState"
+                },
+                {
+                  "name": "repayments",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "totalRepaid",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "creditLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "distinctLoansRepaid",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "failedOrRejectedEvents",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            },
+            {
+              "name": "loanHistory",
+              "type": "tuple[]",
+              "internalType": "struct ITRUCreditRegistry.VerifiedFinancialEvent[]",
+              "components": [
+                {
+                  "name": "eventId",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "borrower",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "sourceChain",
+                  "type": "uint64",
+                  "internalType": "uint64"
+                },
+                {
+                  "name": "sourceTxHash",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "sourceBlock",
+                  "type": "uint64",
+                  "internalType": "uint64"
+                },
+                {
+                  "name": "loanId",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "eventType",
+                  "type": "uint8",
+                  "internalType": "enum ITRUCreditRegistry.EventType"
+                },
+                {
+                  "name": "amount",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "verifiedAt",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            },
+            {
+              "name": "outstandingObligations",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedSourceChains",
+              "type": "uint64[]",
+              "internalType": "uint64[]"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "getCreditState",
       "inputs": [
         {
@@ -290,6 +410,92 @@
     },
     {
       "type": "function",
+      "name": "getLoanStatus",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.LoanStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getOutstandingObligations",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "loanStatus",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.LoanStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "outstandingObligations",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "owner",
       "inputs": [],
       "outputs": [
@@ -297,6 +503,25 @@
           "name": "",
           "type": "address",
           "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "processedOriginations",
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
         }
       ],
       "stateMutability": "view"
@@ -348,6 +573,54 @@
         }
       ],
       "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "recordVerifiedLoanOrigination",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "principal",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "dueTimestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "sourceChain",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "sourceBlock",
+          "type": "uint64",
+          "internalType": "uint64"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -417,6 +690,43 @@
         }
       ],
       "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "LoanOriginationRecorded",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "borrower",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "principal",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "dueTimestamp",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
     },
     {
       "type": "event",

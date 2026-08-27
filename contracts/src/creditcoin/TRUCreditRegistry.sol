@@ -49,7 +49,18 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     /// @dev Verified financial event history per borrower. Append-only.
     mapping(address => VerifiedFinancialEvent[]) public borrowerEvents;
 
+    /// @dev Loan lifecycle: per-borrower loanId status (NONE -> ACTIVE -> REPAID).
+    ///      Only USC-verified originations/repayments mutate this (AGENTS.md rules 1-3).
+    mapping(address => mapping(uint256 => LoanStatus)) public loanStatus;
+
+    /// @dev Count of Active (verified originated but not yet repaid) loans per borrower.
+    mapping(address => uint256) public outstandingObligations;
+
+    /// @dev Replay protection for verified loan originations (queryId = keccak(chainKey, blockHeight, txIndex)).
+    mapping(bytes32 => bool) public processedOriginations;
+
     event RepaymentRecorded(bytes32 indexed queryId, address indexed borrower, uint256 loanId, uint256 amount);
+    event LoanOriginationRecorded(bytes32 indexed queryId, address indexed borrower, uint256 indexed loanId, uint256 principal, uint256 dueTimestamp);
 
     modifier onlyUniversalContract() {
         require(msg.sender == universalContract, "Only TRUUniversalContract");
@@ -70,6 +81,34 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         universalContract = uc;
     }
 
+    /// @notice Records a USC-verified loan origination. Callable ONLY by TRUUniversalContract.
+    /// @dev Mirrors recordVerifiedRepayment pattern: same trust boundary, same replay
+    ///      protection (queryId), same emitter authorization via UC. Marks loan as ACTIVE.
+    function recordVerifiedLoanOrigination(
+        bytes32 queryId,
+        address borrower,
+        uint256 loanId,
+        uint256 principal,
+        uint256 dueTimestamp,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external onlyUniversalContract {
+        require(!processedOriginations[queryId], "Loan origination already recorded");
+        processedOriginations[queryId] = true;
+
+        require(loanStatus[borrower][loanId] == LoanStatus.NONE, "Loan already originated");
+        loanStatus[borrower][loanId] = LoanStatus.ACTIVE;
+        outstandingObligations[borrower] += 1;
+
+        // Note: origination verified facts are lifecycle state (Active count), not
+        // appended to borrowerEvents which remains repayment history for
+        // loanHistory reuse. Principal/due are emitted for audit but not stored
+        // as VerifiedFinancialEvent to keep loanHistory as repayment evidence.
+
+        emit LoanOriginationRecorded(queryId, borrower, loanId, principal, dueTimestamp);
+    }
+
     /// @notice Records a USC-verified repayment. Callable ONLY by TRUUniversalContract.
     /// @dev The caller is trusted to pass a correctly derived queryId; the registry
     ///      does no proof/verification work itself, it only enforces single-recording.
@@ -88,6 +127,30 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         // Duplicate protection: a loanId counts toward a borrower's profile once.
         require(!countedLoans[borrower][loanId], "Loan already credited");
         countedLoans[borrower][loanId] = true;
+
+        // Loan lifecycle transition: ACTIVE -> REPAID. Edge case documented:
+        // a repayment for a loanId with no verified origination on record (loanStatus == NONE)
+        // is still allowed and recorded as REPAID, but outstandingObligations is not
+        // decremented because no Active obligation was previously counted. This preserves
+        // backward compatibility (phase 5/6 tests repay without prior origination) and
+        // ensures outstanding only reflects verified Active loans. Requiring prior
+        // origination would be stricter but would break existing verified repayment
+        // flows that are already evidenced live.
+        LoanStatus status = loanStatus[borrower][loanId];
+        if (status == LoanStatus.ACTIVE) {
+            loanStatus[borrower][loanId] = LoanStatus.REPAID;
+            // safe decrement (should be >=1 if status was ACTIVE)
+            if (outstandingObligations[borrower] > 0) {
+                outstandingObligations[borrower] -= 1;
+            }
+        } else if (status == LoanStatus.NONE) {
+            loanStatus[borrower][loanId] = LoanStatus.REPAID;
+            // outstanding unchanged — no Active loan was counted
+        } else {
+            // status == REPAID should be unreachable due to countedLoans guard above,
+            // but handle defensively
+            revert("Loan already repaid");
+        }
 
         CreditProfile storage profile = profiles[borrower];
         profile.repayments += 1;
@@ -192,5 +255,55 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         if (repayments <= 2) return CreditState.BUILDING;
         if (repayments <= 5) return CreditState.ESTABLISHED;
         return CreditState.VERIFIED;
+    }
+
+    function getLoanStatus(address borrower, uint256 loanId) external view returns (LoanStatus) {
+        return loanStatus[borrower][loanId];
+    }
+
+    function getOutstandingObligations(address borrower) external view returns (uint256) {
+        return outstandingObligations[borrower];
+    }
+
+    function getCreditPassport(address borrower) external view returns (CreditPassport memory) {
+        CreditEvidence memory evidence = this.getCreditEvidence(borrower);
+
+        // loanHistory: reuse phase-7 event data (repayment history)
+        VerifiedFinancialEvent[] storage stored = borrowerEvents[borrower];
+        uint256 n = stored.length;
+        VerifiedFinancialEvent[] memory history = new VerifiedFinancialEvent[](n);
+        for (uint256 i = 0; i < n; i++) {
+            history[i] = stored[i];
+        }
+
+        // verifiedSourceChains: distinct chainKeys seen in event history
+        // Currently trivial ([1] for Sepolia) until a second chain exists.
+        uint64[] memory chainsTmp = new uint64[](n);
+        uint256 chainCount = 0;
+        for (uint256 i = 0; i < n; i++) {
+            uint64 ck = stored[i].sourceChain;
+            bool seen = false;
+            for (uint256 j = 0; j < chainCount; j++) {
+                if (chainsTmp[j] == ck) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                chainsTmp[chainCount] = ck;
+                chainCount++;
+            }
+        }
+        uint64[] memory verifiedSourceChains = new uint64[](chainCount);
+        for (uint256 i = 0; i < chainCount; i++) {
+            verifiedSourceChains[i] = chainsTmp[i];
+        }
+
+        return CreditPassport({
+            evidence: evidence,
+            loanHistory: history,
+            outstandingObligations: outstandingObligations[borrower],
+            verifiedSourceChains: verifiedSourceChains
+        });
     }
 }

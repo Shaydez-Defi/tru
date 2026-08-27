@@ -410,4 +410,133 @@ contract TRUCreditRegistryTest is Test {
         ev = registry.getCreditEvidence(fresh);
         assertEq(ev.failedOrRejectedEvents, 0);
     }
+
+    // ===== Loan Lifecycle Tests (Phase 9) =====
+
+    function _recordOrigination(bytes32 queryId, address borrower_, uint256 loanId, uint256 principal, uint256 due) internal {
+        bytes32 txHash = keccak256(abi.encodePacked("orig-tx-", loanId));
+        vm.prank(universalContract);
+        registry.recordVerifiedLoanOrigination(queryId, borrower_, loanId, principal, due, CHAIN_KEY, txHash, SOURCE_BLOCK);
+    }
+
+    function test_loanOriginationMovesToActive() public {
+        bytes32 qOrig = keccak256("orig-1");
+        _recordOrigination(qOrig, borrower, 10, 1000, block.timestamp + 1000);
+
+        assertEq(uint8(registry.getLoanStatus(borrower, 10)), uint8(ITRUCreditRegistry.LoanStatus.ACTIVE));
+        assertEq(registry.getOutstandingObligations(borrower), 1);
+    }
+
+    function test_repaymentMovesToRepaidAndDecrementsOutstanding() public {
+        bytes32 qOrig = keccak256("orig-1");
+        _recordOrigination(qOrig, borrower, 10, 1000, block.timestamp + 1000);
+        assertEq(registry.getOutstandingObligations(borrower), 1);
+
+        _recordRepayment(QUERY_ID_1, borrower, 10, 500, SOURCE_TX_HASH_1);
+        assertEq(uint8(registry.getLoanStatus(borrower, 10)), uint8(ITRUCreditRegistry.LoanStatus.REPAID));
+        assertEq(registry.getOutstandingObligations(borrower), 0);
+    }
+
+    function test_repaymentWithoutPriorOriginationStillAllowed() public {
+        // Edge case documented in TRUCreditRegistry.recordVerifiedRepayment:
+        // repayment for loanId with no verified origination (status NONE) is still
+        // allowed and recorded as REPAID, but outstandingObligations is not
+        // decremented because no Active loan was counted. This preserves backward
+        // compatibility with phase 5/6 where repayments were verified without
+        // prior origination verification.
+        assertEq(uint8(registry.getLoanStatus(borrower, 99)), uint8(ITRUCreditRegistry.LoanStatus.NONE));
+        assertEq(registry.getOutstandingObligations(borrower), 0);
+
+        _recordRepayment(QUERY_ID_1, borrower, 99, 500, SOURCE_TX_HASH_1);
+
+        assertEq(uint8(registry.getLoanStatus(borrower, 99)), uint8(ITRUCreditRegistry.LoanStatus.REPAID));
+        assertEq(registry.getOutstandingObligations(borrower), 0);
+        // repayment still counted in credit profile
+        (uint256 repayments,,) = registry.profiles(borrower);
+        assertEq(repayments, 1);
+    }
+
+    function test_originationReplayGuard() public {
+        bytes32 qOrig = keccak256("orig-1");
+        _recordOrigination(qOrig, borrower, 10, 1000, block.timestamp + 1000);
+
+        vm.prank(universalContract);
+        vm.expectRevert("Loan origination already recorded");
+        registry.recordVerifiedLoanOrigination(qOrig, borrower, 11, 1000, block.timestamp + 1000, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK);
+
+        assertEq(registry.getOutstandingObligations(borrower), 1);
+    }
+
+    function test_originationDuplicateGuard() public {
+        bytes32 qOrig1 = keccak256("orig-1");
+        bytes32 qOrig2 = keccak256("orig-2");
+        _recordOrigination(qOrig1, borrower, 10, 1000, block.timestamp + 1000);
+
+        vm.prank(universalContract);
+        vm.expectRevert("Loan already originated");
+        registry.recordVerifiedLoanOrigination(qOrig2, borrower, 10, 2000, block.timestamp + 2000, CHAIN_KEY, keccak256("tx2"), SOURCE_BLOCK);
+
+        assertEq(registry.getOutstandingObligations(borrower), 1);
+    }
+
+    function test_repaymentReplayGuardStillHoldsWithLifecycle() public {
+        _recordRepayment(QUERY_ID_1, borrower, 10, 500, SOURCE_TX_HASH_1);
+        vm.prank(universalContract);
+        vm.expectRevert("Repayment already recorded");
+        registry.recordVerifiedRepayment(QUERY_ID_1, borrower, 10, 500, CHAIN_KEY, SOURCE_TX_HASH_1, SOURCE_BLOCK);
+        // ensure outstanding not affected (was NONE -> REPAID, so 0 stays 0)
+        assertEq(registry.getOutstandingObligations(borrower), 0);
+    }
+
+    function test_outstandingObligationsMultiple() public {
+        _recordOrigination(keccak256("orig-1"), borrower, 10, 1000, block.timestamp + 1000);
+        _recordOrigination(keccak256("orig-2"), borrower, 11, 2000, block.timestamp + 2000);
+        _recordOrigination(keccak256("orig-3"), borrower, 12, 3000, block.timestamp + 3000);
+        assertEq(registry.getOutstandingObligations(borrower), 3);
+
+        _recordRepayment(QUERY_ID_1, borrower, 10, 500, SOURCE_TX_HASH_1);
+        assertEq(registry.getOutstandingObligations(borrower), 2);
+
+        _recordRepayment(QUERY_ID_2, borrower, 11, 600, SOURCE_TX_HASH_2);
+        assertEq(registry.getOutstandingObligations(borrower), 1);
+    }
+
+    function test_creditPassportAfterOriginationAndRepayment() public {
+        // Start empty
+        ITRUCreditRegistry.CreditPassport memory p0 = registry.getCreditPassport(borrower);
+        assertEq(p0.outstandingObligations, 0);
+        assertEq(p0.evidence.repayments, 0);
+        assertEq(p0.loanHistory.length, 0);
+        assertEq(p0.verifiedSourceChains.length, 0);
+
+        // Originate loan 10
+        _recordOrigination(keccak256("orig-1"), borrower, 10, 1000, block.timestamp + 1000);
+        ITRUCreditRegistry.CreditPassport memory p1 = registry.getCreditPassport(borrower);
+        assertEq(p1.outstandingObligations, 1);
+        // loanHistory still 0 repayments (origination not in borrowerEvents)
+        assertEq(p1.loanHistory.length, 0);
+        assertEq(p1.verifiedSourceChains.length, 0);
+        assertEq(uint8(registry.getLoanStatus(borrower, 10)), uint8(ITRUCreditRegistry.LoanStatus.ACTIVE));
+
+        // Repay loan 10
+        _recordRepayment(QUERY_ID_1, borrower, 10, 500, SOURCE_TX_HASH_1);
+        ITRUCreditRegistry.CreditPassport memory p2 = registry.getCreditPassport(borrower);
+        assertEq(p2.outstandingObligations, 0);
+        assertEq(p2.evidence.repayments, 1);
+        assertEq(p2.loanHistory.length, 1);
+        assertEq(p2.verifiedSourceChains.length, 1);
+        assertEq(p2.verifiedSourceChains[0], CHAIN_KEY);
+        assertEq(p2.loanHistory[0].loanId, 10);
+    }
+
+    function test_verifiedSourceChainsDistinct() public {
+        _recordRepayment(QUERY_ID_1, borrower, 10, 100, SOURCE_TX_HASH_1);
+        _recordRepayment(QUERY_ID_2, borrower, 11, 100, SOURCE_TX_HASH_2);
+        ITRUCreditRegistry.CreditPassport memory p = registry.getCreditPassport(borrower);
+        // Both events have same chainKey (1), so distinct list is [1]
+        assertEq(p.verifiedSourceChains.length, 1);
+        assertEq(p.verifiedSourceChains[0], 1);
+        // loanHistory mirrors borrowerEvents
+        assertEq(p.loanHistory.length, 2);
+    }
 }
