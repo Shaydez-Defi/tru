@@ -59,6 +59,10 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     /// @dev Replay protection for verified loan originations (queryId = keccak(chainKey, blockHeight, txIndex)).
     mapping(bytes32 => bool) public processedOriginations;
 
+    /// @dev Distinct source chains where a verified origination exists for a borrower (for verifiedSourceChains gap fix).
+    mapping(address => uint64[]) private borrowerOriginationChains;
+    mapping(address => mapping(uint64 => bool)) private hasSeenOriginationChain;
+
     event RepaymentRecorded(bytes32 indexed queryId, address indexed borrower, uint256 loanId, uint256 amount);
     event LoanOriginationRecorded(bytes32 indexed queryId, address indexed borrower, uint256 indexed loanId, uint256 principal, uint256 dueTimestamp);
 
@@ -100,6 +104,13 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         require(loanStatus[borrower][loanId] == LoanStatus.NONE, "Loan already originated");
         loanStatus[borrower][loanId] = LoanStatus.ACTIVE;
         outstandingObligations[borrower] += 1;
+
+        // Track distinct source chains for verifiedSourceChains (covers case where only
+        // origination has been verified so far, no repayment yet).
+        if (!hasSeenOriginationChain[borrower][sourceChain]) {
+            hasSeenOriginationChain[borrower][sourceChain] = true;
+            borrowerOriginationChains[borrower].push(sourceChain);
+        }
 
         // Note: origination verified facts are lifecycle state (Active count), not
         // appended to borrowerEvents which remains repayment history for
@@ -276,12 +287,28 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
             history[i] = stored[i];
         }
 
-        // verifiedSourceChains: distinct chainKeys seen in event history
-        // Currently trivial ([1] for Sepolia) until a second chain exists.
-        uint64[] memory chainsTmp = new uint64[](n);
+        // verifiedSourceChains: distinct chainKeys seen in BOTH repayment history
+        // and verified originations. Fixes gap where only origination has been verified.
+        uint64[] storage origChains = borrowerOriginationChains[borrower];
+        uint256 m = origChains.length;
+        uint64[] memory chainsTmp = new uint64[](n + m);
         uint256 chainCount = 0;
         for (uint256 i = 0; i < n; i++) {
             uint64 ck = stored[i].sourceChain;
+            bool seen = false;
+            for (uint256 j = 0; j < chainCount; j++) {
+                if (chainsTmp[j] == ck) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                chainsTmp[chainCount] = ck;
+                chainCount++;
+            }
+        }
+        for (uint256 i = 0; i < m; i++) {
+            uint64 ck = origChains[i];
             bool seen = false;
             for (uint256 j = 0; j < chainCount; j++) {
                 if (chainsTmp[j] == ck) {

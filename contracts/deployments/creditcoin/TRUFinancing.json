@@ -1,0 +1,153 @@
+{
+  "address": "0xf5180eD8244a8B25F6F100EA0ccD5e1a727354a6",
+  "chainId": 102031,
+  "chain": "creditcoin",
+  "deployTxHash": "0x3725187fb016cf1ef58fd9f323fe504fc4a0b8aad6f4e83a68ed08c3f11d5fe4",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "registry_",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getFinancingRequestCount",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getFinancingRequests",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct TRUFinancing.FinancingRequest[]",
+          "components": [
+            {
+              "name": "borrower",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "timestamp",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "creditStateAtRequest",
+              "type": "uint8",
+              "internalType": "enum ITRUCreditRegistry.CreditState"
+            },
+            {
+              "name": "status",
+              "type": "uint8",
+              "internalType": "enum TRUFinancing.RequestStatus"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "registry",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract ITRUCreditRegistry"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "requestFinancing",
+      "inputs": [
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "requestId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "FinancingRequested",
+      "inputs": [
+        {
+          "name": "borrower",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "requestId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "creditStateAtRequest",
+          "type": "uint8",
+          "indexed": false,
+          "internalType": "enum ITRUCreditRegistry.CreditState"
+        },
+        {
+          "name": "status",
+          "type": "uint8",
+          "indexed": false,
+          "internalType": "enum TRUFinancing.RequestStatus"
+        }
+      ],
+      "anonymous": false
+    }
+  ]
+}

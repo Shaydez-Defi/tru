@@ -515,10 +515,12 @@ contract TRUCreditRegistryTest is Test {
         assertEq(p1.outstandingObligations, 1);
         // loanHistory still 0 repayments (origination not in borrowerEvents)
         assertEq(p1.loanHistory.length, 0);
-        assertEq(p1.verifiedSourceChains.length, 0);
+        // verifiedSourceChains now includes origination chain even before repayment
+        assertEq(p1.verifiedSourceChains.length, 1);
+        assertEq(p1.verifiedSourceChains[0], CHAIN_KEY);
         assertEq(uint8(registry.getLoanStatus(borrower, 10)), uint8(ITRUCreditRegistry.LoanStatus.ACTIVE));
 
-        // Repay loan 10
+        // Repay loan 10 (same chain, distinct list stays 1)
         _recordRepayment(QUERY_ID_1, borrower, 10, 500, SOURCE_TX_HASH_1);
         ITRUCreditRegistry.CreditPassport memory p2 = registry.getCreditPassport(borrower);
         assertEq(p2.outstandingObligations, 0);
@@ -538,5 +540,15 @@ contract TRUCreditRegistryTest is Test {
         assertEq(p.verifiedSourceChains[0], 1);
         // loanHistory mirrors borrowerEvents
         assertEq(p.loanHistory.length, 2);
+    }
+
+    function test_verifiedSourceChainsWithOnlyOrigination() public {
+        // No repayment yet, only origination — verifiedSourceChains should still include that chain
+        _recordOrigination(keccak256("orig-only"), borrower, 20, 1000, block.timestamp + 1000);
+        ITRUCreditRegistry.CreditPassport memory p = registry.getCreditPassport(borrower);
+        assertEq(p.verifiedSourceChains.length, 1);
+        assertEq(p.verifiedSourceChains[0], CHAIN_KEY);
+        assertEq(p.loanHistory.length, 0);
+        assertEq(p.outstandingObligations, 1);
     }
 }
