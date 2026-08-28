@@ -34,31 +34,31 @@ SourceLoanMarket                                  BlockProver precompile 0x…0F
   polls /api/v1/attested-height/1                 │
   ProofBuilder.getProof(txHash)                   │
   ───────── USC proof ───────────────────────►    │
-                                    ┌────────────┴────────────────┐
-                                    │ TRUUniversalContract        │
-                                    │ processedQueries[queryId]   │
-                                    │ decode LoanCreated/        │
-                                    │ LoanRepaid, check emitter │
-                                    │ == SourceLoanMarket         │
-                                    └───────┬──────────┬──────────┘
-                                            │          │
-                                   LoanCreated         LoanRepaid
-                                            │          │
-                         recordVerified      │          │  recordVerified
-                         LoanOrigination     │          │  Repayment
-                                            ▼          ▼
-                                   TRUCreditRegistry (CC3)
-                                    loanStatus ACTIVE/REPAID
-                                    outstandingObligations
-                                    profiles: repayments, totalRepaid, creditLimit
-                                    borrowerEvents: VerifiedFinancialEvent[]
-                                    getCreditEvidence / getCreditPassport
-                                            │
-                                            ▼
-                                    TRUFinancing (CC3) — downstream consumer
-                                     reads getCreditEvidence, gates requestFinancing
-                                     on creditState >= BUILDING and amount <= creditLimit
-                                     records FinancingRequest, no disbursement
+                                    ┌──────────────────────────────┐
+                                    │ TRUUniversalContract         │
+                                    │ processedQueries[queryId]    │
+                                    │ decode LoanCreated /         │
+                                    │ LoanRepaid, check emitter    │
+                                    │ == SourceLoanMarket          │
+                                    └──────────────┬───┬───────────┘
+                                                   │   │
+                                          LoanCreated LoanRepaid
+                                                   │   │
+                                recordVerified     │   │  recordVerified
+                                LoanOrigination    │   │  Repayment
+                                                   ▼   ▼
+                                          TRUCreditRegistry (CC3)
+                                           loanStatus ACTIVE/REPAID
+                                           outstandingObligations
+                                           profiles: repayments, totalRepaid, creditLimit
+                                           borrowerEvents: VerifiedFinancialEvent[]
+                                           getCreditEvidence / getCreditPassport
+                                                   │
+                                                   ▼
+                                          TRUFinancing (CC3) — downstream consumer
+                                           reads getCreditEvidence, gates requestFinancing
+                                           on creditState >= BUILDING and amount <= creditLimit
+                                           records FinancingRequest, no disbursement
 ```
 
 Current contract set: `SourceLoanMarket` (Sepolia), `TRUUniversalContract` (CC3, verification only), `TRUCreditRegistry` (CC3, credit logic only), `TRUFinancing` (CC3, consumer of verified state). The worker relays proof bytes only and never decides what gets credited.
@@ -148,7 +148,7 @@ ChainKeys are per environment; on CC3 Testnet `chainKey 1 = Sepolia` and `chainK
 
 ## 10. Proven Results
 
-Three-plus independent live end-to-end runs plus the attestation timing diagnostic show the same pipeline succeeding:
+Three-plus independent live end-to-end runs plus the attestation timing diagnostic show the same pipeline succeeding. The phase 0, 4, 6, and timing runs below used earlier contract deployments superseded by the phase 10 addresses in section 15, so those transaction hashes are historical proof that the mechanism has worked repeatedly across the build, not live state on the current contracts. The current deployment's live evidence is in section 6.
 
 * Phase 0 spike: Sepolia `0xbd0cdaf5…` block `11497681` -> `SpikeConsumer.execute` tx `0x784bdffd…` block `5317027` verifiedCount `1`.
 * Phase 4 pipeline: loan 0 creation `0x60e6e5c8…` block `11498016` and repayment `0x98c2040d…` block `11498018` -> `TRUUniversalContract.execute` `0xd55830a2…` block `5317198` -> `repayments 1`.
@@ -220,7 +220,7 @@ cd creditcoin
 node src/deploy-production.mjs
 ```
 
-This deploys `SourceLoanMarket` to Sepolia, then `TRUCreditRegistry` and `TRUUniversalContract` to CC3, and configures `TRUCreditRegistry.setUniversalContract`. `TRUFinancing` is deployed separately after that with `registry` as constructor arg; see `contracts/src/creditcoin/TRUFinancing.sol` and the ad-hoc deploy snippet used in phase 10.
+This deploys `SourceLoanMarket` to Sepolia, then `TRUCreditRegistry`, `TRUUniversalContract` (with `decoder`, `registry`, and `sourceLoanMarket` constructor args), and `TRUFinancing` (with the just-deployed `TRUCreditRegistry` address as its constructor arg) to CC3, and configures `TRUCreditRegistry.setUniversalContract`. All four addresses and ABIs are written to `contracts/deployments` as the single source of truth loaded by the worker.
 
 Worker (real USC pipeline):
 

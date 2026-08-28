@@ -98,4 +98,19 @@ console.log('\n=== configuring TRUCreditRegistry.universalContract ===');
   console.log('  universalContract ->', universalContractAddress);
 }
 
+// ---- 5. TRUFinancing on CC3 (needs registry) ----
+console.log('\n=== deploying TRUFinancing (Creditcoin CC3) ===');
+console.log('  registry:', registryAddress);
+{
+  const { artifact, bytecode } = readArtifact('TRUFinancing', 'TRUFinancing.sol');
+  const factory = new ContractFactory(artifact.abi, bytecode, ccWallet);
+  const contract = await factory.deploy(registryAddress);
+  const receipt = await contract.deploymentTransaction().wait();
+  const address = await contract.getAddress();
+  console.log('  TRUFinancing at:', address);
+  console.log('  tx:', contract.deploymentTransaction().hash);
+  console.log('  gas used:', receipt.gasUsed.toString());
+  saveDeployment('creditcoin', 'TRUFinancing', address, contract.deploymentTransaction().hash, 102031, artifact.abi);
+}
+
 console.log('\nDone.');
