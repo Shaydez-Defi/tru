@@ -93,4 +93,82 @@ interface ITRUCreditRegistry {
     function getLoanStatus(address borrower, uint256 loanId) external view returns (LoanStatus);
     function getOutstandingObligations(address borrower) external view returns (uint256);
     function getCreditPassport(address borrower) external view returns (CreditPassport memory);
+
+    // --- Verifiable Economic History (phase 11) ---
+    // Generalizes VerifiedFinancialEvent for economic obligations involving
+    // autonomous actors. Keeps loan history separate for backward compatibility
+    // while sharing the same USC verification path.
+
+    enum ObligationStatus {
+        NONE,
+        ACTIVE,
+        COMPLETED,
+        FAILED
+    }
+
+    enum ObligationEventType {
+        Created,
+        Completed,
+        Failed
+    }
+
+    struct VerifiedObligationEvent {
+        bytes32 eventId;
+        uint256 obligationId;
+        address requester;
+        address executor;
+        uint64 sourceChain;
+        bytes32 sourceTxHash;
+        uint64 sourceBlock;
+        ObligationEventType eventType;
+        uint256 value;
+        uint256 verifiedAt;
+        uint256 deadline;
+    }
+
+    struct AgentPassport {
+        address subject;
+        uint256 verifiedObligations;
+        uint256 completedObligations;
+        uint256 failedObligations;
+        uint256 activeObligations;
+        uint256 verifiedSettlementVolume;
+        uint64[] verifiedSourceChains;
+        VerifiedObligationEvent[] obligationHistory;
+        uint256 completionRateBps;
+    }
+
+    function recordVerifiedObligationCreated(
+        bytes32 queryId,
+        uint256 obligationId,
+        address requester,
+        address executor,
+        uint256 value,
+        uint256 deadline,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external;
+
+    function recordVerifiedObligationCompleted(
+        bytes32 queryId,
+        uint256 obligationId,
+        address executor,
+        uint256 settlementAmount,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external;
+
+    function getObligationStatus(uint256 obligationId) external view returns (ObligationStatus);
+    function getObligationEventCount(address subject) external view returns (uint256);
+    function getObligationEvents(address subject, uint256 offset, uint256 limit)
+        external
+        view
+        returns (VerifiedObligationEvent[] memory);
+    function getAgentPassport(address subject) external view returns (AgentPassport memory);
+    function getVerifiedObligation(uint256 obligationId)
+        external
+        view
+        returns (VerifiedObligationEvent memory);
 }

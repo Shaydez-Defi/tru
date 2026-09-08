@@ -79,6 +79,11 @@ contract TRUUniversalContract {
     ///      contract whose logic enforces loan ownership (AGENTS.md rule 6).
     address public sourceLoanMarket;
 
+    /// @dev The SourceObligationMarket contract (Sepolia) whose obligation events
+    ///      this contract accepts. Same trust model as SourceLoanMarket: TRU
+    ///      verifies the event, the source market enforces the business rules.
+    address public sourceObligationMarket;
+
     /// @dev keccak256("LoanRepaid(address,uint256,uint256)") — the event emitted by
     ///      SourceLoanMarket (the source-chain contract this verifies against).
     bytes32 public constant REPAYMENT_EVENT_SIGNATURE =
@@ -87,6 +92,14 @@ contract TRUUniversalContract {
     /// @dev keccak256("LoanCreated(uint256,address,uint256,uint256)") — loan origination event.
     bytes32 public constant LOAN_CREATED_EVENT_SIGNATURE =
         0x3373919ad665425d2cddb4072830e5935b6ee308440fa99b23383648da473bc0;
+
+    /// @dev Obligation events from SourceObligationMarket (Sepolia).
+    bytes32 public constant OBLIGATION_CREATED_EVENT_SIGNATURE =
+        keccak256("ObligationCreated(uint256,address,address,uint256,uint256)");
+    bytes32 public constant OBLIGATION_COMPLETED_EVENT_SIGNATURE =
+        keccak256("ObligationCompleted(uint256,address,uint256)");
+    bytes32 public constant OBLIGATION_FAILED_EVENT_SIGNATURE =
+        keccak256("ObligationFailed(uint256,address)");
 
     /// @dev Replay protection keyed on keccak(chainKey, blockHeight, txIndex) so the
     ///      same source-chain event can never be verified/credited twice.
@@ -111,6 +124,32 @@ contract TRUUniversalContract {
         uint256 dueTimestamp
     );
 
+    event ObligationCreatedVerified(
+        uint64 chainKey,
+        uint64 blockHeight,
+        uint64 transactionIndex,
+        uint256 indexed obligationId,
+        address indexed requester,
+        address indexed executor,
+        uint256 value,
+        uint256 deadline
+    );
+    event ObligationCompletedVerified(
+        uint64 chainKey,
+        uint64 blockHeight,
+        uint64 transactionIndex,
+        uint256 indexed obligationId,
+        address indexed executor,
+        uint256 settlementAmount
+    );
+    event ObligationFailedVerified(
+        uint64 chainKey,
+        uint64 blockHeight,
+        uint64 transactionIndex,
+        uint256 indexed obligationId,
+        address indexed executor
+    );
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
         _;
@@ -132,6 +171,11 @@ contract TRUUniversalContract {
     function setSourceLoanMarket(address sourceLoanMarket_) external onlyOwner {
         require(sourceLoanMarket_ != address(0), "Zero source market");
         sourceLoanMarket = sourceLoanMarket_;
+    }
+
+    function setSourceObligationMarket(address sourceObligationMarket_) external onlyOwner {
+        // Allow zero to unset, but require non-zero when verifying obligation events
+        sourceObligationMarket = sourceObligationMarket_;
     }
 
     /// @notice Verifies a USC proof of a source-chain transaction, extracts the
@@ -322,6 +366,132 @@ contract TRUUniversalContract {
         returns (address borrower, uint256 loanId, uint256 principal, uint256 dueTimestamp)
     {
         return _decodeLoanCreated(encodedTransaction);
+    }
+
+    /// @dev Decodes ObligationCreated from verified receipt logs.
+    function _decodeObligationCreated(bytes memory encodedTransaction)
+        internal
+        view
+        returns (uint256 obligationId, address requester, address executor, uint256 value, uint256 deadline)
+    {
+        uint8 txType = DECODER.getTransactionType(encodedTransaction);
+        require(DECODER.isValidTransactionType(txType), "Unsupported transaction type");
+        IEvmV1Decoder.ReceiptFields memory receipt = DECODER.decodeReceiptFields(encodedTransaction);
+        require(receipt.receiptStatus == 1, "Transaction did not succeed");
+        require(sourceObligationMarket != address(0), "Obligation market not set");
+        IEvmV1Decoder.LogEntry[] memory logs = receipt.receiptLogs;
+        uint256 matchIndex = type(uint256).max;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics.length == 4 && logs[i].topics[0] == OBLIGATION_CREATED_EVENT_SIGNATURE) {
+                matchIndex = i;
+                break;
+            }
+        }
+        require(matchIndex != type(uint256).max, "No ObligationCreated event found");
+        IEvmV1Decoder.LogEntry memory log = logs[matchIndex];
+        require(log.topics.length == 4, "Invalid ObligationCreated topics");
+        require(log.topics[0] == OBLIGATION_CREATED_EVENT_SIGNATURE, "Not ObligationCreated event");
+        require(log.address_ == sourceObligationMarket, "Not SourceObligationMarket emitter");
+        obligationId = uint256(log.topics[1]);
+        requester = address(uint160(uint256(log.topics[2])));
+        executor = address(uint160(uint256(log.topics[3])));
+        (value, deadline) = abi.decode(log.data, (uint256, uint256));
+    }
+
+    function decodeObligationCreated(bytes calldata encodedTransaction)
+        external
+        view
+        returns (uint256 obligationId, address requester, address executor, uint256 value, uint256 deadline)
+    {
+        return _decodeObligationCreated(encodedTransaction);
+    }
+
+    /// @dev Decodes ObligationCompleted from verified receipt logs.
+    function _decodeObligationCompleted(bytes memory encodedTransaction)
+        internal
+        view
+        returns (uint256 obligationId, address executor, uint256 settlementAmount)
+    {
+        uint8 txType = DECODER.getTransactionType(encodedTransaction);
+        require(DECODER.isValidTransactionType(txType), "Unsupported transaction type");
+        IEvmV1Decoder.ReceiptFields memory receipt = DECODER.decodeReceiptFields(encodedTransaction);
+        require(receipt.receiptStatus == 1, "Transaction did not succeed");
+        require(sourceObligationMarket != address(0), "Obligation market not set");
+        IEvmV1Decoder.LogEntry[] memory logs = receipt.receiptLogs;
+        uint256 matchIndex = type(uint256).max;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics.length == 3 && logs[i].topics[0] == OBLIGATION_COMPLETED_EVENT_SIGNATURE) {
+                matchIndex = i;
+                break;
+            }
+        }
+        require(matchIndex != type(uint256).max, "No ObligationCompleted event found");
+        IEvmV1Decoder.LogEntry memory log = logs[matchIndex];
+        require(log.topics.length == 3, "Invalid ObligationCompleted topics");
+        require(log.topics[0] == OBLIGATION_COMPLETED_EVENT_SIGNATURE, "Not ObligationCompleted event");
+        require(log.address_ == sourceObligationMarket, "Not SourceObligationMarket emitter");
+        obligationId = uint256(log.topics[1]);
+        executor = address(uint160(uint256(log.topics[2])));
+        settlementAmount = abi.decode(log.data, (uint256));
+    }
+
+    function decodeObligationCompleted(bytes calldata encodedTransaction)
+        external
+        view
+        returns (uint256 obligationId, address executor, uint256 settlementAmount)
+    {
+        return _decodeObligationCompleted(encodedTransaction);
+    }
+
+    /// @notice Verifies a USC proof of an ObligationCreated transaction.
+    function executeObligationCreated(
+        uint64 chainKey,
+        uint64 blockHeight,
+        bytes calldata encodedTransaction,
+        bytes32 sourceTxHash,
+        bytes32 merkleRoot,
+        INativeQueryVerifier.MerkleProofEntry[] calldata siblings,
+        bytes32 lowerEndpointDigest,
+        bytes32[] calldata continuityRoots
+    ) external returns (bool) {
+        INativeQueryVerifier.MerkleProof memory merkleProof =
+            INativeQueryVerifier.MerkleProof({root: merkleRoot, siblings: siblings});
+        uint64 transactionIndex = VERIFIER.calculateTxIndex(merkleProof);
+        bytes32 queryId = _computeQueryId(chainKey, blockHeight, transactionIndex);
+        require(!processedQueries[queryId], "Query already processed");
+        bool verified = _verifyProof(chainKey, blockHeight, encodedTransaction, merkleProof, lowerEndpointDigest, continuityRoots);
+        require(verified, "Proof of inclusion verification failed");
+        processedQueries[queryId] = true;
+        (uint256 obligationId, address requester, address executor, uint256 value, uint256 deadline) =
+            _decodeObligationCreated(encodedTransaction);
+        emit ObligationCreatedVerified(chainKey, blockHeight, transactionIndex, obligationId, requester, executor, value, deadline);
+        registry.recordVerifiedObligationCreated(queryId, obligationId, requester, executor, value, deadline, chainKey, sourceTxHash, blockHeight);
+        return true;
+    }
+
+    /// @notice Verifies a USC proof of an ObligationCompleted transaction.
+    function executeObligationCompleted(
+        uint64 chainKey,
+        uint64 blockHeight,
+        bytes calldata encodedTransaction,
+        bytes32 sourceTxHash,
+        bytes32 merkleRoot,
+        INativeQueryVerifier.MerkleProofEntry[] calldata siblings,
+        bytes32 lowerEndpointDigest,
+        bytes32[] calldata continuityRoots
+    ) external returns (bool) {
+        INativeQueryVerifier.MerkleProof memory merkleProof =
+            INativeQueryVerifier.MerkleProof({root: merkleRoot, siblings: siblings});
+        uint64 transactionIndex = VERIFIER.calculateTxIndex(merkleProof);
+        bytes32 queryId = _computeQueryId(chainKey, blockHeight, transactionIndex);
+        require(!processedQueries[queryId], "Query already processed");
+        bool verified = _verifyProof(chainKey, blockHeight, encodedTransaction, merkleProof, lowerEndpointDigest, continuityRoots);
+        require(verified, "Proof of inclusion verification failed");
+        processedQueries[queryId] = true;
+        (uint256 obligationId, address executor, uint256 settlementAmount) = _decodeObligationCompleted(encodedTransaction);
+        emit ObligationCompletedVerified(chainKey, blockHeight, transactionIndex, obligationId, executor, settlementAmount);
+        registry.recordVerifiedObligationCompleted(queryId, obligationId, executor, settlementAmount, chainKey, sourceTxHash, blockHeight);
+        return true;
     }
 
     function _computeQueryId(uint64 chainKey, uint64 blockHeight, uint64 transactionIndex)

@@ -24,8 +24,16 @@ const ROOT = path.resolve(__dirname, '../..');
 function loadDeployment(chain, name) {
   return JSON.parse(fs.readFileSync(path.resolve(ROOT, `contracts/deployments/${chain}/${name}.json`), 'utf8'));
 }
+function tryLoadDeployment(chain, name) {
+  try {
+    return loadDeployment(chain, name);
+  } catch {
+    return null;
+  }
+}
 
 const sourceMeta = loadDeployment('sepolia', 'SourceLoanMarket');
+const obligationMeta = tryLoadDeployment('sepolia', 'SourceObligationMarket');
 const ucMeta = loadDeployment('creditcoin', 'TRUUniversalContract');
 const registryMeta = loadDeployment('creditcoin', 'TRUCreditRegistry');
 
@@ -35,6 +43,7 @@ const ccWallet = new Wallet(process.env.CREDITCOIN_PRIVATE_KEY, ccProvider);
 const proofBuilderUrl = process.env.PROOF_BUILDER_URL;
 
 const source = new Contract(sourceMeta.address, sourceMeta.abi, SEPSource);
+const obligationSource = obligationMeta ? new Contract(obligationMeta.address, obligationMeta.abi, SEPSource) : null;
 const uc = new Contract(ucMeta.address, ucMeta.abi, ccWallet);
 const registry = new Contract(registryMeta.address, registryMeta.abi, ccProvider);
 
@@ -56,7 +65,118 @@ const fmt = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
 async function processLog(log, eventName) {
   if (eventName === 'LoanCreated') return processLoanCreated(log);
+  if (eventName === 'ObligationCreated') return processObligationCreated(log);
+  if (eventName === 'ObligationCompleted') return processObligationCompleted(log);
   return processLoanRepaid(log);
+}
+
+async function processObligationCreated(log) {
+  const t0 = Date.now();
+  const timings = {};
+  console.log(`\n[detected] ObligationCreated event @ ${ts()}`);
+  console.log(`  tx       : ${log.transactionHash}`);
+  console.log(`  block    : ${log.blockNumber}`);
+  console.log(`  logIndex : ${log.index}`);
+  console.log(`  obligationId: ${log.args.obligationId.toString()}`);
+  console.log(`  requester: ${log.args.requester}`);
+  console.log(`  executor : ${log.args.executor}`);
+  console.log(`  value    : ${log.args.value.toString()}`);
+  console.log(`  deadline : ${log.args.deadline.toString()}`);
+  console.log(`[attesting] waiting for Creditcoin attestation of Sepolia block ${log.blockNumber} @ ${ts()}...`);
+  const a0 = Date.now();
+  await proofBuilder.waitUntilHeightAttested(chainKey, log.blockNumber, 10000, 900000, 2000);
+  timings.attesting = Date.now() - a0;
+  console.log(`[attesting] block ${log.blockNumber} attested @ ${ts()} (waited ${fmt(timings.attesting)})`);
+  console.log(`[proof-ready] requesting proof for ${log.transactionHash} @ ${ts()}...`);
+  const p0 = Date.now();
+  const result = await proofBuilder.getProof(log.transactionHash);
+  timings.proof = Date.now() - p0;
+  if (!result.success || !result.data) throw new Error(`proof generation failed: ${result.error}`);
+  const d = result.data;
+  console.log(`[proof-ready] header=${d.headerNumber} txIndex=${d.txIndex} cached=${d.cached} @ ${ts()} (${fmt(timings.proof)})`);
+  const verified = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
+  console.log(`[verified] precompile verifySingle (eth_call): ${verified}`);
+  if (!verified) throw new Error('on-chain verification FAILED');
+  console.log(`[submitted] submitting ObligationCreated proof to TRUUniversalContract @ ${ts()}...`);
+  const s0 = Date.now();
+  let submitTx;
+  try {
+    submitTx = await uc.executeObligationCreated(d.chainKey, d.headerNumber, d.txBytes, log.transactionHash, d.merkleProof.root, d.merkleProof.siblings, d.continuityProof.lowerEndpointDigest, d.continuityProof.roots);
+  } catch (e) {
+    const reason = e.reason ?? e.shortMessage ?? String(e);
+    if (/Query already processed/.test(reason) || /already recorded|already created/.test(reason)) {
+      timings.submit = Date.now() - s0;
+      console.log(`[replay-rejected] "${reason}"`);
+      return { status: 'replay-rejected', timings };
+    }
+    throw new Error(`executeObligationCreated failed: ${reason}`);
+  }
+  const receipt = await submitTx.wait();
+  timings.submit = Date.now() - s0;
+  console.log(`[submitted] tx=${receipt.hash} block=${receipt.blockNumber} gasUsed=${receipt.gasUsed} @ ${ts()} (${fmt(timings.submit)})`);
+  const parsedLogs = [];
+  for (const l of receipt.logs) { try { const p = uc.interface.parseLog(l); if (p) parsedLogs.push(p); } catch {} }
+  const ev = parsedLogs.find((p) => p.name === 'ObligationCreatedVerified');
+  if (ev) console.log(`[verified] ObligationCreatedVerified: obligationId=${ev.args.obligationId} requester=${ev.args.requester} executor=${ev.args.executor} value=${ev.args.value}`);
+  const r0 = Date.now();
+  const status = await registry.getObligationStatus(log.args.obligationId);
+  timings.registry = Date.now() - r0;
+  console.log(`[registry] obligation ${log.args.obligationId} status=${status} @ ${ts()}`);
+  timings.total = Date.now() - t0;
+  return { status: 'verified', timings };
+}
+
+async function processObligationCompleted(log) {
+  const t0 = Date.now();
+  const timings = {};
+  console.log(`\n[detected] ObligationCompleted event @ ${ts()}`);
+  console.log(`  tx       : ${log.transactionHash}`);
+  console.log(`  block    : ${log.blockNumber}`);
+  console.log(`  obligationId: ${log.args.obligationId.toString()}`);
+  console.log(`  executor : ${log.args.executor}`);
+  console.log(`  settlementAmount: ${log.args.settlementAmount.toString()}`);
+  console.log(`[attesting] waiting for Creditcoin attestation of Sepolia block ${log.blockNumber} @ ${ts()}...`);
+  const a0 = Date.now();
+  await proofBuilder.waitUntilHeightAttested(chainKey, log.blockNumber, 10000, 900000, 2000);
+  timings.attesting = Date.now() - a0;
+  console.log(`[attesting] block ${log.blockNumber} attested @ ${ts()} (waited ${fmt(timings.attesting)})`);
+  console.log(`[proof-ready] requesting proof for ${log.transactionHash} @ ${ts()}...`);
+  const p0 = Date.now();
+  const result = await proofBuilder.getProof(log.transactionHash);
+  timings.proof = Date.now() - p0;
+  if (!result.success || !result.data) throw new Error(`proof generation failed: ${result.error}`);
+  const d = result.data;
+  console.log(`[proof-ready] header=${d.headerNumber} txIndex=${d.txIndex} cached=${d.cached} @ ${ts()} (${fmt(timings.proof)})`);
+  const verified = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
+  console.log(`[verified] precompile verifySingle (eth_call): ${verified}`);
+  if (!verified) throw new Error('on-chain verification FAILED');
+  console.log(`[submitted] submitting ObligationCompleted proof to TRUUniversalContract @ ${ts()}...`);
+  const s0 = Date.now();
+  let submitTx;
+  try {
+    submitTx = await uc.executeObligationCompleted(d.chainKey, d.headerNumber, d.txBytes, log.transactionHash, d.merkleProof.root, d.merkleProof.siblings, d.continuityProof.lowerEndpointDigest, d.continuityProof.roots);
+  } catch (e) {
+    const reason = e.reason ?? e.shortMessage ?? String(e);
+    if (/Query already processed/.test(reason) || /already recorded|not active/.test(reason)) {
+      timings.submit = Date.now() - s0;
+      console.log(`[replay-rejected] "${reason}"`);
+      return { status: 'replay-rejected', timings };
+    }
+    throw new Error(`executeObligationCompleted failed: ${reason}`);
+  }
+  const receipt = await submitTx.wait();
+  timings.submit = Date.now() - s0;
+  console.log(`[submitted] tx=${receipt.hash} block=${receipt.blockNumber} gasUsed=${receipt.gasUsed} @ ${ts()} (${fmt(timings.submit)})`);
+  const parsedLogs = [];
+  for (const l of receipt.logs) { try { const p = uc.interface.parseLog(l); if (p) parsedLogs.push(p); } catch {} }
+  const ev = parsedLogs.find((p) => p.name === 'ObligationCompletedVerified');
+  if (ev) console.log(`[verified] ObligationCompletedVerified: obligationId=${ev.args.obligationId} executor=${ev.args.executor} settlement=${ev.args.settlementAmount}`);
+  const r0 = Date.now();
+  const status = await registry.getObligationStatus(log.args.obligationId);
+  timings.registry = Date.now() - r0;
+  console.log(`[registry] obligation ${log.args.obligationId} status=${status} @ ${ts()}`);
+  timings.total = Date.now() - t0;
+  return { status: 'verified', timings };
 }
 
 async function processLoanCreated(log) {
@@ -267,7 +387,10 @@ async function listen({ fromBlock, untilTx, processCount }) {
   const seen = new Set();
   const results = [];
 
-  console.log(`listening for LoanCreated/LoanRepaid on SourceLoanMarket ${sourceMeta.address} (chainKey=${chainKey})`);
+  const marketsDesc = obligationMeta
+    ? `SourceLoanMarket ${sourceMeta.address} + SourceObligationMarket ${obligationMeta.address}`
+    : `SourceLoanMarket ${sourceMeta.address}`;
+  console.log(`listening for LoanCreated/LoanRepaid${obligationMeta ? '/ObligationCreated/ObligationCompleted' : ''} on ${marketsDesc} (chainKey=${chainKey})`);
   console.log(`fromBlock=${start} processCount=${processCount} untilTx=${untilTx ?? '-'}`);
 
   while (processed < processCount) {
@@ -276,13 +399,27 @@ async function listen({ fromBlock, untilTx, processCount }) {
       await sleep(6000);
       continue;
     }
-    const [repaidLogs, createdLogs] = await Promise.all([
+    const loanFilters = [
       source.queryFilter(source.filters.LoanRepaid(), start, latest),
       source.queryFilter(source.filters.LoanCreated(), start, latest),
-    ]);
-    const logs = [...repaidLogs, ...createdLogs]
-      .map((l) => ({ log: l, name: l.fragment?.name ?? (l.args?.principal !== undefined ? 'LoanCreated' : 'LoanRepaid') }))
-      .sort((a, b) => a.log.blockNumber !== b.log.blockNumber ? a.log.blockNumber - b.log.blockNumber : a.log.index - b.log.index);
+    ];
+    const obligationFilters = obligationSource
+      ? [
+          obligationSource.queryFilter(obligationSource.filters.ObligationCreated(), start, latest),
+          obligationSource.queryFilter(obligationSource.filters.ObligationCompleted(), start, latest),
+        ]
+      : [];
+    const allLogs = await Promise.all([...loanFilters, ...obligationFilters]);
+    const repaidLogs = allLogs[0];
+    const createdLogs = allLogs[1];
+    const obligationCreatedLogs = obligationSource ? allLogs[2] : [];
+    const obligationCompletedLogs = obligationSource ? allLogs[3] : [];
+    const logs = [
+      ...repaidLogs.map((l) => ({ log: l, name: 'LoanRepaid' })),
+      ...createdLogs.map((l) => ({ log: l, name: 'LoanCreated' })),
+      ...obligationCreatedLogs.map((l) => ({ log: l, name: 'ObligationCreated' })),
+      ...obligationCompletedLogs.map((l) => ({ log: l, name: 'ObligationCompleted' })),
+    ].sort((a, b) => a.log.blockNumber !== b.log.blockNumber ? a.log.blockNumber - b.log.blockNumber : a.log.index - b.log.index);
     for (const { log, name } of logs) {
       const key = `${log.transactionHash}:${log.index}`;
       if (seen.has(key)) continue;
@@ -337,17 +474,25 @@ if (has('--tx')) {
     console.error(`tx not found on Sepolia: ${txHash}`);
     process.exit(1);
   }
-  const [repaidLogs, createdLogs] = await Promise.all([
+  const loanLogs = await Promise.all([
     source.queryFilter(source.filters.LoanRepaid(), receipt.blockNumber, receipt.blockNumber),
     source.queryFilter(source.filters.LoanCreated(), receipt.blockNumber, receipt.blockNumber),
   ]);
+  const obligationLogs = obligationSource
+    ? await Promise.all([
+        obligationSource.queryFilter(obligationSource.filters.ObligationCreated(), receipt.blockNumber, receipt.blockNumber),
+        obligationSource.queryFilter(obligationSource.filters.ObligationCompleted(), receipt.blockNumber, receipt.blockNumber),
+      ])
+    : [[], []];
   const all = [
-    ...repaidLogs.map((l) => ({ log: l, name: 'LoanRepaid' })),
-    ...createdLogs.map((l) => ({ log: l, name: 'LoanCreated' })),
+    ...loanLogs[0].map((l) => ({ log: l, name: 'LoanRepaid' })),
+    ...loanLogs[1].map((l) => ({ log: l, name: 'LoanCreated' })),
+    ...obligationLogs[0].map((l) => ({ log: l, name: 'ObligationCreated' })),
+    ...obligationLogs[1].map((l) => ({ log: l, name: 'ObligationCompleted' })),
   ];
   const found = all.find((x) => x.log.transactionHash.toLowerCase() === txHash.toLowerCase());
   if (!found) {
-    console.error(`no LoanCreated/LoanRepaid event in tx ${txHash}`);
+    console.error(`no LoanCreated/LoanRepaid/ObligationCreated/ObligationCompleted event in tx ${txHash}`);
     process.exit(1);
   }
   const res = await processLog(found.log, found.name);

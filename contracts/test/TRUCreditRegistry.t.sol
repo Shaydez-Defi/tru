@@ -551,4 +551,128 @@ contract TRUCreditRegistryTest is Test {
         assertEq(p.loanHistory.length, 0);
         assertEq(p.outstandingObligations, 1);
     }
+
+    // ===== Obligation / Agent History Tests (Phase 11) =====
+
+    function _recordObligationCreated(bytes32 queryId, uint256 oid, address req, address exec, uint256 val, uint256 deadline) internal {
+        bytes32 txHash = keccak256(abi.encodePacked("ob-create-", oid));
+        vm.prank(universalContract);
+        registry.recordVerifiedObligationCreated(queryId, oid, req, exec, val, deadline, CHAIN_KEY, txHash, SOURCE_BLOCK);
+    }
+
+    function _recordObligationCompleted(bytes32 queryId, uint256 oid, address exec, uint256 settlement) internal {
+        bytes32 txHash = keccak256(abi.encodePacked("ob-complete-", oid));
+        vm.prank(universalContract);
+        registry.recordVerifiedObligationCompleted(queryId, oid, exec, settlement, CHAIN_KEY, txHash, SOURCE_BLOCK);
+    }
+
+    function test_obligationCreatedMovesToActive() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        _recordObligationCreated(keccak256("ob-1"), 100, requester, executor, 5000, block.timestamp + 1000);
+        assertEq(uint8(registry.getObligationStatus(100)), uint8(ITRUCreditRegistry.ObligationStatus.ACTIVE));
+        // Executor sees verified obligation
+        assertEq(registry.getObligationEventCount(executor), 1);
+        assertEq(registry.getObligationEventCount(requester), 1);
+    }
+
+    function test_obligationCompletedMovesToCompleted() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        _recordObligationCreated(keccak256("ob-1"), 100, requester, executor, 5000, block.timestamp + 1000);
+        _recordObligationCompleted(keccak256("ob-1-complete"), 100, executor, 5000);
+        assertEq(uint8(registry.getObligationStatus(100)), uint8(ITRUCreditRegistry.ObligationStatus.COMPLETED));
+        // Settlement volume counted for executor
+        ITRUCreditRegistry.AgentPassport memory p = registry.getAgentPassport(executor);
+        assertEq(p.verifiedObligations, 1);
+        assertEq(p.completedObligations, 1);
+        assertEq(p.activeObligations, 0);
+        assertEq(p.verifiedSettlementVolume, 5000);
+        assertEq(p.completionRateBps, 10000);
+    }
+
+    function test_obligationCompletedWithoutActiveReverts() public {
+        address executor = makeAddr("executor");
+        vm.prank(universalContract);
+        vm.expectRevert("Obligation not active");
+        registry.recordVerifiedObligationCompleted(keccak256("q"), 999, executor, 100, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK);
+    }
+
+    function test_obligationReplayGuard() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        bytes32 q = keccak256("ob-1");
+        _recordObligationCreated(q, 100, requester, executor, 5000, block.timestamp + 1000);
+        vm.prank(universalContract);
+        vm.expectRevert("Obligation creation already recorded");
+        registry.recordVerifiedObligationCreated(q, 101, requester, executor, 5000, block.timestamp + 1000, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK);
+    }
+
+    function test_obligationDuplicateGuard() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        _recordObligationCreated(keccak256("ob-1"), 100, requester, executor, 5000, block.timestamp + 1000);
+        vm.prank(universalContract);
+        vm.expectRevert("Obligation already created");
+        registry.recordVerifiedObligationCreated(keccak256("ob-2"), 100, requester, executor, 5000, block.timestamp + 1000, CHAIN_KEY, keccak256("tx2"), SOURCE_BLOCK);
+    }
+
+    function test_obligationExecutorMismatchReverts() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        address other = makeAddr("other");
+        _recordObligationCreated(keccak256("ob-1"), 100, requester, executor, 5000, block.timestamp + 1000);
+        vm.prank(universalContract);
+        vm.expectRevert("Executor mismatch");
+        registry.recordVerifiedObligationCompleted(keccak256("ob-complete"), 100, other, 5000, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK);
+    }
+
+    function test_agentPassportDeterministicMetrics() public {
+        address requester = makeAddr("requester");
+        address agent = makeAddr("agent");
+        // Create 3 obligations for agent
+        _recordObligationCreated(keccak256("ob-1"), 1, requester, agent, 1000, block.timestamp + 1000);
+        _recordObligationCreated(keccak256("ob-2"), 2, requester, agent, 2000, block.timestamp + 1000);
+        _recordObligationCreated(keccak256("ob-3"), 3, requester, agent, 3000, block.timestamp + 1000);
+        // Complete 2 of them
+        _recordObligationCompleted(keccak256("ob-1-c"), 1, agent, 1000);
+        _recordObligationCompleted(keccak256("ob-2-c"), 2, agent, 2000);
+        // One remains active
+        ITRUCreditRegistry.AgentPassport memory p = registry.getAgentPassport(agent);
+        assertEq(p.verifiedObligations, 3);
+        assertEq(p.completedObligations, 2);
+        assertEq(p.activeObligations, 1);
+        assertEq(p.verifiedSettlementVolume, 3000);
+        assertEq(p.completionRateBps, 6666); // 2/3 ≈ 66.66%
+        assertEq(p.verifiedSourceChains.length, 1);
+        assertEq(p.verifiedSourceChains[0], CHAIN_KEY);
+        assertEq(p.obligationHistory.length, 5); // 3 created + 2 completed
+    }
+
+    function test_agentPassportEmptyForFreshAddress() public {
+        address fresh = makeAddr("freshAgent");
+        ITRUCreditRegistry.AgentPassport memory p = registry.getAgentPassport(fresh);
+        assertEq(p.verifiedObligations, 0);
+        assertEq(p.completedObligations, 0);
+        assertEq(p.activeObligations, 0);
+        assertEq(p.verifiedSettlementVolume, 0);
+        assertEq(p.completionRateBps, 0);
+        assertEq(p.verifiedSourceChains.length, 0);
+    }
+
+    function test_loanAndObligationHistoriesAreIsolated() public {
+        // Loan for borrower
+        _recordRepayment(QUERY_ID_1, borrower, 1, 100, SOURCE_TX_HASH_1);
+        // Obligation for same address as executor
+        address requester = makeAddr("requester");
+        _recordObligationCreated(keccak256("ob-1"), 99, requester, borrower, 5000, block.timestamp + 1000);
+        // Borrower now has 1 loan repayment and 1 obligation (as executor)
+        assertEq(registry.getEventCount(borrower), 1); // loan history
+        assertEq(registry.getObligationEventCount(borrower), 1); // one Created event for borrower as executor
+        // Agent passport for borrower should show obligation, not loan
+        ITRUCreditRegistry.AgentPassport memory ap = registry.getAgentPassport(borrower);
+        assertEq(ap.verifiedObligations, 1);
+        ITRUCreditRegistry.CreditEvidence memory ce = registry.getCreditEvidence(borrower);
+        assertEq(ce.repayments, 1);
+    }
 }

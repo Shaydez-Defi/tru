@@ -146,4 +146,62 @@ contract TRUUniversalContractTest is Test {
         vm.expectRevert("No LoanCreated event found");
         uc.decodeLoanCreated(hex"1234");
     }
+
+    function test_decodeObligationCreatedAcceptsSourceMarket() public {
+        address obligationMarket = makeAddr("obligationMarket");
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        uc.setSourceObligationMarket(obligationMarket);
+        bytes32 sig = keccak256("ObligationCreated(uint256,address,address,uint256,uint256)");
+        bytes32[] memory topics = new bytes32[](4);
+        topics[0] = sig;
+        topics[1] = bytes32(uint256(99));
+        topics[2] = bytes32(uint256(uint160(requester)));
+        topics[3] = bytes32(uint256(uint160(executor)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: obligationMarket, topics: topics, data: abi.encode(uint256(5000), uint256(9999999999))})
+        );
+        (uint256 oid, address req, address exec, uint256 val, uint256 dl) = uc.decodeObligationCreated(hex"1234");
+        assertEq(oid, 99);
+        assertEq(req, requester);
+        assertEq(exec, executor);
+        assertEq(val, 5000);
+        assertEq(dl, 9999999999);
+    }
+
+    function test_decodeObligationCreatedRejectsForeignEmitter() public {
+        address obligationMarket = makeAddr("obligationMarket");
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        uc.setSourceObligationMarket(obligationMarket);
+        bytes32 sig = keccak256("ObligationCreated(uint256,address,address,uint256,uint256)");
+        bytes32[] memory topics = new bytes32[](4);
+        topics[0] = sig;
+        topics[1] = bytes32(uint256(99));
+        topics[2] = bytes32(uint256(uint160(requester)));
+        topics[3] = bytes32(uint256(uint160(executor)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: otherContract, topics: topics, data: abi.encode(uint256(5000), uint256(9999999999))})
+        );
+        vm.expectRevert("Not SourceObligationMarket emitter");
+        uc.decodeObligationCreated(hex"1234");
+    }
+
+    function test_decodeObligationCompletedAcceptsSourceMarket() public {
+        address obligationMarket = makeAddr("obligationMarket");
+        address executor = makeAddr("executor");
+        uc.setSourceObligationMarket(obligationMarket);
+        bytes32 sig = keccak256("ObligationCompleted(uint256,address,uint256)");
+        bytes32[] memory topics = new bytes32[](3);
+        topics[0] = sig;
+        topics[1] = bytes32(uint256(99));
+        topics[2] = bytes32(uint256(uint160(executor)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: obligationMarket, topics: topics, data: abi.encode(uint256(5000))})
+        );
+        (uint256 oid, address exec, uint256 amt) = uc.decodeObligationCompleted(hex"1234");
+        assertEq(oid, 99);
+        assertEq(exec, executor);
+        assertEq(amt, 5000);
+    }
 }

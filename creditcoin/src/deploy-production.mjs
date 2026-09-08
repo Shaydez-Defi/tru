@@ -4,10 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Deploy the three production contracts (AGENTS.md build-order step 3):
-//   1. SourceLoanMarket    -> Ethereum Sepolia
-//   2. TRUCreditRegistry   -> Creditcoin CC3 Testnet
-//   3. TRUUniversalContract-> Creditcoin CC3 Testnet (needs registry + decoder)
+// Deploy the production contracts (AGENTS.md build-order step 3):
+//   1. SourceLoanMarket        -> Ethereum Sepolia
+//   1b. SourceObligationMarket -> Ethereum Sepolia (verifiable economic obligations)
+//   2. TRUCreditRegistry       -> Creditcoin CC3 Testnet
+//   3. TRUUniversalContract    -> Creditcoin CC3 Testnet (needs registry + decoder)
+//   4. TRUFinancing            -> Creditcoin CC3 (reads verified credit)
 // Deploys via ethers (forge broadcast is unreliable on CC3 testnet).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
@@ -45,6 +47,21 @@ console.log('  deployer:', sepoliaWallet.address);
   console.log('  tx:', contract.deploymentTransaction().hash);
   console.log('  gas used:', receipt.gasUsed.toString());
   saveDeployment('sepolia', 'SourceLoanMarket', address, contract.deploymentTransaction().hash, 11155111, artifact.abi);
+}
+
+console.log('\n=== deploying SourceObligationMarket (Sepolia) ===');
+console.log('  deployer:', sepoliaWallet.address);
+let obligationMarketAddress;
+{
+  const { artifact, bytecode } = readArtifact('SourceObligationMarket', 'SourceObligationMarket.sol');
+  const factory = new ContractFactory(artifact.abi, bytecode, sepoliaWallet);
+  const contract = await factory.deploy();
+  const receipt = await contract.deploymentTransaction().wait();
+  obligationMarketAddress = await contract.getAddress();
+  console.log('  SourceObligationMarket at:', obligationMarketAddress);
+  console.log('  tx:', contract.deploymentTransaction().hash);
+  console.log('  gas used:', receipt.gasUsed.toString());
+  saveDeployment('sepolia', 'SourceObligationMarket', obligationMarketAddress, contract.deploymentTransaction().hash, 11155111, artifact.abi);
 }
 
 // ---- 2. TRUCreditRegistry on CC3 ----
@@ -96,6 +113,17 @@ console.log('\n=== configuring TRUCreditRegistry.universalContract ===');
   const receipt = await tx.wait();
   console.log('  setUniversalContract tx:', receipt.hash);
   console.log('  universalContract ->', universalContractAddress);
+}
+
+// ---- 4b. Configure TRUUniversalContract's obligation market ----
+console.log('\n=== configuring TRUUniversalContract.sourceObligationMarket ===');
+{
+  const { artifact } = readArtifact('TRUUniversalContract', 'TRUUniversalContract.sol');
+  const uc = new Contract(universalContractAddress, artifact.abi, ccWallet);
+  const tx = await uc.setSourceObligationMarket(obligationMarketAddress);
+  const receipt = await tx.wait();
+  console.log('  setSourceObligationMarket tx:', receipt.hash);
+  console.log('  sourceObligationMarket ->', obligationMarketAddress);
 }
 
 // ---- 5. TRUFinancing on CC3 (needs registry) ----

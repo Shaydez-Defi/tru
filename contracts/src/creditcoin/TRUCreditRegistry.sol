@@ -63,8 +63,19 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     mapping(address => uint64[]) private borrowerOriginationChains;
     mapping(address => mapping(uint64 => bool)) private hasSeenOriginationChain;
 
+    // --- Verifiable Economic History: obligations (phase 11) ---
+    mapping(uint256 => ObligationStatus) public obligationStatus;
+    mapping(uint256 => VerifiedObligationEvent) private obligationCreatedEvent;
+    mapping(address => VerifiedObligationEvent[]) private subjectObligationHistory;
+    mapping(address => mapping(uint64 => bool)) private hasSeenObligationChain;
+    mapping(address => uint64[]) private subjectObligationChains;
+    mapping(bytes32 => bool) public processedObligationCreations;
+    mapping(bytes32 => bool) public processedObligationCompletions;
+
     event RepaymentRecorded(bytes32 indexed queryId, address indexed borrower, uint256 loanId, uint256 amount);
     event LoanOriginationRecorded(bytes32 indexed queryId, address indexed borrower, uint256 indexed loanId, uint256 principal, uint256 dueTimestamp);
+    event ObligationCreatedRecorded(bytes32 indexed queryId, uint256 indexed obligationId, address indexed requester, address executor, uint256 value, uint256 deadline);
+    event ObligationCompletedRecorded(bytes32 indexed queryId, uint256 indexed obligationId, address indexed executor, uint256 settlementAmount);
 
     modifier onlyUniversalContract() {
         require(msg.sender == universalContract, "Only TRUUniversalContract");
@@ -331,6 +342,217 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
             loanHistory: history,
             outstandingObligations: outstandingObligations[borrower],
             verifiedSourceChains: verifiedSourceChains
+        });
+    }
+
+    /// @notice Records a USC-verified economic obligation creation.
+    /// @dev Mirrors loan origination pattern: same trust boundary, replay guard,
+    ///      emitter checked in TRUUniversalContract. Marks obligation ACTIVE.
+    function recordVerifiedObligationCreated(
+        bytes32 queryId,
+        uint256 obligationId,
+        address requester,
+        address executor,
+        uint256 value,
+        uint256 deadline,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external onlyUniversalContract {
+        require(!processedObligationCreations[queryId], "Obligation creation already recorded");
+        processedObligationCreations[queryId] = true;
+        require(obligationStatus[obligationId] == ObligationStatus.NONE, "Obligation already created");
+        require(requester != address(0) && executor != address(0), "Zero address");
+
+        obligationStatus[obligationId] = ObligationStatus.ACTIVE;
+
+        VerifiedObligationEvent memory evt = VerifiedObligationEvent({
+            eventId: queryId,
+            obligationId: obligationId,
+            requester: requester,
+            executor: executor,
+            sourceChain: sourceChain,
+            sourceTxHash: sourceTxHash,
+            sourceBlock: sourceBlock,
+            eventType: ObligationEventType.Created,
+            value: value,
+            verifiedAt: block.timestamp,
+            deadline: deadline
+        });
+        obligationCreatedEvent[obligationId] = evt;
+        subjectObligationHistory[executor].push(evt);
+        subjectObligationHistory[requester].push(evt);
+
+        if (!hasSeenObligationChain[executor][sourceChain]) {
+            hasSeenObligationChain[executor][sourceChain] = true;
+            subjectObligationChains[executor].push(sourceChain);
+        }
+        // Requester also sees the chain for query purposes
+        if (!hasSeenObligationChain[requester][sourceChain]) {
+            hasSeenObligationChain[requester][sourceChain] = true;
+            subjectObligationChains[requester].push(sourceChain);
+        }
+
+        emit ObligationCreatedRecorded(queryId, obligationId, requester, executor, value, deadline);
+    }
+
+    /// @notice Records a USC-verified obligation completion.
+    function recordVerifiedObligationCompleted(
+        bytes32 queryId,
+        uint256 obligationId,
+        address executor,
+        uint256 settlementAmount,
+        uint64 sourceChain,
+        bytes32 sourceTxHash,
+        uint64 sourceBlock
+    ) external onlyUniversalContract {
+        require(!processedObligationCompletions[queryId], "Obligation completion already recorded");
+        processedObligationCompletions[queryId] = true;
+        require(obligationStatus[obligationId] == ObligationStatus.ACTIVE, "Obligation not active");
+
+        VerifiedObligationEvent storage created = obligationCreatedEvent[obligationId];
+        require(created.executor == executor, "Executor mismatch");
+
+        obligationStatus[obligationId] = ObligationStatus.COMPLETED;
+
+        VerifiedObligationEvent memory evt = VerifiedObligationEvent({
+            eventId: queryId,
+            obligationId: obligationId,
+            requester: created.requester,
+            executor: executor,
+            sourceChain: sourceChain,
+            sourceTxHash: sourceTxHash,
+            sourceBlock: sourceBlock,
+            eventType: ObligationEventType.Completed,
+            value: settlementAmount,
+            verifiedAt: block.timestamp,
+            deadline: created.deadline
+        });
+        subjectObligationHistory[executor].push(evt);
+        // Also track for requester for queryability
+        subjectObligationHistory[created.requester].push(evt);
+
+        if (!hasSeenObligationChain[executor][sourceChain]) {
+            hasSeenObligationChain[executor][sourceChain] = true;
+            subjectObligationChains[executor].push(sourceChain);
+        }
+        if (!hasSeenObligationChain[created.requester][sourceChain]) {
+            hasSeenObligationChain[created.requester][sourceChain] = true;
+            subjectObligationChains[created.requester].push(sourceChain);
+        }
+
+        emit ObligationCompletedRecorded(queryId, obligationId, executor, settlementAmount);
+    }
+
+    function getObligationStatus(uint256 obligationId) external view returns (ObligationStatus) {
+        return obligationStatus[obligationId];
+    }
+
+    function getVerifiedObligation(uint256 obligationId) external view returns (VerifiedObligationEvent memory) {
+        return obligationCreatedEvent[obligationId];
+    }
+
+    function getObligationEventCount(address subject) external view returns (uint256) {
+        return subjectObligationHistory[subject].length;
+    }
+
+    function getObligationEvents(address subject, uint256 offset, uint256 limit)
+        external
+        view
+        returns (VerifiedObligationEvent[] memory)
+    {
+        VerifiedObligationEvent[] storage events = subjectObligationHistory[subject];
+        uint256 total = events.length;
+        if (offset >= total) return new VerifiedObligationEvent[](0);
+        uint256 end = offset + limit;
+        if (end > total) end = total;
+        uint256 count = end - offset;
+        VerifiedObligationEvent[] memory result = new VerifiedObligationEvent[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = events[total - 1 - offset - i];
+        }
+        return result;
+    }
+
+    /// @notice Deterministic Agent Passport over verified economic history.
+    ///         Every field is derived from USC-verified events; no AI or
+    ///         subjective scoring. The caller interprets the evidence per
+    ///         their own policy (TRU provides evidence, not decisions).
+    function getAgentPassport(address subject) external view returns (AgentPassport memory) {
+        VerifiedObligationEvent[] storage history = subjectObligationHistory[subject];
+        uint256 n = history.length;
+        uint256 verified = 0;
+        uint256 completed = 0;
+        uint256 failed = 0;
+        uint256 active = 0;
+        uint256 settlementVolume = 0;
+        for (uint256 i = 0; i < n; i++) {
+            if (history[i].eventType == ObligationEventType.Completed) {
+                completed++;
+                // Settlement volume counts only where subject is the executor (their work)
+                if (history[i].executor == subject) {
+                    settlementVolume += history[i].value;
+                }
+            } else if (history[i].eventType == ObligationEventType.Failed) {
+                failed++;
+            }
+        }
+        // Recompute active as distinct obligationIds with status ACTIVE that appear in this subject's history
+        // Use dedup to avoid counting same obligation multiple times if subject appears as both requester and executor
+        uint256 distinctActive = 0;
+        for (uint256 i = 0; i < n; i++) {
+            if (history[i].eventType != ObligationEventType.Created) continue;
+            uint256 oid = history[i].obligationId;
+            if (obligationStatus[oid] != ObligationStatus.ACTIVE) continue;
+            bool seen = false;
+            for (uint256 j = 0; j < i; j++) {
+                if (history[j].obligationId == oid && history[j].eventType == ObligationEventType.Created) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) distinctActive++;
+        }
+        active = distinctActive;
+        // Verified is distinct Created obligations for this subject
+        uint256 distinctVerified = 0;
+        for (uint256 i = 0; i < n; i++) {
+            if (history[i].eventType != ObligationEventType.Created) continue;
+            uint256 oid = history[i].obligationId;
+            bool seen = false;
+            for (uint256 j = 0; j < i; j++) {
+                if (history[j].obligationId == oid && history[j].eventType == ObligationEventType.Created) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) distinctVerified++;
+        }
+        verified = distinctVerified;
+
+        // Source chains distinct for this subject (from obligation history)
+        uint64[] storage chains = subjectObligationChains[subject];
+        uint256 m = chains.length;
+        uint64[] memory verifiedSourceChains = new uint64[](m);
+        for (uint256 i = 0; i < m; i++) verifiedSourceChains[i] = chains[i];
+
+        // Copy history for return (most recent first already via storage order reversed in getObligationEvents, but here return as stored)
+        VerifiedObligationEvent[] memory historyCopy = new VerifiedObligationEvent[](n);
+        for (uint256 i = 0; i < n; i++) historyCopy[i] = history[i];
+
+        uint256 completionRateBps = 0;
+        if (verified > 0) completionRateBps = (completed * 10000) / verified;
+
+        return AgentPassport({
+            subject: subject,
+            verifiedObligations: verified,
+            completedObligations: completed,
+            failedObligations: failed,
+            activeObligations: active,
+            verifiedSettlementVolume: settlementVolume,
+            verifiedSourceChains: verifiedSourceChains,
+            obligationHistory: historyCopy,
+            completionRateBps: completionRateBps
         });
     }
 }

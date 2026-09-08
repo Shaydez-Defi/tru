@@ -1,8 +1,8 @@
 {
-  "address": "0x0Eed154cf8c024d7f16D1c5856EC71E34aCebc5b",
+  "address": "0x50bc5376d5f96FbeDF5F1CB5AA85cAe73683a7b2",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x1db4f64cd9b96bf076af5ff0696351cc6eceb2eb1afd550fcb419a9ceb92bcbf",
+  "deployTxHash": "0x5cef30f26565301a63c86e09d6786ecd0b6f7c4864f4e491967f897da1a237c0",
   "abi": [
     {
       "type": "constructor",
@@ -119,6 +119,129 @@
           "name": "",
           "type": "bool",
           "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getAgentPassport",
+      "inputs": [
+        {
+          "name": "subject",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ITRUCreditRegistry.AgentPassport",
+          "components": [
+            {
+              "name": "subject",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "verifiedObligations",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "completedObligations",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "failedObligations",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "activeObligations",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedSettlementVolume",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedSourceChains",
+              "type": "uint64[]",
+              "internalType": "uint64[]"
+            },
+            {
+              "name": "obligationHistory",
+              "type": "tuple[]",
+              "internalType": "struct ITRUCreditRegistry.VerifiedObligationEvent[]",
+              "components": [
+                {
+                  "name": "eventId",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "obligationId",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "requester",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "executor",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "sourceChain",
+                  "type": "uint64",
+                  "internalType": "uint64"
+                },
+                {
+                  "name": "sourceTxHash",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "sourceBlock",
+                  "type": "uint64",
+                  "internalType": "uint64"
+                },
+                {
+                  "name": "eventType",
+                  "type": "uint8",
+                  "internalType": "enum ITRUCreditRegistry.ObligationEventType"
+                },
+                {
+                  "name": "value",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "verifiedAt",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "deadline",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            },
+            {
+              "name": "completionRateBps",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         }
       ],
       "stateMutability": "view"
@@ -434,6 +557,130 @@
     },
     {
       "type": "function",
+      "name": "getObligationEventCount",
+      "inputs": [
+        {
+          "name": "subject",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getObligationEvents",
+      "inputs": [
+        {
+          "name": "subject",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "offset",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "limit",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple[]",
+          "internalType": "struct ITRUCreditRegistry.VerifiedObligationEvent[]",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "obligationId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "requester",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "executor",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "sourceChain",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "sourceTxHash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "sourceBlock",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "eventType",
+              "type": "uint8",
+              "internalType": "enum ITRUCreditRegistry.ObligationEventType"
+            },
+            {
+              "name": "value",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getObligationStatus",
+      "inputs": [
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.ObligationStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "getOutstandingObligations",
       "inputs": [
         {
@@ -447,6 +694,82 @@
           "name": "",
           "type": "uint256",
           "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getVerifiedObligation",
+      "inputs": [
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ITRUCreditRegistry.VerifiedObligationEvent",
+          "components": [
+            {
+              "name": "eventId",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "obligationId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "requester",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "executor",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "sourceChain",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "sourceTxHash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "sourceBlock",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "eventType",
+              "type": "uint8",
+              "internalType": "enum ITRUCreditRegistry.ObligationEventType"
+            },
+            {
+              "name": "value",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifiedAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         }
       ],
       "stateMutability": "view"
@@ -471,6 +794,25 @@
           "name": "",
           "type": "uint8",
           "internalType": "enum ITRUCreditRegistry.LoanStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "obligationStatus",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ITRUCreditRegistry.ObligationStatus"
         }
       ],
       "stateMutability": "view"
@@ -503,6 +845,44 @@
           "name": "",
           "type": "address",
           "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "processedObligationCompletions",
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "processedObligationCreations",
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
         }
       ],
       "stateMutability": "view"
@@ -624,6 +1004,102 @@
     },
     {
       "type": "function",
+      "name": "recordVerifiedObligationCompleted",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "settlementAmount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "sourceChain",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "sourceBlock",
+          "type": "uint64",
+          "internalType": "uint64"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "recordVerifiedObligationCreated",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "requester",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "sourceChain",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "sourceBlock",
+          "type": "uint64",
+          "internalType": "uint64"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "recordVerifiedRepayment",
       "inputs": [
         {
@@ -721,6 +1197,80 @@
         },
         {
           "name": "dueTimestamp",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ObligationCompletedRecorded",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "settlementAmount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ObligationCreatedRecorded",
+      "inputs": [
+        {
+          "name": "queryId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "requester",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"

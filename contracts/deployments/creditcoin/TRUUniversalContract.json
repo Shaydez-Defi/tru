@@ -1,8 +1,8 @@
 {
-  "address": "0x8BF244FEf53060e262de699D099C649cF3Bf14D9",
+  "address": "0x1C0958DB2B35FE26138E3bDa573e66a94cC4A1A4",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x748597853c630ed3b27b7447b4cc549ed4ae9dd9b5277f74cb4ea3eb427bd2ba",
+  "deployTxHash": "0xca30f2a87c9938d56587c2871e6934c7d9695b23d33ed4b07677955d2fc53f05",
   "abi": [
     {
       "type": "constructor",
@@ -41,6 +41,45 @@
     {
       "type": "function",
       "name": "LOAN_CREATED_EVENT_SIGNATURE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "OBLIGATION_COMPLETED_EVENT_SIGNATURE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "OBLIGATION_CREATED_EVENT_SIGNATURE",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "OBLIGATION_FAILED_EVENT_SIGNATURE",
       "inputs": [],
       "outputs": [
         {
@@ -105,6 +144,74 @@
         },
         {
           "name": "dueTimestamp",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "decodeObligationCompleted",
+      "inputs": [
+        {
+          "name": "encodedTransaction",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "settlementAmount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "decodeObligationCreated",
+      "inputs": [
+        {
+          "name": "encodedTransaction",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "requester",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -274,6 +381,138 @@
     },
     {
       "type": "function",
+      "name": "executeObligationCompleted",
+      "inputs": [
+        {
+          "name": "chainKey",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "blockHeight",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "encodedTransaction",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "merkleRoot",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "siblings",
+          "type": "tuple[]",
+          "internalType": "struct INativeQueryVerifier.MerkleProofEntry[]",
+          "components": [
+            {
+              "name": "hash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "isLeft",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        },
+        {
+          "name": "lowerEndpointDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "continuityRoots",
+          "type": "bytes32[]",
+          "internalType": "bytes32[]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "executeObligationCreated",
+      "inputs": [
+        {
+          "name": "chainKey",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "blockHeight",
+          "type": "uint64",
+          "internalType": "uint64"
+        },
+        {
+          "name": "encodedTransaction",
+          "type": "bytes",
+          "internalType": "bytes"
+        },
+        {
+          "name": "sourceTxHash",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "merkleRoot",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "siblings",
+          "type": "tuple[]",
+          "internalType": "struct INativeQueryVerifier.MerkleProofEntry[]",
+          "components": [
+            {
+              "name": "hash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "isLeft",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        },
+        {
+          "name": "lowerEndpointDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "continuityRoots",
+          "type": "bytes32[]",
+          "internalType": "bytes32[]"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "owner",
       "inputs": [],
       "outputs": [
@@ -345,7 +584,33 @@
     },
     {
       "type": "function",
+      "name": "setSourceObligationMarket",
+      "inputs": [
+        {
+          "name": "sourceObligationMarket_",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "sourceLoanMarket",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "sourceObligationMarket",
       "inputs": [],
       "outputs": [
         {
@@ -401,6 +666,141 @@
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ObligationCompletedVerified",
+      "inputs": [
+        {
+          "name": "chainKey",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "blockHeight",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "transactionIndex",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "settlementAmount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ObligationCreatedVerified",
+      "inputs": [
+        {
+          "name": "chainKey",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "blockHeight",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "transactionIndex",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "requester",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ObligationFailedVerified",
+      "inputs": [
+        {
+          "name": "chainKey",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "blockHeight",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "transactionIndex",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "obligationId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "executor",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
         }
       ],
       "anonymous": false
