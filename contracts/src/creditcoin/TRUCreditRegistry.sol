@@ -381,14 +381,16 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         });
         obligationCreatedEvent[obligationId] = evt;
         subjectObligationHistory[executor].push(evt);
-        subjectObligationHistory[requester].push(evt);
+        if (requester != executor) {
+            subjectObligationHistory[requester].push(evt);
+        }
 
         if (!hasSeenObligationChain[executor][sourceChain]) {
             hasSeenObligationChain[executor][sourceChain] = true;
             subjectObligationChains[executor].push(sourceChain);
         }
         // Requester also sees the chain for query purposes
-        if (!hasSeenObligationChain[requester][sourceChain]) {
+        if (requester != executor && !hasSeenObligationChain[requester][sourceChain]) {
             hasSeenObligationChain[requester][sourceChain] = true;
             subjectObligationChains[requester].push(sourceChain);
         }
@@ -429,14 +431,16 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
             deadline: created.deadline
         });
         subjectObligationHistory[executor].push(evt);
-        // Also track for requester for queryability
-        subjectObligationHistory[created.requester].push(evt);
+        // Also track for requester for queryability (avoid duplicate when self-obligation)
+        if (created.requester != executor) {
+            subjectObligationHistory[created.requester].push(evt);
+        }
 
         if (!hasSeenObligationChain[executor][sourceChain]) {
             hasSeenObligationChain[executor][sourceChain] = true;
             subjectObligationChains[executor].push(sourceChain);
         }
-        if (!hasSeenObligationChain[created.requester][sourceChain]) {
+        if (created.requester != executor && !hasSeenObligationChain[created.requester][sourceChain]) {
             hasSeenObligationChain[created.requester][sourceChain] = true;
             subjectObligationChains[created.requester].push(sourceChain);
         }
@@ -486,17 +490,39 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         uint256 failed = 0;
         uint256 active = 0;
         uint256 settlementVolume = 0;
+        // Distinct Completed (and settlement volume) to avoid double count if same obligation appears twice
+        uint256 distinctCompleted = 0;
+        uint256 distinctFailed = 0;
         for (uint256 i = 0; i < n; i++) {
             if (history[i].eventType == ObligationEventType.Completed) {
-                completed++;
-                // Settlement volume counts only where subject is the executor (their work)
+                uint256 oid = history[i].obligationId;
+                bool seen = false;
+                for (uint256 j = 0; j < i; j++) {
+                    if (history[j].obligationId == oid && history[j].eventType == ObligationEventType.Completed) {
+                        seen = true;
+                        break;
+                    }
+                }
+                if (seen) continue;
+                distinctCompleted++;
                 if (history[i].executor == subject) {
                     settlementVolume += history[i].value;
                 }
             } else if (history[i].eventType == ObligationEventType.Failed) {
-                failed++;
+                uint256 oid = history[i].obligationId;
+                bool seen = false;
+                for (uint256 j = 0; j < i; j++) {
+                    if (history[j].obligationId == oid && history[j].eventType == ObligationEventType.Failed) {
+                        seen = true;
+                        break;
+                    }
+                }
+                if (seen) continue;
+                distinctFailed++;
             }
         }
+        completed = distinctCompleted;
+        failed = distinctFailed;
         // Recompute active as distinct obligationIds with status ACTIVE that appear in this subject's history
         // Use dedup to avoid counting same obligation multiple times if subject appears as both requester and executor
         uint256 distinctActive = 0;

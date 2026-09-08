@@ -1,8 +1,8 @@
 {
-  "address": "0x50bc5376d5f96FbeDF5F1CB5AA85cAe73683a7b2",
+  "address": "0x0D2707D258A87b971fd4cd78232304a672CA43c0",
   "chainId": 102031,
   "chain": "creditcoin",
-  "deployTxHash": "0x5cef30f26565301a63c86e09d6786ecd0b6f7c4864f4e491967f897da1a237c0",
+  "deployTxHash": "0x54e5f166cf17048ee471ef2e4699677f9afd1fbf095ff15bd7f47cc032689d27",
   "abi": [
     {
       "type": "constructor",
