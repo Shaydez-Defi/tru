@@ -1,6 +1,6 @@
 # TRU
 
-TRU turns verified repayment behavior on any supported blockchain into reusable on-chain credit history on Creditcoin.
+TRU turns verified economic behavior on any supported blockchain into reusable on-chain history on Creditcoin — loan repayment history for humans and verified obligation history for autonomous agents — through the same cryptographic proof architecture.
 
 ## 1. The Problem
 
@@ -12,7 +12,36 @@ Do not move the history. Prove it. Instead of copying a score or asking an oracl
 
 ## 3. How TRU Works
 
-A borrower repays a loan on Ethereum Sepolia through `SourceLoanMarket`, which emits `LoanRepaid` or `LoanCreated`. The TRU worker waits for Creditcoin to attest that Sepolia block, requests a Merkle plus continuity proof from the proof builder, and sanity checks it with the BlockProver precompile. The worker submits the proof to `TRUUniversalContract` on Creditcoin, which computes the transaction index, checks the replay guard, calls the native verifier `verifyAndEmit`, decodes the event from the verified transaction receipt, checks that the emitter is the configured `SourceLoanMarket`, and forwards the verified fields to `TRUCreditRegistry`. The registry enforces replay and duplicate guards, updates the borrower's profile, appends a `VerifiedFinancialEvent`, and updates loan lifecycle state. Downstream consumers like `TRUFinancing` read that already-verified state. No claims are made beyond what the verifier and emitter checks have proven.
+A borrower repays a loan on Ethereum Sepolia through `SourceLoanMarket`, which emits `LoanRepaid` or `LoanCreated`. The same pipeline also verifies economic obligations: a requester creates an `ObligationCreated` for an executor (any address, including an autonomous agent) through `SourceObligationMarket`, and the executor later emits `ObligationCompleted`. In both cases the TRU worker waits for Creditcoin to attest that Sepolia block, requests a Merkle plus continuity proof from the proof builder, and sanity checks it with the BlockProver precompile. The worker submits the proof to `TRUUniversalContract` on Creditcoin, which computes the transaction index, checks the replay guard, calls the native verifier `verifyAndEmit`, decodes the event from the verified transaction receipt, checks that the emitter is the configured source market (`SourceLoanMarket` for loans, `SourceObligationMarket` for obligations), and forwards the verified fields to `TRUCreditRegistry`. The registry enforces replay and duplicate guards and, for loans, updates the borrower's profile, appends a `VerifiedFinancialEvent`, and updates loan lifecycle state; for obligations, it appends a `VerifiedObligationEvent` and updates the executor's obligation lifecycle. Downstream consumers like `TRUFinancing` read the already-verified loan state, while any application or agent can read the verified obligation history. No claims are made beyond what the verifier and emitter checks have proven.
+
+## Verifiable Economic History
+
+TRU originally proved loan repayment history. The same cryptographic verification architecture now extends to economic obligations involving autonomous agents. An agent is any address; its history is the set of verified economic events where that address was the executor. See `docs/VERIFIABLE_ECONOMIC_HISTORY.md` for the full extension.
+
+*Human:* loan `→` repayment `→` cryptographic proof `→` verified credit history
+
+*Agent:* obligation `→` completion `→` cryptographic proof `→` verified economic history
+
+Agent flow:
+
+```
+Agent obligation (requester → executor, value, deadline)
+  → SourceObligationMarket emits ObligationCreated / ObligationCompleted
+  → Attestcoin attestation of the Sepolia block
+  → Merkle + continuity proof
+  → Creditcoin BlockProver verification
+  → TRUUniversalContract (checks emitter == SourceObligationMarket, replay guard)
+  → TRUCreditRegistry (append VerifiedObligationEvent, update obligation lifecycle)
+  → verified agent economic history (queryable via getAgentPassport)
+```
+
+Trust boundary is unchanged and precise:
+
+* **TRU verifies** that the configured source contract emitted the event, that the event existed in the attested source block, and that the logged parameters match the verified receipt.
+* **TRU does not** determine whether an agent is trustworthy, whether the real-world work was satisfactory, or what reputation the agent deserves.
+* Applications and autonomous agents interpret the verified history according to their own policies — for example, requiring a completion rate or settlement volume threshold before transacting. TRU provides evidence; the application makes the decision.
+
+The Agent Passport is not an NFT, collectible, or AI-generated score. It is a deterministic view over `VerifiedObligationEvent` history, where every field (`verifiedObligations`, `completedObligations`, `activeObligations`, `verifiedSettlementVolume`, `verifiedSourceChains`, `completionRateBps`) is computed from verified events and explainable as `completed * 10000 / verified`.
 
 ## 4. Why Creditcoin + USC Are Essential
 
@@ -28,7 +57,10 @@ Sepolia (Ethereum)                               Creditcoin CC3 Testnet
 SourceLoanMarket                                  BlockProver precompile 0x…0FD2
  createLoan() -> LoanCreated                      ▲ verifyAndEmit(proof) -> reverts
  repayLoan()  -> LoanRepaid                      │ "Merkle proof validation failed"
-      │  tx hash                                 │ on any tampered byte
+SourceObligationMarket                            │ on any tampered byte
+ createObligation() -> ObligationCreated          │
+ completeObligation() -> ObligationCompleted      │
+      │  tx hash (any market)                    │
       ▼                                          │
  worker (off-chain, infrastructure only)          │
   polls /api/v1/attested-height/1                 │
@@ -38,30 +70,31 @@ SourceLoanMarket                                  BlockProver precompile 0x…0F
                                     │ TRUUniversalContract         │
                                     │ processedQueries[queryId]    │
                                     │ decode LoanCreated /         │
-                                    │ LoanRepaid, check emitter    │
-                                    │ == SourceLoanMarket          │
+                                    │ LoanRepaid /                 │
+                                    │ ObligationCreated /          │
+                                    │ ObligationCompleted, check   │
+                                    │ emitter == configured market │
                                     └──────────────┬───┬───────────┘
                                                    │   │
-                                          LoanCreated LoanRepaid
+                                          Loan*   Obligation*
                                                    │   │
-                                recordVerified     │   │  recordVerified
-                                LoanOrigination    │   │  Repayment
-                                                   ▼   ▼
                                           TRUCreditRegistry (CC3)
-                                           loanStatus ACTIVE/REPAID
-                                           outstandingObligations
-                                           profiles: repayments, totalRepaid, creditLimit
-                                           borrowerEvents: VerifiedFinancialEvent[]
+                                           loanStatus / obligationStatus
+                                           borrowerEvents / subjectObligationHistory
                                            getCreditEvidence / getCreditPassport
+                                           getAgentPassport / getObligationEvents
                                                    │
                                                    ▼
-                                          TRUFinancing (CC3) — downstream consumer
-                                           reads getCreditEvidence, gates requestFinancing
-                                           on creditState >= BUILDING and amount <= creditLimit
-                                           records FinancingRequest, no disbursement
+                                          Downstream consumers
+                                           TRUFinancing (reads getCreditEvidence)
+                                           Any app/agent (reads getAgentPassport)
 ```
 
-Current contract set: `SourceLoanMarket` (Sepolia), `TRUUniversalContract` (CC3, verification only), `TRUCreditRegistry` (CC3, credit logic only), `TRUFinancing` (CC3, consumer of verified state). The worker relays proof bytes only and never decides what gets credited.
+* Loan* = LoanCreated / LoanRepaid → `VerifiedFinancialEvent` history.
+  Obligation* = ObligationCreated / ObligationCompleted → `VerifiedObligationEvent` history.
+  Both flow through the same `verifyAndEmit` + emitter + replay checks.
+
+Current contract set: `SourceLoanMarket` and `SourceObligationMarket` (Sepolia, source markets, know nothing about Creditcoin), `TRUUniversalContract` (CC3, verification only), `TRUCreditRegistry` (CC3, history only — loans and obligations), `TRUFinancing` (CC3, consumer of verified state). The worker relays proof bytes only and never decides what gets credited.
 
 ## 6. Live End-to-End Demonstration
 
@@ -93,6 +126,14 @@ Phase 10 live chain, borrower `0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0`:
   - `getFinancingRequests` returns one `FinancingRequest` with `amount 50 timestamp 1787876505 creditStateAtRequest BUILDING (1) status APPROVED (1)`
   - `requestFinancing(200)` correctly reverted `Amount exceeds credit limit`
   - fresh wallet with `NEW` correctly reverted `Insufficient credit state`
+
+* Verifiable economic history for an autonomous agent (same deployment, same worker, same proof path — live, not simulated):
+  - Agent `0x8FC1b779592De32B507014103ebBEbbE91566FB1` (fresh wallet funded on Sepolia, represents an autonomous executor)
+  - `createObligation(agent, 9000, now+86400)` by requester `0x2b374aDd…` on Sepolia tx `0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617` block `11663848` (`ObligationCreated(1, requester 0x2b37…, executor 0x8FC1…, value 9000, deadline 1788992128)`)
+    - worker waited `464.0s`, proof `header 11663848 txIndex 73 cached true 0.4s`, `verifySingle true`, submitted via `TRUUniversalContract.executeObligationCreated` tx `0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1` CC3 block `5454388` gas `857271` → `ObligationCreatedVerified` matched source YES → `obligationStatus ACTIVE`
+  - `completeObligation(1)` by the agent on Sepolia tx `0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c` block `11663849` (`ObligationCompleted(1, executor 0x8FC1…, settlementAmount 9000)`)
+    - worker waited `2.3s` (already attested), proof `header 11663849 txIndex 70 cached true 0.1s`, `verifySingle true`, submitted via `TRUUniversalContract.executeObligationCompleted` tx `0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8` CC3 block `5454391` gas `560098` → `ObligationCompletedVerified` matched source YES → `obligationStatus COMPLETED`
+  - `getAgentPassport(0x8FC1…)` returns `verifiedObligations 1, completedObligations 1, activeObligations 0, failedObligations 0, verifiedSettlementVolume 9000, completionRateBps 10000, verifiedSourceChains [1]` with `obligationHistory` of two `VerifiedObligationEvent` entries (`Created` and `Completed` for obligationId `1`). A second self-obligation (`0x5a2757…` block `11663734` → `0x720a42…` and `0x9eb372…` block `11663735` → `0xf342b72c…`) was also verified live for `0x2b37…` with the same path, showing the primitive works for both human and agent addresses. See `docs/VERIFIABLE_ECONOMIC_HISTORY.md` for the full extension.
 
 Explorer links are formatted as `https://sepolia.etherscan.io/tx/<hash>` for Sepolia and `https://creditcoin-testnet.blockscout.com/tx/<hash>` for CC3. The CC3 Blockscout pattern is confirmed in `docs/usc-research.md`; the Sepolia Etherscan pattern is used as a placeholder because no Sepolia explorer URL pattern is recorded in the phase reports.
 
@@ -135,28 +176,30 @@ Loan origination uses the same verifier path and emitter and replay checks as re
 
 ## 9. Testnet Deployment
 
-Current deployment is phase 10, which supersedes earlier phase addresses. The deployment files under `contracts/deployments` are the single source of truth and are loaded by the worker at runtime. `SourceLoanMarket` is redeployed fresh on each `deploy-production.mjs` run.
+Current deployment is the verifiable economic history extension, which supersedes earlier phase addresses. The deployment files under `contracts/deployments` are the single source of truth and are loaded by the worker at runtime. Both source markets are redeployed fresh on each `deploy-production.mjs` run.
 
 | Component | Chain | Address | ChainId / chainKey |
 | --- | --- | --- | --- |
-| SourceLoanMarket | Ethereum Sepolia | `0x9013c573Ca23450456E7091d369E79BC7803E72A` | chainId `11155111`, chainKey `1` on CC3 Testnet |
-| TRUCreditRegistry | Creditcoin CC3 Testnet | `0x0Eed154cf8c024d7f16D1c5856EC71E34aCebc5b` | chainId `102031` |
-| TRUUniversalContract | Creditcoin CC3 Testnet | `0x8BF244FEf53060e262de699D099C649cF3Bf14D9` | chainId `102031`; decoder `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` |
-| TRUFinancing | Creditcoin CC3 Testnet | `0xf5180eD8244a8B25F6F100EA0ccD5e1a727354a6` | chainId `102031`; registry `0x0Eed…` |
+| SourceLoanMarket | Ethereum Sepolia | `0x9953AC50803f85EaA666B7724a7B165504B9c2e1` | chainId `11155111`, chainKey `1` on CC3 Testnet |
+| SourceObligationMarket | Ethereum Sepolia | `0x133A8Fe8408066B95034Ed638f5C7083Be94d14F` | chainId `11155111`, chainKey `1` on CC3 Testnet |
+| TRUCreditRegistry | Creditcoin CC3 Testnet | `0x0D2707D258A87b971fd4cd78232304a672CA43c0` | chainId `102031` |
+| TRUUniversalContract | Creditcoin CC3 Testnet | `0xa33fd898502de87aA52C5992483b74f471613Ef0` | chainId `102031`; decoder `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` |
+| TRUFinancing | Creditcoin CC3 Testnet | `0xd971aeaAc0D7216c41CccEdc5F4d6EF539Cad0bB` | chainId `102031`; registry `0x0D27…` |
 
 ChainKeys are per environment; on CC3 Testnet `chainKey 1 = Sepolia` and `chainKey 3 = Ethereum mainnet`, queried via `getSupportedChains` rather than hardcoded. The BlockProver precompile is `0x0000000000000000000000000000000000000FD2` and ChainInfo is `0x0000000000000000000000000000000000000fd3`.
 
 ## 10. Proven Results
 
-Three-plus independent live end-to-end runs plus the attestation timing diagnostic show the same pipeline succeeding. The phase 0, 4, 6, and timing runs below used earlier contract deployments superseded by the phase 10 addresses in section 15, so those transaction hashes are historical proof that the mechanism has worked repeatedly across the build, not live state on the current contracts. The current deployment's live evidence is in section 6.
+Three-plus independent live end-to-end runs plus the attestation timing diagnostic show the same pipeline succeeding. The phase 0, 4, 6, and timing runs below used earlier contract deployments superseded by the current addresses in section 15, so those transaction hashes are historical proof that the mechanism has worked repeatedly across the build, not live state on the current contracts. The current deployment's live evidence is in section 6.
 
 * Phase 0 spike: Sepolia `0xbd0cdaf5…` block `11497681` -> `SpikeConsumer.execute` tx `0x784bdffd…` block `5317027` verifiedCount `1`.
 * Phase 4 pipeline: loan 0 creation `0x60e6e5c8…` block `11498016` and repayment `0x98c2040d…` block `11498018` -> `TRUUniversalContract.execute` `0xd55830a2…` block `5317198` -> `repayments 1`.
 * Phase 6 credit logic: repayment `0x9f4ec67d…` block `11503185` -> submit `0xea7808a4…` block `5321469` -> `creditLimit 0 -> 100`.
 * Attestation timing: three runs with repay `0x10dc15…` block `11503274`, `0x51556a…` block `11503321`, `0x770251…` block `11503369`, each `+1` repayment and `creditLimit 200/300/400`, cold waits `499.9s, 549.0s, 450.9s`.
-* Phase 10 full chain described in section 6: origination `0x74d0e459…` and repayment `0xc21ea7d1…` leading to `BUILDING / 1 / 100` and financing `0xa81174…`.
+* Phase 10 full loan chain described in section 6: origination `0x74d0e459…` and repayment `0xc21ea7d1…` leading to `BUILDING / 1 / 100` and financing `0xa81174…`.
+* Verifiable economic history (live, current deployment): obligation for agent `0x8FC1…` — create `0x9591e621…` block `11663848` → `0xe7961a54…` block `5454388` (464.0s attestation) and complete `0x3aa9af68…` block `11663849` → `0xc19bc7df…` block `5454391` (2.3s) → `AgentPassport: verified 1, completed 1, active 0, settlement 9000, rate 10000`. A self-obligation `0x5a2757…` block `11663734` → `0x720a42…` and `0x9eb372…` block `11663735` → `0xf342b72c…` was also verified live, showing the primitive works for both human and agent addresses. See `docs/VERIFIABLE_ECONOMIC_HISTORY.md`.
 
-Forge test count as of phase 10: `54 passing` (7 `SourceLoanMarket`, 8 `TRUUniversalContract`, 33 `TRUCreditRegistry`, 6 `TRUFinancing`) with `foundry.toml` solc `0.8.28`, `via_ir true`, `optimizer 200`. The specific verified state transitions observed in live tests are `repayments 0 -> 1` with `creditLimit 0 -> 100`, then `1 -> 2 -> 3 -> 4` with `100 -> 200 -> 300 -> 400` across the timing runs, and the phase 10 origination `ACTIVE` with `outstanding 1` then repayment `REPAID` with `outstanding 0`.
+Forge test count as of this update: `73 passing` (7 `SourceLoanMarket`, 7 `SourceObligationMarket`, 11 `TRUUniversalContract`, 42 `TRUCreditRegistry`, 6 `TRUFinancing`) with `foundry.toml` solc `0.8.28`, `via_ir true`, `optimizer 200`. The specific verified state transitions observed in live tests are `repayments 0 -> 1` with `creditLimit 0 -> 100`, then `1 -> 2 -> 3 -> 4` with `100 -> 200 -> 300 -> 400` across the timing runs, and the recent origination `ACTIVE` with `outstanding 1` then repayment `REPAID` with `outstanding 0`, plus obligation `Created ACTIVE` then `Completed` with `verified 1 → completed 1` and `settlement 9000`.
 
 ## 11. Ecosystem / User Expansion
 
@@ -189,14 +232,15 @@ The judge-facing deep dive is `docs/ATTESTCOIN-INTEGRATION.md`. It covers why At
 
 ## 15. Contract Addresses
 
-Current phase 10 deployment only, both chains. Previous phase addresses are superseded by the redeploy.
+Current deployment is the verifiable economic history extension, which supersedes earlier phase addresses. Previous addresses are retained in `contracts/deployments` history but the worker loads the current files above.
 
 | Contract | Chain | Address | Deploy Tx |
 | --- | --- | --- | --- |
-| SourceLoanMarket | Sepolia (`11155111`) | `0x9013c573Ca23450456E7091d369E79BC7803E72A` | `0xa41f3ea3ce8d5bc51b4b7696fc080a5ac026db3eb81e5bf6f146d59b1f17a874` |
-| TRUCreditRegistry | CC3 (`102031`) | `0x0Eed154cf8c024d7f16D1c5856EC71E34aCebc5b` | `0x1db4f64cd9b96bf076af5ff0696351cc6eceb2eb1afd550fcb419a9ceb92bcbf` |
-| TRUUniversalContract | CC3 (`102031`) | `0x8BF244FEf53060e262de699D099C649cF3Bf14D9` | `0x748597853c630ed3b27b7447b4cc549ed4ae9dd9b5277f74cb4ea3eb427bd2ba` |
-| TRUFinancing | CC3 (`102031`) | `0xf5180eD8244a8B25F6F100EA0ccD5e1a727354a6` | `0x3725187fb016cf1ef58fd9f323fe504fc4a0b8aad6f4e83a68ed08c3f11d5fe4` |
+| SourceLoanMarket | Sepolia (`11155111`) | `0x9953AC50803f85EaA666B7724a7B165504B9c2e1` | `0xfdd5cb3e248a78aa232f32e963a090c6f0b7452af33a92ba4c2ddb870fdc0993` |
+| SourceObligationMarket | Sepolia (`11155111`) | `0x133A8Fe8408066B95034Ed638f5C7083Be94d14F` | `0x174d715ab49b14836a90118e06ec58a67bfd755242af8053b2f31ec6b0a6079e` |
+| TRUCreditRegistry | CC3 (`102031`) | `0x0D2707D258A87b971fd4cd78232304a672CA43c0` | `0x54e5f166cf17048ee471ef2e4699677f9afd1fbf095ff15bd7f47cc032689d27` |
+| TRUUniversalContract | CC3 (`102031`) | `0xa33fd898502de87aA52C5992483b74f471613Ef0` | `0x1264d53753736398f33330340f983e4be5f0f336f514a2f13af612105b64a125` |
+| TRUFinancing | CC3 (`102031`) | `0xd971aeaAc0D7216c41CccEdc5F4d6EF539Cad0bB` | `0x634cbf7119c03c1d3a4d6bcb96e592ef22cce2770717ce80eaa3ef33d7f0bca6` |
 | EvmV1Decoder (deployed library) | CC3 | `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` | — |
 | BlockProver precompile | CC3 | `0x0000000000000000000000000000000000000FD2` | — |
 | ChainInfo precompile | CC3 | `0x0000000000000000000000000000000000000fd3` | — |
@@ -220,7 +264,7 @@ cd creditcoin
 node src/deploy-production.mjs
 ```
 
-This deploys `SourceLoanMarket` to Sepolia, then `TRUCreditRegistry`, `TRUUniversalContract` (with `decoder`, `registry`, and `sourceLoanMarket` constructor args), and `TRUFinancing` (with the just-deployed `TRUCreditRegistry` address as its constructor arg) to CC3, and configures `TRUCreditRegistry.setUniversalContract`. All four addresses and ABIs are written to `contracts/deployments` as the single source of truth loaded by the worker.
+This deploys `SourceLoanMarket` and `SourceObligationMarket` to Sepolia, then `TRUCreditRegistry`, `TRUUniversalContract` (with `decoder`, `registry`, and `sourceLoanMarket` constructor args, then `setSourceObligationMarket`), and `TRUFinancing` (with the just-deployed `TRUCreditRegistry` address as its constructor arg) to CC3, and configures `TRUCreditRegistry.setUniversalContract`. All five addresses and ABIs are written to `contracts/deployments` as the single source of truth loaded by the worker.
 
 Worker (real USC pipeline):
 
@@ -228,14 +272,14 @@ Worker (real USC pipeline):
 # Sepolia RPC and Creditcoin RPC plus proof builder are in creditcoin/.env:
 # SOURCE_RPC_URL, SEPOLIA_PRIVATE_KEY, CREDITCOIN_RPC_URL, CREDITCOIN_PRIVATE_KEY, PROOF_BUILDER_URL
 
-# process a single repayment or origination
+# process a single repayment, origination, or obligation (auto-detected)
 node creditcoin/src/worker.mjs --tx <sepoliaTxHash>
 
-# listen from a block
+# listen from a block (handles LoanCreated/Repaid and ObligationCreated/Completed)
 node creditcoin/src/worker.mjs --from-block <N> --process-count 1
 ```
 
-The worker loads ABIs and addresses from `contracts/deployments/*`, waits for attestation via `ProofBuilder.waitUntilHeightAttested`, builds the proof via `getProof`, sanity checks with `PrecompileBlockProver.verifySingle`, and submits to `TRUUniversalContract.execute` or `executeLoanOrigination`.
+The worker loads ABIs and addresses from `contracts/deployments/*`, waits for attestation via `ProofBuilder.waitUntilHeightAttested`, builds the proof via `getProof`, sanity checks with `PrecompileBlockProver.verifySingle`, and submits to `TRUUniversalContract.execute`, `executeLoanOrigination`, `executeObligationCreated`, or `executeObligationCompleted`.
 
 Driver (source chain helper):
 
