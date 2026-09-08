@@ -1,7 +1,7 @@
 # Verifiable Economic History — Generalized Primitive
 
-**Date:** 2026-08-28
-**Status:** Foundation implemented, verified on testnet via unit tests and reused cross-chain proof path; full live cross-chain obligation flow pending attestation window, documented as remaining work.
+**Date:** 2026-09-08
+**Status:** Implemented and verified live on testnet: a real obligation creation and completion on Sepolia were verified through the live Attestcoin proof path and recorded on Creditcoin, with deterministic Agent Passport derived.
 **Scope:** Extend TRU from human loan history to verifiable economic history for humans and autonomous agents, reusing the existing Attestcoin / BlockProver verification architecture.
 
 ## 1. Summary
@@ -145,7 +145,23 @@ No existing loan test was modified in a way that changes its expectation; loan f
 
 No fake agent history was created and no fake proof transactions were fabricated. The foundation is verified on testnet via unit tests that use the real `TRUUniversalContract` decoder and registry logic, and via the reused cross-chain proof path that is already live for loans (phase 10: origination `0x74d0e459…` block 11580721 -> `0xdd9e4e71…` block 5385429; repayment `0xc21ea7d1…` block 11581259 -> `0xe0a48f58…` block 5385870; financing `0xa81174…` block 5385873).
 
-The full live cross-chain obligation flow (create obligation on Sepolia -> wait for attestation -> prove -> verify on Creditcoin -> record in registry -> Agent Passport) reuses the identical `ProofBuilder.getProof` / `waitUntilHeightAttested` / `PrecompileBlockProver.verifySingle` / `TRUUniversalContract.verifyAndEmit` path that is already proven live for loans. It was not yet run end-to-end in this phase to avoid faking attestation timing; the worker is ready and the contracts are deployed, but the live obligation attestation would require the same ~7-9 minute cold wait as loans. The strongest verified foundation is implemented and tested; the remaining work is to run the live obligation transactions and let the worker drive them through, exactly as was done for loans in phases 4, 6, 8, 10.
+The full live cross-chain obligation flow was executed for real on the current deployment (`SourceObligationMarket 0x133A8Fe8408066B95034Ed638f5C7083Be94d14F`, `TRUCreditRegistry 0x0D2707D258A87b971fd4cd78232304a672CA43c0`, `TRUUniversalContract 0xa33fd898502de87aA52C5992483b74f471613Ef0`):
+
+**Implemented and verified live:**
+
+* Self-obligation (executor == requester == `0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0`, value `8000`):
+  - Create `0x5a2757cdc55494c2f591b517c253f3543e8b736e9f6ab6124a26495f0a049771` block `11663734` -> worker waited `371.1s`, proof header `11663734` txIndex `54` cached true, `verifySingle` true, submitted via `executeObligationCreated` `0x720a42a950e42fa0e54ab443638ffbce07ec6b1f964fb6c3fc2586bf014f3ff1` block `5454297` -> `ObligationCreatedVerified` matched, `obligationStatus 0xACTIVE`.
+  - Complete `0x9eb3725ae6e58db7b0926af5174e911396b8dd1a6765d6ff08508f355efb3707` block `11663735` -> worker `2.3s` (already attested), proof header `11663735` txIndex `81`, `verifySingle` true, `executeObligationCompleted` `0xf342b72c36413471674122fe318cc5b0afbf8be13d75d29613830cc6b576ce2c` block `5454298` -> `ObligationCompletedVerified` matched, `obligationStatus COMPLETED`. Agent Passport for `0x2b37…`: `verified 1, completed 1, active 0, settlement 8000, rate 10000`, history `2` (`Created` + `Completed`), `chains [1]`.
+
+* Autonomous agent obligation (requester `0x2b374aDd…`, executor `0x8FC1b779592De32B507014103ebBEbbE91566FB1` — a wallet representing an autonomous agent, value `9000`, deadline `1788992128`):
+  - Create `0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617` block `11663848` -> worker `464.0s`, header `11663848` txIndex `73`, `verifySingle` true, `executeObligationCreated` `0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1` block `5454388` -> `ACTIVE`.
+  - Complete `0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c` block `11663849` -> worker `2.3s`, header `11663849` txIndex `70`, `verifySingle` true, `executeObligationCompleted` `0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8` block `5454391` -> `COMPLETED`. Agent Passport for `0x8FC1…`: `verified 1, completed 1, active 0, settlement 9000, rate 10000`, history `2`, `chains [1]`.
+
+**What this proves:** TRU verified that the configured `SourceObligationMarket` emitted the corresponding `ObligationCreated` and `ObligationCompleted` events in attested Sepolia blocks, with the exact `obligationId`, `requester`, `executor`, `value`, and `deadline`/`settlementAmount` as logged. The registry only updated after `verifyAndEmit` succeeded and the emitter check passed.
+
+**What it does NOT prove:** that the real-world task behind the obligation was satisfactory, that the agent behaved honestly off-chain, or that the agent deserves a particular reputation score. Completion proves the on-chain event, not the quality of the work.
+
+**Implemented but not yet run live in this phase:** `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it (can be added with the same pattern as Created/Completed). A unified `VerifiedEconomicEvent` timeline merging loan and obligation histories is future, though `getCreditPassport` and `getAgentPassport` already provide clean separate views.
 
 ## 7. Agent Passport Querying
 
@@ -179,10 +195,11 @@ No frontend redesign was necessary to demonstrate the primitive. The existing hu
 
 ## 9. Remaining Work
 
-- Run the live cross-chain obligation flow on Sepolia -> Creditcoin with real transactions (create and complete) and let the existing worker drive them; no code changes required, only the attestation wait.
-- Add `ObligationFailed` verification path in `TRUUniversalContract` and `recordVerifiedObligationFailed` in the registry if failure semantics are needed beyond the current `failObligation` source event (currently source contract emits `ObligationFailed` but TRU does not yet verify it; it can be added with the same pattern as Created/Completed).
-- Consider a unified `VerifiedEconomicEvent` history that merges loan and obligation events for a single `getEconomicHistory` view, if a consumer wants one timeline across both domains. The current `getCreditPassport` (loans) and `getAgentPassport` (obligations) already provide separate, clean views, so the unified view is optional.
-- Frontend: add Agent Passport page and obligation detail with verification evidence links.
+**Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (73 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it — it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
+
+**Implemented but not yet run live in this deployment:** A unified `VerifiedEconomicEvent` timeline that merges loan `borrowerEvents` and obligation `subjectObligationHistory` into a single `getEconomicHistory` view. The current `getCreditPassport` (loans) and `getAgentPassport` (obligations) already provide clean, separate histories, so the unified view is optional and was not faked.
+
+**Future work:** Frontend — add `Agent Passport` page and obligation detail with verification evidence links (source tx hash, proof header, Creditcoin verification tx, and `AgentPassport` fields). No new cryptography is needed; it is a read-only view over `getAgentPassport` / `getObligationEvents`.
 
 All of the above can be done without inventing reputation numbers or trusting off-chain reports; every new field will continue to trace to a `queryId`-verified event.
 
