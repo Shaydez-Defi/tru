@@ -17,7 +17,7 @@ const TOKENS = `
     --bg:#0a0a0b; --bg-elevated:#131316; --bg-elevated-2:#1a1a1e;
     --line: rgba(255,255,255,0.10); --line-soft: rgba(255,255,255,0.06);
     --text:#f2f1ec; --text-soft:#9c9a94; --text-faint:#5f5d59;
-    --accent:#4A607A; --accent-bright:#00FFC6; --accent-deep:#2B3D52;
+    --accent:#4A607A; --accent-bright:#00FFC6; --accent-hi:#5CF2CF; --accent-deep:#2B3D52;
     --accent-tint: rgba(0,255,198,.25);
     --accent-gradient: linear-gradient(135deg, #00FFC6 0%, #4A607A 55%, #2B3D52 100%);
     --font-display:'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -38,7 +38,7 @@ function OverviewIcon({ size = 16 }: { size?: number }) { return (<svg width={si
 function CreditIcon({ size = 16 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.6" /><path d="M2.5 9.5h19" stroke="currentColor" strokeWidth="1.6" /><path d="M6 14.5h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>); }
 function EventsIcon({ size = 16 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>); }
 function ProtocolIcon({ size = 16 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.6" /><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" /><circle cx="19" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" /><path d="M12 6.5V12M12 12L6 17M12 12l6 5" stroke="currentColor" strokeWidth="1.6" /></svg>); }
-function SettingsIcon({ size = 15 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" /><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>); }
+function SettingsIcon({ size = 15 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>); }
 function ArrowUpRight({ size = 12 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M18 6H9M18 6V15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function CheckGlyph({ size = 12, color = "var(--bg)" }: { size?: number; color?: string }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9.5 18L20 6" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function ExportIcon({ size = 16 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 3v12M12 3l4 4M12 3L8 7M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
@@ -102,7 +102,7 @@ function RateGauge({ pct = 100, size = 116 }: { pct?: number; size?: number }) {
 }
 
 function Identicon({ addr = "0x7A3f92Fd" }: { addr?: string }) {
-  // deterministic 4x4 pattern from the address string, mirrored — a
+  // deterministic 4x4 pattern from the address string, mirrored: a
   // lightweight stand-in for a real wallet blockie.
   const codes = addr.split("").map((c) => c.charCodeAt(0));
   const cells: { row: number; col: number; on: boolean }[] = [];
@@ -123,7 +123,7 @@ function Identicon({ addr = "0x7A3f92Fd" }: { addr?: string }) {
 }
 
 /* ────────────────────────────────────────────────────────────
-    TRU — design tokens (dark, slate base, mint accent)
+    TRU design tokens (dark, slate base, mint accent)
    ──────────────────────────────────────────────────────────── */
 function ArrowDown({ size = 14 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 4v16M12 20l-6-6M12 20l6-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function ChainGlyph({ size = 13 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M9 15l6-6M8 16l-1.5 1.5a3.5 3.5 0 0 1-5-5L3 11a3.5 3.5 0 0 1 5-5l1-1M16 8l1.5-1.5a3.5 3.5 0 0 1 5 5L21 13a3.5 3.5 0 0 1-5 5l-1 1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
@@ -151,7 +151,7 @@ function PipelineNode({ node }: { node: PipelineNodeDatum }) {
   );
 }
 
-/* ── Scroll reveal — same safe pattern as before: never opacity:0
+/* ── Scroll reveal: same safe pattern as before, never opacity:0
    by default, only a settle-into-place transform. ────────────── */
 function Reveal({ children, stagger = 0, className = "" }: { children: ReactNode; stagger?: number; className?: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -166,7 +166,7 @@ function Reveal({ children, stagger = 0, className = "" }: { children: ReactNode
   return <div ref={ref} className={`reveal ${inView ? "is-in" : ""} ${className}`} style={{ "--stagger": stagger } as CSSProperties}>{children}</div>;
 }
 
-/* ── Section label — varied per section, not the same kicker+H2
+/* ── Section label: varied per section, not the same kicker+H2
    formula every time. ─────────────────────────────────────────── */
 function SectionTag({ children }: { children: ReactNode }) {
   return <span className="section-tag">{children}</span>;
@@ -188,7 +188,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .wrap{ max-width:1180px; margin:0 auto; padding:0 40px; }
         @media (max-width:700px){ .wrap{ padding:0 22px; } }
 
-        /* PAGE FRAME — nav + hero + trust strip sit inside one large
+        /* PAGE FRAME: nav + hero + trust strip sit inside one large
            rounded panel, inset from the true viewport edge, matching
            the reference's framed presentation. */
         .page-backdrop{ background:#050506; padding:18px; }
@@ -210,8 +210,8 @@ function LandingScreen({ navigate }: ScreenProps) {
           border:1px solid var(--line); border-radius:100px; padding:8px 14px; text-decoration:none; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
         .nav-pill:hover{ color:var(--text); border-color:rgba(255,255,255,.2); }
         .nav-cta{ font-size:14px; font-weight:600; color:var(--bg); background:var(--accent-bright); border:none; border-radius:100px; padding:10px 20px; cursor:pointer;
-          transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
-        .nav-cta:hover{ filter:brightness(1.1); }
+          transition:transform .15s var(--ease-out), background-color .2s var(--ease-out); }
+        .nav-cta:hover{ background-color:var(--accent-hi); }
         .nav-cta:active{ transform:scale(.97); }
         @media (max-width:900px){ .nav-center{ display:none; } .nav{ display:flex; justify-content:space-between; padding:18px 22px; } }
 
@@ -231,8 +231,8 @@ function LandingScreen({ navigate }: ScreenProps) {
         .hero-sub{ font-size:clamp(15.5px, 1.2vw, 18px); line-height:1.6; color:var(--text-soft); max-width:46ch; margin:0 0 36px; }
         .hero-actions{ display:flex; align-items:center; gap:14px; }
         .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--bg); background:var(--accent-bright);
-          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
-        .btn-primary:hover{ filter:brightness(1.1); }
+          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; transition:transform .15s var(--ease-out), background-color .2s var(--ease-out); }
+        .btn-primary:hover{ background-color:var(--accent-hi); }
         .btn-primary:active{ transform:scale(.97); }
         .btn-ghost{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--text); background:transparent;
           border:1px solid var(--line); border-radius:100px; padding:13px 22px; cursor:pointer; transition:border-color .15s var(--ease-out), background .15s var(--ease-out), color .15s var(--ease-out); }
@@ -431,7 +431,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="hero-content">
 
               <h1 className="headline">Economic history<b>you can prove.</b></h1>
-              <p className="hero-sub">TRU verifies economic activity across chains — loan repayments and agent obligations — and turns verified events into reusable on-chain history on Creditcoin.</p>
+              <p className="hero-sub">TRU verifies economic activity across chains, including loan repayments and agent obligations, and records verified events as reusable on-chain history on Creditcoin.</p>
 
               <div className="hero-actions">
                 <button className="btn-primary" onClick={() => navigate("connect")}>Connect Wallet <WalletGlyph size={14} /></button>
@@ -479,7 +479,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* SOLUTION */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>The TRU Model</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Don't move the history. Prove it.</p></Reveal>
+          <Reveal><SectionTag>The TRU Model</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Verify events where they happened.</p></Reveal>
           <Reveal stagger={1}>
             <div className="pipeline">
               <div className="pipe-node"><span className="pipe-icon"><EventGlyph size={20} /></span><span className="pipe-label">Economic Activity</span><span className="pipe-sub">loans & obligations</span></div>
@@ -500,7 +500,7 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>How It Works</SectionTag><p className="section-title">What happens between an event and a record.</p></Reveal>
           <Reveal stagger={1}>
             <div className="steps-grid">
-              <div className="step-card"><span className="step-n">01</span><h3 className="step-title">Activity Happens</h3><p className="step-body">An actor takes a loan — or accepts an obligation — on a supported chain.</p></div>
+              <div className="step-card"><span className="step-n">01</span><h3 className="step-title">Activity Happens</h3><p className="step-body">An actor takes a loan or accepts an obligation on a supported chain.</p></div>
               <div className="step-card"><span className="step-n">02</span><h3 className="step-title">Attestcoin Attests</h3><p className="step-body">Attestcoin provides cross-chain proof that the event actually occurred.</p></div>
               <div className="step-card"><span className="step-n">03</span><h3 className="step-title">TRU Verifies</h3><p className="step-body">TRU checks the attested event against the conditions for a valid economic event.</p></div>
               <div className="step-card"><span className="step-n">04</span><h3 className="step-title">Creditcoin Records</h3><p className="step-body">The resulting verified history is written to Creditcoin, reusable by other apps and agents.</p></div>
@@ -549,7 +549,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* CREDIT PROFILE PREVIEW */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>Credit Profile</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Not a score. A record you can open.</p></Reveal>
+          <Reveal><SectionTag>Credit Profile</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>A verifiable record, not a score.</p></Reveal>
           <Reveal stagger={1}>
             <div className="profile-panel">
               <span className="profile-example-tag">Example profile</span>
@@ -561,7 +561,7 @@ function LandingScreen({ navigate }: ScreenProps) {
                 <div className="profile-stat"><div className="profile-stat-v">100%</div><div className="profile-stat-k">Repayment rate</div></div>
                 <div className="profile-stat"><div className="profile-stat-v">$0</div><div className="profile-stat-k">Outstanding</div></div>
               </div>
-              <div className="profile-capability"><CheckGlyph size={15} /> Sample capacity: $200 of verified limit — the contract derives capacity as repayments × $100</div>
+              <div className="profile-capability"><CheckGlyph size={15} /> Sample capacity: $200 of verified limit. The contract derives capacity as repayments × $100</div>
             </div>
           </Reveal>
         </div>
@@ -623,7 +623,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* WHY ATTESTCOIN */}
       <section className="section">
         <div className="wrap">
-          <Reveal><SectionTag>Why Each Layer Matters</SectionTag><p className="section-title">Take one piece away and the chain breaks.</p></Reveal>
+          <Reveal><SectionTag>Why Each Layer Matters</SectionTag><p className="section-title">Why each layer is needed.</p></Reveal>
           <Reveal stagger={1}>
             <div className="dep-grid">
               <div className="dep-card"><div className="dep-role">Proof</div><div className="dep-name">Attestcoin</div><p className="dep-body">Without it, TRU cannot reliably know what happened on another chain.</p></div>
@@ -637,7 +637,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* DEVELOPER ARCHITECTURE */}
       <section className="section" id="developers">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>For Developers</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>One query. You don't touch the chains underneath.</p></Reveal>
+          <Reveal><SectionTag>For Developers</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>One query, without touching the chains underneath.</p></Reveal>
           <Reveal stagger={1}>
             <div className="dev-flow">
               <span className="dev-chip">VerifiedEvent</span><span className="dev-flow-arrow">→</span>
@@ -672,7 +672,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* FUTURE VISION */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>Future Vision</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>This gets more useful as it gets bigger.</p></Reveal>
+          <Reveal><SectionTag>Future Vision</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Grows as the history grows.</p></Reveal>
           <Reveal stagger={1}>
             <div className="vision-flow">
               <span className="vision-step">One chain</span><span className="vision-arrow">↓</span>
@@ -781,7 +781,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
         .v-headline{ font-family:var(--font-display); font-size:clamp(28px,3.4vw,42px); font-weight:600; text-align:center; margin:0 0 12px; }
         .v-sub{ font-size:14.5px; color:var(--text-soft); text-align:center; max-width:46ch; margin:0 0 56px; line-height:1.6; }
 
-        /* SIGNATURE VISUAL — two block heights, racing to converge.
+        /* SIGNATURE VISUAL: two block heights, racing to converge.
            This IS the product's actual mechanism made visible, not a
            generic loading widget standing in for it. */
         .race{ width:100%; max-width:640px; margin-bottom:56px; }
@@ -802,7 +802,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
         .race-gap-k{ font-size:13.5px; color:var(--text-soft); max-width:16ch; line-height:1.4; }
         .race-note{ text-align:center; font-size:12px; color:var(--text-faint); margin-top:18px; line-height:1.55; max-width:52ch; margin-left:auto; margin-right:auto; }
 
-        /* STAGE RAIL — a horizontal timeline with real weight, not a
+        /* STAGE RAIL: a horizontal timeline with real weight, not a
            cramped vertical dot list borrowed from another product. */
         .rail{ width:100%; max-width:640px; position:relative; }
         .rail-track{ position:relative; height:2px; background:var(--line); border-radius:2px; margin:0 22px 20px; }
@@ -866,7 +866,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
               <span className="race-gap-k">Fully caught up</span>
             </div>
           )}
-          <p className="race-note">It comes straight from the gap between Ethereum Sepolia's current height and where Attestcoin has attested through so far.</p>
+          <p className="race-note">It comes from the gap between Ethereum Sepolia's current height and where Attestcoin has attested through so far.</p>
         </div>
 
             <div className="rail">
@@ -881,7 +881,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
               </div>
             </div>
 
-            <p className="v-footnote">The wait belongs to Attestcoin gathering real confirmations on Sepolia. TRU can't speed it up, and has no reason to hide it behind a spinner.</p>
+            <p className="v-footnote">The wait belongs to Attestcoin gathering real confirmations on Sepolia. TRU can't speed it up, so it shows the wait directly instead of hiding it behind a spinner.</p>
           </div>
 
           <aside className="v-side">
@@ -897,7 +897,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
             </div>
             <div className="side-panel side-panel--note">
               <div className="side-title">Why this takes time</div>
-              <p className="side-note-body">Attestcoin needs enough confirmations on Sepolia before it will attest to an event. The wait is what gives the resulting credit state its weight.</p>
+              <p className="side-note-body">Attestcoin needs enough confirmations on Sepolia before it will attest to an event. That wait is what makes the resulting credit state reliable.</p>
             </div>
           </aside>
         </div>
@@ -931,10 +931,10 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -947,12 +947,12 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
 
         /* Collapsed hover tooltip */
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
@@ -961,8 +961,8 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
 
         .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
-        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
-        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
+        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; transition:gap .3s var(--ease-in-out), padding .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; gap:0; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
         .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
@@ -983,7 +983,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .dash-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:96px; }
         @media (max-width:1000px){ .dash-grid{ grid-template-columns:1fr; } .dash-side{ position:static; } }
 
-        /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
+        /* CREDIT STATE: a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
         .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
@@ -1017,7 +1017,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        /* Quick actions live in the sidebar on desktop — show this card only
+        /* Quick actions live in the sidebar on desktop: show this card only
            where the sidebar is hidden (small screens), as a fallback nav. */
         .side-widget--qa{ display:none; }
         @media (max-width:860px){ .side-widget--qa{ display:block; } }
@@ -1048,7 +1048,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
-        /* LEDGER — stamped entries, not a card grid */
+        /* LEDGER: stamped entries, not a card grid */
         .ledger{ border-top:1px solid var(--line); }
         .ledger-row{ display:flex; align-items:center; gap:20px; padding:22px 4px; border-bottom:1px solid var(--line); }
         .seal{ position:relative; flex:none; border-radius:50%;
@@ -1270,10 +1270,10 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -1286,12 +1286,12 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
 
         /* Collapsed hover tooltip */
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
@@ -1300,8 +1300,8 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
 
         .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
-        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
-        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
+        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; transition:gap .3s var(--ease-in-out), padding .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; gap:0; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
         .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
@@ -1322,7 +1322,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .dash-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:96px; }
         @media (max-width:1000px){ .dash-grid{ grid-template-columns:1fr; } .dash-side{ position:static; } }
 
-        /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
+        /* CREDIT STATE: a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
         .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
@@ -1356,7 +1356,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        /* Quick actions live in the sidebar on desktop — show this card only
+        /* Quick actions live in the sidebar on desktop: show this card only
            where the sidebar is hidden (small screens), as a fallback nav. */
         .side-widget--qa{ display:none; }
         @media (max-width:860px){ .side-widget--qa{ display:block; } }
@@ -1412,7 +1412,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
-        /* LEDGER — stamped entries, not a card grid */
+        /* LEDGER: stamped entries, not a card grid */
         .ledger{ border-top:1px solid var(--line); }
         .ledger-row{ display:flex; align-items:center; gap:20px; padding:22px 4px; border-bottom:1px solid var(--line); }
         .seal{ position:relative; flex:none; border-radius:50%;
@@ -1517,7 +1517,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
               <div className="factors-panel">
                 <div className="widget-title">Obligation history</div>
-                <div className="widget-sub">Deterministic counts from verified obligation events — no score, no judgment.</div>
+                <div className="widget-sub">Deterministic counts from verified obligation events, with no score and no judgment.</div>
                 <div className="factors-list">
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Verified obligations</span><span className="factor-note">Each one attested by Attestcoin independently</span></div>
@@ -1572,8 +1572,8 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 </button>
                 {whyOpen && (
                   <div className="why-body">
-                    <p>TRU doesn't assign "Building" as a label someone chose. It's the output of a fixed rule: any wallet with 1–2 verified repayments sits in Building. At 3 verified repayments, this profile would move to Established — the repayment rate plays no part in the rule.</p>
-                    <p>The $200 capacity is calculated as 2 verified repayments × $100 — the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives a completion rate, with no score assigned by anyone.</p>
+                    <p>TRU doesn't assign "Building" as a label someone chose. It's the output of a fixed rule: any wallet with 1–2 verified repayments sits in Building. At 3 verified repayments, this profile would move to Established. The repayment rate plays no part in the rule.</p>
+                    <p>The $200 capacity is calculated as 2 verified repayments × $100, which is the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives a completion rate, with no score assigned by anyone.</p>
                   </div>
                 )}
               </div>
@@ -1649,10 +1649,10 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -1665,12 +1665,12 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
 
         /* Collapsed hover tooltip */
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
@@ -1679,8 +1679,8 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
 
         .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
-        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
-        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
+        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; transition:gap .3s var(--ease-in-out), padding .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; gap:0; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
         .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
@@ -1701,7 +1701,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .dash-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:96px; }
         @media (max-width:1000px){ .dash-grid{ grid-template-columns:1fr; } .dash-side{ position:static; } }
 
-        /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
+        /* CREDIT STATE: a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
         .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
@@ -1735,7 +1735,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        /* Quick actions live in the sidebar on desktop — show this card only
+        /* Quick actions live in the sidebar on desktop: show this card only
            where the sidebar is hidden (small screens), as a fallback nav. */
         .side-widget--qa{ display:none; }
         @media (max-width:860px){ .side-widget--qa{ display:block; } }
@@ -1798,7 +1798,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         .ledger--full{ margin-top:0; }
 
-        /* PENDING MARK — distinct from a verified seal, honest in-progress state */
+        /* PENDING MARK: distinct from a verified seal, honest in-progress state */
         .pending-mark{ position:relative; flex:none; border-radius:50%; border:1.5px dashed var(--line);
           background:var(--bg); display:flex; align-items:center; justify-content:center; }
         .pending-spin{ animation:pend-spin .9s linear infinite; }
@@ -1817,7 +1817,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
-        /* LEDGER — stamped entries, not a card grid */
+        /* LEDGER: stamped entries, not a card grid */
         .ledger{ border-top:1px solid var(--line); }
         .ledger-row{ display:flex; align-items:center; gap:20px; padding:22px 4px; border-bottom:1px solid var(--line); }
         .seal{ position:relative; flex:none; border-radius:50%;
@@ -1999,10 +1999,10 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -2015,12 +2015,12 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
 
         /* Collapsed hover tooltip */
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
@@ -2029,8 +2029,8 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
 
         .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
-        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
-        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
+        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; transition:gap .3s var(--ease-in-out), padding .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; gap:0; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
         .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
@@ -2051,7 +2051,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .dash-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:96px; }
         @media (max-width:1000px){ .dash-grid{ grid-template-columns:1fr; } .dash-side{ position:static; } }
 
-        /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
+        /* CREDIT STATE: a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
         .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
@@ -2085,7 +2085,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        /* Quick actions live in the sidebar on desktop — show this card only
+        /* Quick actions live in the sidebar on desktop: show this card only
            where the sidebar is hidden (small screens), as a fallback nav. */
         .side-widget--qa{ display:none; }
         @media (max-width:860px){ .side-widget--qa{ display:block; } }
@@ -2148,7 +2148,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         .ledger--full{ margin-top:0; }
 
-        /* PENDING MARK — distinct from a verified seal, honest in-progress state */
+        /* PENDING MARK: distinct from a verified seal, honest in-progress state */
         .pending-mark{ position:relative; flex:none; border-radius:50%; border:1.5px dashed var(--line);
           background:var(--bg); display:flex; align-items:center; justify-content:center; }
         .pending-spin{ animation:pend-spin .9s linear infinite; }
@@ -2198,7 +2198,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
-        /* LEDGER — stamped entries, not a card grid */
+        /* LEDGER: stamped entries, not a card grid */
         .ledger{ border-top:1px solid var(--line); }
         .ledger-row{ display:flex; align-items:center; gap:20px; padding:22px 4px; border-bottom:1px solid var(--line); }
         .seal{ position:relative; flex:none; border-radius:50%;
@@ -2293,7 +2293,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
           <div className="dash-grid">
             <div className="dash-main">
-              {/* Chain — same node language as the rest of the product, now shown complete */}
+              {/* Chain: same node language as the rest of the product, now shown complete */}
               <div className="proof-chain">
                 <div className="proof-node"><ShieldGlyph size={16} /><span>Ethereum Sepolia</span></div>
                 <span className="proof-arrow">→</span>
@@ -2396,10 +2396,10 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -2412,12 +2412,12 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
 
         /* Collapsed hover tooltip */
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
@@ -2426,8 +2426,8 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
 
         .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
-        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
-        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
+        .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; transition:gap .3s var(--ease-in-out), padding .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; gap:0; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
         .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
@@ -2448,7 +2448,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .dash-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:96px; }
         @media (max-width:1000px){ .dash-grid{ grid-template-columns:1fr; } .dash-side{ position:static; } }
 
-        /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
+        /* CREDIT STATE: a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
         .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
@@ -2482,7 +2482,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        /* Quick actions live in the sidebar on desktop — show this card only
+        /* Quick actions live in the sidebar on desktop: show this card only
            where the sidebar is hidden (small screens), as a fallback nav. */
         .side-widget--qa{ display:none; }
         @media (max-width:860px){ .side-widget--qa{ display:block; } }
@@ -2545,7 +2545,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         .ledger--full{ margin-top:0; }
 
-        /* PENDING MARK — distinct from a verified seal, honest in-progress state */
+        /* PENDING MARK: distinct from a verified seal, honest in-progress state */
         .pending-mark{ position:relative; flex:none; border-radius:50%; border:1.5px dashed var(--line);
           background:var(--bg); display:flex; align-items:center; justify-content:center; }
         .pending-spin{ animation:pend-spin .9s linear infinite; }
@@ -2622,7 +2622,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
-        /* LEDGER — stamped entries, not a card grid */
+        /* LEDGER: stamped entries, not a card grid */
         .ledger{ border-top:1px solid var(--line); }
         .ledger-row{ display:flex; align-items:center; gap:20px; padding:22px 4px; border-bottom:1px solid var(--line); }
         .seal{ position:relative; flex:none; border-radius:50%;
@@ -2710,7 +2710,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
           <div className="dash-grid">
             <div className="dash-main">
-              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Everything below is the real pipeline, not a simplified version of it.</p>
+              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Everything below describes the real pipeline.</p>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Architecture</div>
@@ -2826,7 +2826,7 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError("Copy failed — long-press the address bar to copy the link manually.");
+      setError("Copy failed. Long-press the address bar to copy the link manually.");
     }
   };
 
@@ -2856,10 +2856,10 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         .sb-label{ display:inline-block; white-space:nowrap; transition:opacity .18s var(--ease-out), max-width .28s var(--ease-in-out); opacity:1; max-width:160px; overflow:hidden; }
         .sidebar.is-collapsed .sb-label{ opacity:0; max-width:0; }
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
-        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
@@ -2870,12 +2870,12 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         .sidebar.is-collapsed .sb-section-label{ opacity:0; height:0; padding:0; overflow:hidden; }
         .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
         .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
-          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), gap .3s var(--ease-in-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
         .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
-        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; gap:0; }
         .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
           background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 11px;
           font-size:12px; color:var(--text); white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s var(--ease-out); }
@@ -2897,8 +2897,8 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         .connect-wrap{ max-width:620px; margin:0 auto; }
         .connect-lede{ font-size:14.5px; color:var(--text-soft); line-height:1.65; margin:0 0 28px; max-width:52ch; }
         .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--bg); background:var(--accent-bright);
-          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; text-decoration:none; transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
-        .btn-primary:hover{ filter:brightness(1.1); }
+          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; text-decoration:none; transition:transform .15s var(--ease-out), background-color .2s var(--ease-out); }
+        .btn-primary:hover{ background-color:var(--accent-hi); }
         .btn-primary:active{ transform:scale(.97); }
         .btn-primary:disabled{ opacity:.45; cursor:not-allowed; }
         .btn-ghost{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--text); background:transparent;
@@ -2978,7 +2978,7 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
           <a className="back-link" href="#product" onClick={(e) => { e.preventDefault(); navigate("landing"); }}><ArrowLeft /> Back</a>
           <span className="page-eyebrow">Wallet</span>
           <h1 className="page-title">Connect your wallet</h1>
-          <p className="connect-lede">Connection is local and read-only. TRU never sees your keys and never moves funds — it only reads the address you connect with.</p>
+          <p className="connect-lede">Connection is local and read-only. TRU never sees your keys and never moves funds. It only reads the address you connect with.</p>
 
           <div className="detail-panel">
             <div className="detail-panel-title">Browser wallet · injected</div>
@@ -2998,11 +2998,11 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
             <div className="detail-panel-title">Mobile · wallet browser</div>
             {isMobile && (
               <p className="connect-note" style={{ marginTop: 0 }}>
-                You are on mobile — open this page inside your wallet's browser below.
+                You are on mobile. Open this page inside your wallet's browser below.
               </p>
             )}
             <div className="connect-steps">
-              <div className="connect-step"><span className="connect-step-n">01</span><span>Open your wallet app — MetaMask, Coinbase Wallet, or Rabby.</span></div>
+              <div className="connect-step"><span className="connect-step-n">01</span><span>Open your wallet app, such as MetaMask, Coinbase Wallet, or Rabby.</span></div>
               <div className="connect-step"><span className="connect-step-n">02</span><span>Open its built-in browser tab.</span></div>
               <div className="connect-step"><span className="connect-step-n">03</span><span>Paste this page's link, or jump straight in:</span></div>
             </div>
@@ -3012,7 +3012,7 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
               </a>
               <button className="btn-ghost" onClick={copyLink}>{copied ? "Link copied" : "Copy page link"}</button>
             </div>
-            <p className="connect-note">Desktop pages cannot reach a phone's wallets directly — the wallet's own browser injects the connection, and the step above then just works.</p>
+            <p className="connect-note">Desktop pages cannot reach a phone's wallets directly. The wallet's own browser injects the connection, and the step above then just works.</p>
           </div>
 
           <div className="security-note">

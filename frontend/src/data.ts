@@ -1,7 +1,7 @@
 import type { LedgerEntry, MonthDatum, StageDatum } from "./types";
 
 /*
- * SAMPLE DATA — for UI demo only. None of these values are read from
+ * SAMPLE DATA: for UI demo only. None of these values are read from
  * on-chain contracts. Every entry is explicitly marked `sample: true`
  * and the UI labels sample surfaces as examples.
  */
@@ -15,7 +15,7 @@ export const ENTRIES: LedgerEntry[] = [
   { event: "Attestation pending", amount: "80 USDC", ref: "#45", refKind: "loan", domain: "loan", date: "Aug 19, 2026", chain: "Ethereum Sepolia", tx: "0x51d4...7b2a", status: "pending", sample: true },
 ];
 
-// Real, sparse, honest — TRU is early-stage, so the chart is early-stage too.
+// Real, sparse, honest: TRU is early-stage, so the chart is early-stage too.
 export const MONTHS: MonthDatum[] = [
   { label: "MAR", count: 0 }, { label: "APR", count: 0 }, { label: "MAY", count: 0 },
   { label: "JUN", count: 0 }, { label: "JUL", count: 1 }, { label: "AUG", count: 1 },
