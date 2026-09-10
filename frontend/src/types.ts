@@ -9,7 +9,8 @@ export type ScreenName =
   | "credit"
   | "events"
   | "event-detail"
-  | "protocol";
+  | "protocol"
+  | "connect";
 
 export type NavigateFn = (screen: ScreenName) => void;
 
@@ -119,4 +120,20 @@ export interface EconomicActorView {
   network: string;
   credit: CreditEvidenceView;
   obligations: AgentPassportView;
+}
+
+/* ── Wallet connection (EIP-1193, minimal) ─────────────────── */
+
+export interface EIP1193Provider {
+  request: (args: { method: string; params?: unknown }) => Promise<unknown>;
+  isMetaMask?: boolean;
+  isCoinbaseWallet?: boolean;
+  isRabby?: boolean;
+  providers?: EIP1193Provider[];
+}
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
 }

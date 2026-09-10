@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { NavigateFn, PipelineNodeDatum, ScreenName, ScreenProps } from "./types";
+import type { EIP1193Provider, NavigateFn, PipelineNodeDatum, ScreenName, ScreenProps } from "./types";
 import {
   BLOCK_TIME_SEC,
   ENTRIES,
@@ -17,8 +17,9 @@ const TOKENS = `
     --bg:#0a0a0b; --bg-elevated:#131316; --bg-elevated-2:#1a1a1e;
     --line: rgba(255,255,255,0.10); --line-soft: rgba(255,255,255,0.06);
     --text:#f2f1ec; --text-soft:#9c9a94; --text-faint:#5f5d59;
-    --gold:#e3b877; --gold-bright:#f7d9a3; --gold-deep:#b9873f;
-    --gold-gradient: linear-gradient(135deg, #fbe6bf 0%, #e3b877 42%, #b9873f 100%);
+    --accent:#4A607A; --accent-bright:#00FFC6; --accent-deep:#2B3D52;
+    --accent-tint: rgba(0,255,198,.25);
+    --accent-gradient: linear-gradient(135deg, #00FFC6 0%, #4A607A 55%, #2B3D52 100%);
     --font-display:'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
     --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -71,7 +72,7 @@ function PendingMark({ size = 40 }: { size?: number }) {
     <div className="pending-mark" style={{ width: size, height: size }}>
       <svg className="pending-spin" width={size * 0.4} height={size * 0.4} viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke="var(--text-faint)" strokeWidth="2.2" strokeOpacity=".3" />
-        <path d="M21 12a9 9 0 0 0-9-9" stroke="var(--gold-bright)" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M21 12a9 9 0 0 0-9-9" stroke="var(--accent-bright)" strokeWidth="2.2" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -86,9 +87,9 @@ function RateGauge({ pct = 100, size = 116 }: { pct?: number; size?: number }) {
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <defs>
         <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fbe6bf" />
-          <stop offset="42%" stopColor="#e3b877" />
-          <stop offset="100%" stopColor="#b9873f" />
+          <stop offset="0%" stopColor="#C9FFF2" />
+          <stop offset="42%" stopColor="#00FFC6" />
+          <stop offset="100%" stopColor="#0A8F77" />
         </linearGradient>
       </defs>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke} />
@@ -122,7 +123,7 @@ function Identicon({ addr = "0x7A3f92Fd" }: { addr?: string }) {
 }
 
 /* ────────────────────────────────────────────────────────────
-   TRU — design tokens (dark, atmospheric, gold accent)
+    TRU — design tokens (dark, slate base, mint accent)
    ──────────────────────────────────────────────────────────── */
 function ArrowDown({ size = 14 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 4v16M12 20l-6-6M12 20l6-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function ChainGlyph({ size = 13 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M9 15l6-6M8 16l-1.5 1.5a3.5 3.5 0 0 1-5-5L3 11a3.5 3.5 0 0 1 5-5l1-1M16 8l1.5-1.5a3.5 3.5 0 0 1 5 5L21 13a3.5 3.5 0 0 1-5 5l-1 1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
@@ -178,9 +179,10 @@ function LandingScreen({ navigate }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .tru-root{ background:var(--bg); color:var(--text); font-family:var(--font-body); position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.08;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .page-backdrop{ position:relative; z-index:1; }
         .wrap{ max-width:1180px; margin:0 auto; padding:0 40px; }
@@ -207,9 +209,9 @@ function LandingScreen({ navigate }: ScreenProps) {
         .nav-pill{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-soft); background:var(--bg-elevated);
           border:1px solid var(--line); border-radius:100px; padding:8px 14px; text-decoration:none; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
         .nav-pill:hover{ color:var(--text); border-color:rgba(255,255,255,.2); }
-        .nav-cta{ font-size:14px; font-weight:600; color:var(--bg); background:var(--text); border:none; border-radius:100px; padding:10px 20px; cursor:pointer;
-          transition:transform .15s var(--ease-out), background .15s var(--ease-out); }
-        .nav-cta:hover{ background:var(--gold-gradient); }
+        .nav-cta{ font-size:14px; font-weight:600; color:var(--bg); background:var(--accent-bright); border:none; border-radius:100px; padding:10px 20px; cursor:pointer;
+          transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
+        .nav-cta:hover{ filter:brightness(1.1); }
         .nav-cta:active{ transform:scale(.97); }
         @media (max-width:900px){ .nav-center{ display:none; } .nav{ display:flex; justify-content:space-between; padding:18px 22px; } }
 
@@ -219,8 +221,8 @@ function LandingScreen({ navigate }: ScreenProps) {
         .hero-glow{ position:absolute; top:-14%; left:0; right:0; height:680px; pointer-events:none; z-index:0;
           background:
             radial-gradient(ellipse 460px 260px at 36% 6%, rgba(255,255,255,.14), transparent 62%),
-            radial-gradient(ellipse 560px 340px at 66% 16%, rgba(217,167,92,.20), transparent 66%),
-            radial-gradient(ellipse 380px 240px at 50% -4%, rgba(240,196,127,.10), transparent 68%);
+            radial-gradient(ellipse 560px 340px at 66% 16%, rgba(74,96,122,.24), transparent 66%),
+            radial-gradient(ellipse 380px 240px at 50% -4%, rgba(0,255,198,.07), transparent 68%);
           filter:blur(18px); }
         .hero-content{ position:relative; z-index:2; max-width:760px; display:flex; flex-direction:column; align-items:center; }
 
@@ -228,12 +230,12 @@ function LandingScreen({ navigate }: ScreenProps) {
         .headline b{ display:block; font-weight:800; color:var(--text); }
         .hero-sub{ font-size:clamp(15.5px, 1.2vw, 18px); line-height:1.6; color:var(--text-soft); max-width:46ch; margin:0 0 36px; }
         .hero-actions{ display:flex; align-items:center; gap:14px; }
-        .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--bg); background:var(--text);
-          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; transition:transform .15s var(--ease-out), background .15s var(--ease-out); }
-        .btn-primary:hover{ background:var(--gold-gradient); }
+        .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--bg); background:var(--accent-bright);
+          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
+        .btn-primary:hover{ filter:brightness(1.1); }
         .btn-primary:active{ transform:scale(.97); }
         .btn-ghost{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--text); background:transparent;
-          border:1px solid var(--line); border-radius:100px; padding:13px 22px; cursor:pointer; transition:border-color .15s var(--ease-out), background .15s var(--ease-out); }
+          border:1px solid var(--line); border-radius:100px; padding:13px 22px; cursor:pointer; transition:border-color .15s var(--ease-out), background .15s var(--ease-out), color .15s var(--ease-out); }
         .btn-ghost:hover{ border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.03); }
 
         .trail-lines{ position:relative; width:100%; height:110px; margin-top:6px; pointer-events:none; }
@@ -244,7 +246,7 @@ function LandingScreen({ navigate }: ScreenProps) {
 
         .node{ position:absolute; z-index:2; display:flex; align-items:center; gap:10px; animation:node-float 7s var(--ease-in-out) infinite; }
         .node-icon{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--bg-elevated);
-          box-shadow:inset 0 0 0 1px rgba(227,184,119,.18); display:flex; align-items:center; justify-content:center; color:var(--gold-bright); flex:none; }
+          box-shadow:inset 0 0 0 1px rgba(74,96,122,.35); display:flex; align-items:center; justify-content:center; color:var(--accent-bright); flex:none; }
         .node-text{ display:flex; flex-direction:column; gap:1px; text-align:left; white-space:nowrap; }
         .node-label{ font-family:var(--font-mono); font-size:12.5px; color:var(--text); }
         .node-meta{ font-size:10.5px; color:var(--text-faint); }
@@ -257,10 +259,10 @@ function LandingScreen({ navigate }: ScreenProps) {
         @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
         @media (max-width:700px){ .scroll-cue{ display:none; } }
         .stage-indicator{ position:absolute; bottom:32px; right:40px; z-index:2; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
-        .stage-label{ font-size:11px; color:var(--gold-bright); font-family:var(--font-mono); letter-spacing:.05em; text-transform:uppercase; }
+        .stage-label{ font-size:11px; color:var(--accent-bright); font-family:var(--font-mono); letter-spacing:.05em; text-transform:uppercase; }
         .stage-dots{ display:flex; gap:6px; }
         .stage-dot{ width:20px; height:3px; border-radius:2px; background:var(--line); transition:width .2s var(--ease-out), background .2s var(--ease-out); }
-        .stage-dot.is-active{ background:var(--gold-gradient); width:28px; }
+        .stage-dot.is-active{ background:var(--accent-gradient); width:28px; }
         @media (max-width:700px){ .stage-indicator{ display:none; } }
         .trust-strip{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:44px; flex-wrap:wrap; padding:28px 24px 40px; border-top:1px solid var(--line-soft); }
         .trust-item{ font-family:var(--font-display); font-size:13px; font-weight:600; color:var(--text-faint); letter-spacing:.02em; }
@@ -269,9 +271,9 @@ function LandingScreen({ navigate }: ScreenProps) {
 
         /* SHARED SECTION SHELL */
         .section{ padding:100px 0; border-top:1px solid var(--line-soft); }
-        .section-tag{ display:inline-block; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:18px; }
+        .section-tag{ display:inline-block; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:18px; }
         .section-title{ font-family:var(--font-display); font-weight:600; font-size:clamp(26px, 2.6vw, 38px); line-height:1.25; letter-spacing:-.01em; max-width:18ch; }
-        .section-title b{ color:var(--gold-bright); font-weight:600; }
+        .section-title b{ color:var(--accent-bright); font-weight:600; }
         .reveal{ opacity:1; transition:transform .6s var(--ease-out); transition-delay:calc(var(--stagger,0) * 80ms); transform:translateY(18px); }
         .reveal.is-in{ transform:translateY(0); }
         @media (prefers-reduced-motion: reduce){ .reveal{ transition:none; transform:none; } }
@@ -291,7 +293,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .pipeline{ display:flex; align-items:center; justify-content:center; gap:0; margin:52px 0 8px; flex-wrap:wrap; }
         .pipe-node{ display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; width:150px; }
         .pipe-icon{ width:52px; height:52px; border-radius:50%; border:1px solid var(--line); background:var(--bg-elevated);
-          box-shadow:inset 0 0 0 1px rgba(227,184,119,.18); display:flex; align-items:center; justify-content:center; color:var(--gold-bright); }
+          box-shadow:inset 0 0 0 1px rgba(74,96,122,.35); display:flex; align-items:center; justify-content:center; color:var(--accent-bright); }
         .pipe-label{ font-family:var(--font-display); font-size:14px; font-weight:600; }
         .pipe-sub{ font-size:11.5px; color:var(--text-faint); font-family:var(--font-mono); }
         .pipe-arrow{ color:var(--text-faint); font-size:18px; padding:0 6px; align-self:center; }
@@ -300,7 +302,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         /* HOW IT WORKS */
         .steps-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-top:48px; }
         .step-card{ background:var(--bg); padding:28px 24px; }
-        .step-n{ font-family:var(--font-mono); font-size:12px; color:var(--gold-bright); margin-bottom:16px; display:block; }
+        .step-n{ font-family:var(--font-mono); font-size:12px; color:var(--accent-bright); margin-bottom:16px; display:block; }
         .step-title{ font-family:var(--font-display); font-size:17px; font-weight:600; margin-bottom:8px; }
         .step-body{ font-size:13.5px; color:var(--text-soft); line-height:1.55; }
         @media (max-width:860px){ .steps-grid{ grid-template-columns:1fr; } }
@@ -314,10 +316,11 @@ function LandingScreen({ navigate }: ScreenProps) {
         .proof-row{ display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; font-size:12.5px; }
         .proof-k{ color:var(--text-soft); }
         .proof-v{ font-family:var(--font-mono); color:var(--text); }
-        .proof-v--ok{ color:var(--gold-bright); display:flex; align-items:center; gap:5px; }
+        .proof-v--ok{ color:var(--accent-bright); display:flex; align-items:center; gap:5px; }
         .proof-cmd{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; border-top:1px solid var(--line); background:var(--bg); }
         .proof-cmd code{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft); }
-        .proof-copy{ font-size:12px; font-weight:600; color:var(--text); background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; }
+        .proof-copy{ font-size:12px; font-weight:600; color:var(--text); background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; transition:color .15s var(--ease-out), border-color .15s var(--ease-out), background .15s var(--ease-out); }
+        .proof-copy:hover{ color:var(--accent-bright); border-color:rgba(0,255,198,.4); }
         @media (max-width:860px){ .proof-stage{ grid-template-columns:1fr; } .proof-cell{ border-right:none; border-bottom:1px solid var(--line); } }
 
         /* CREDIT PROFILE PREVIEW */
@@ -330,7 +333,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .profile-stat{ background:var(--bg); padding:16px; text-align:center; }
         .profile-stat-v{ font-family:var(--font-display); font-size:19px; font-weight:700; }
         .profile-stat-k{ font-size:10.5px; color:var(--text-faint); margin-top:3px; }
-        .profile-capability{ display:flex; align-items:center; gap:10px; padding:14px 16px; border:1px solid var(--gold-tint); background:rgba(217,167,92,.06); border-radius:10px; font-size:13px; }
+        .profile-capability{ display:flex; align-items:center; gap:10px; padding:14px 16px; border:1px solid var(--accent-tint); background:rgba(0,255,198,.06); border-radius:10px; font-size:13px; }
 
         /* VERIFICATION DETAIL */
         .vdetail{ border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-top:48px; max-width:600px; margin-left:auto; margin-right:auto; background:var(--bg-elevated); }
@@ -339,7 +342,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .vdetail-row:first-of-type{ border-top:none; }
         .vdetail-k{ color:var(--text-soft); }
         .vdetail-v{ font-family:var(--font-mono); color:var(--text); }
-        .vdetail-status{ display:flex; align-items:center; gap:6px; color:var(--gold-bright); }
+        .vdetail-status{ display:flex; align-items:center; gap:6px; color:var(--accent-bright); }
 
         /* CREDITCOIN STATE before/after */
         .state-compare{ display:flex; align-items:center; justify-content:center; gap:0; margin-top:48px; }
@@ -347,7 +350,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .state-k{ font-size:12px; color:var(--text-faint); margin-bottom:10px; }
         .state-v{ font-family:var(--font-display); font-size:34px; font-weight:700; }
         .state-v--before{ color:var(--text-faint); }
-        .state-v--after{ color:var(--gold-bright); }
+        .state-v--after{ color:var(--accent-bright); }
         .state-arrow{ color:var(--text-faint); font-size:22px; padding:0 20px; }
         @media (max-width:600px){ .state-compare{ flex-direction:column; gap:16px; } .state-arrow{ transform:rotate(90deg); } }
 
@@ -361,7 +364,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         /* DEPENDENCY TRIANGLE */
         .dep-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-top:48px; }
         .dep-card{ background:var(--bg); padding:28px 24px; }
-        .dep-role{ font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:10px; }
+        .dep-role{ font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:10px; }
         .dep-name{ font-family:var(--font-display); font-size:18px; font-weight:600; margin-bottom:10px; }
         .dep-body{ font-size:13px; color:var(--text-soft); line-height:1.55; }
         @media (max-width:860px){ .dep-grid{ grid-template-columns:1fr; } }
@@ -371,19 +374,19 @@ function LandingScreen({ navigate }: ScreenProps) {
         .dev-chip{ font-family:var(--font-mono); font-size:13px; background:var(--bg-elevated); border:1px solid var(--line); border-radius:8px; padding:10px 16px; }
         .dev-flow-arrow{ color:var(--text-faint); }
         .dev-snippet{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft); background:var(--bg-elevated); border:1px solid var(--line); border-radius:12px; padding:18px 22px; max-width:460px; margin:0 auto; line-height:1.7; }
-        .dev-snippet .k{ color:var(--gold-bright); }
+        .dev-snippet .k{ color:var(--accent-bright); }
 
         /* USE CASES */
         .cases-list{ display:flex; flex-direction:column; margin-top:48px; border-top:1px solid var(--line); }
         .case-row{ display:flex; gap:28px; align-items:flex-start; padding:26px 0; border-bottom:1px solid var(--line); }
-        .case-n{ font-family:var(--font-mono); font-size:13px; color:var(--gold-bright); flex:none; padding-top:2px; }
+        .case-n{ font-family:var(--font-mono); font-size:13px; color:var(--accent-bright); flex:none; padding-top:2px; }
         .case-title{ font-family:var(--font-display); font-size:16px; font-weight:600; margin-bottom:6px; }
         .case-body{ font-size:14px; color:var(--text-soft); line-height:1.6; max-width:56ch; }
 
         /* FUTURE VISION */
         .vision-flow{ display:flex; flex-direction:column; align-items:center; gap:4px; margin-top:48px; }
         .vision-step{ font-family:var(--font-mono); font-size:13.5px; color:var(--text-soft); padding:8px 0; }
-        .vision-step:last-child{ color:var(--gold-bright); font-weight:600; font-size:16px; }
+        .vision-step:last-child{ color:var(--accent-bright); font-weight:600; font-size:16px; }
         .vision-arrow{ color:var(--text-faint); font-size:14px; }
 
         /* FINAL CTA */
@@ -417,7 +420,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             </div>
             <div className="nav-right">
               <a className="nav-pill" href="#github"><GitHubGlyph size={14} /> GitHub</a>
-              <button className="nav-cta" onClick={() => navigate("overview")}>Connect Wallet</button>
+              <button className="nav-cta" onClick={() => navigate("connect")}>Connect Wallet</button>
             </div>
           </nav>
 
@@ -431,7 +434,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <p className="hero-sub">TRU verifies economic activity across chains — loan repayments and agent obligations — and turns verified events into reusable on-chain history on Creditcoin.</p>
 
               <div className="hero-actions">
-                <button className="btn-primary" onClick={() => navigate("overview")}>Connect Wallet <WalletGlyph size={14} /></button>
+                <button className="btn-primary" onClick={() => navigate("connect")}>Connect Wallet <WalletGlyph size={14} /></button>
                 <button className="btn-ghost" onClick={() => navigate("protocol")}>Explore Protocol</button>
               </div>
 
@@ -481,9 +484,9 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="pipeline">
               <div className="pipe-node"><span className="pipe-icon"><EventGlyph size={20} /></span><span className="pipe-label">Economic Activity</span><span className="pipe-sub">loans & obligations</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><ShieldGlyph size={20} /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">verifies the event</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><ShieldGlyph size={20} /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">attests the source block</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><TruMark size={18} color="var(--gold-bright)" /></span><span className="pipe-label">TRU</span><span className="pipe-sub">verifies the event</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><TruMark size={18} color="var(--accent-bright)" /></span><span className="pipe-label">TRU</span><span className="pipe-sub">verifies the event</span></div>
               <span className="pipe-arrow">→</span>
               <div className="pipe-node"><span className="pipe-icon"><LedgerGlyph size={20} /></span><span className="pipe-label">Creditcoin</span><span className="pipe-sub">records verified history</span></div>
             </div>
@@ -494,7 +497,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* HOW IT WORKS */}
       <section className="section" id="how">
         <div className="wrap">
-          <Reveal><SectionTag>How It Works</SectionTag><p className="section-title">What happens between a repayment and a record.</p></Reveal>
+          <Reveal><SectionTag>How It Works</SectionTag><p className="section-title">What happens between an event and a record.</p></Reveal>
           <Reveal stagger={1}>
             <div className="steps-grid">
               <div className="step-card"><span className="step-n">01</span><h3 className="step-title">Activity Happens</h3><p className="step-body">An actor takes a loan — or accepts an obligation — on a supported chain.</p></div>
@@ -624,7 +627,7 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal stagger={1}>
             <div className="dep-grid">
               <div className="dep-card"><div className="dep-role">Proof</div><div className="dep-name">Attestcoin</div><p className="dep-body">Without it, TRU cannot reliably know what happened on another chain.</p></div>
-              <div className="dep-card"><div className="dep-role">Interpretation</div><div className="dep-name">TRU</div><p className="dep-body">Without it, the attested event stays raw data. It never becomes standardized credit state.</p></div>
+              <div className="dep-card"><div className="dep-role">Verification</div><div className="dep-name">TRU</div><p className="dep-body">Without it, the attested event stays raw data. It never becomes verified, replay-guarded history.</p></div>
               <div className="dep-card"><div className="dep-role">Record</div><div className="dep-name">Creditcoin</div><p className="dep-body">Without it, TRU has nowhere to turn verified history into reusable infrastructure.</p></div>
             </div>
           </Reveal>
@@ -747,11 +750,12 @@ function VerifyingScreen({ navigate }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .v-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); position:relative; overflow:hidden; }
         .v-glow{ position:absolute; top:-14%; left:0; right:0; height:680px; pointer-events:none; z-index:0;
           background:
             radial-gradient(ellipse 460px 260px at 36% 6%, rgba(255,255,255,.10), transparent 62%),
-            radial-gradient(ellipse 560px 340px at 66% 16%, rgba(227,184,119,.16), transparent 66%);
+            radial-gradient(ellipse 560px 340px at 66% 16%, rgba(74,96,122,.20), transparent 66%);
           filter:blur(18px); }
 
         .v-top{ position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:26px 40px; }
@@ -766,14 +770,14 @@ function VerifyingScreen({ navigate }: ScreenProps) {
 
         .v-side{ display:flex; flex-direction:column; gap:16px; position:sticky; top:100px; }
         .side-panel{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
-        .side-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:14px; }
+        .side-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:14px; }
         .side-row{ display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-top:1px solid var(--line); font-size:12.5px; }
         .side-row:first-of-type{ border-top:none; }
         .side-k{ color:var(--text-soft); }
         .side-v{ font-family:var(--font-mono); color:var(--text); }
         .side-panel--note{ background:var(--bg); }
         .side-note-body{ font-size:12.5px; color:var(--text-soft); line-height:1.6; }
-        .v-eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:14px; }
+        .v-eyebrow{ font-family:var(--font-mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:14px; }
         .v-headline{ font-family:var(--font-display); font-size:clamp(28px,3.4vw,42px); font-weight:600; text-align:center; margin:0 0 12px; }
         .v-sub{ font-size:14.5px; color:var(--text-soft); text-align:center; max-width:46ch; margin:0 0 56px; line-height:1.6; }
 
@@ -786,15 +790,15 @@ function VerifyingScreen({ navigate }: ScreenProps) {
         .race-chip-label{ font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; }
         .race-chip-value{ font-family:var(--font-mono); font-size:16px; color:var(--text); margin-top:2px; }
         .race-track{ position:relative; flex:1; height:2px; background:var(--line); border-radius:2px; }
-        .race-fill{ position:absolute; top:0; left:0; height:100%; background:var(--gold-gradient); border-radius:2px; transition:width .4s var(--ease-out); }
+        .race-fill{ position:absolute; top:0; left:0; height:100%; background:var(--accent-gradient); border-radius:2px; transition:width .4s var(--ease-out); }
         .race-marker{ position:absolute; top:50%; width:14px; height:14px; border-radius:50%; transform:translate(-50%,-50%); transition:left .4s var(--ease-out); display:flex; align-items:center; justify-content:center; }
-        .race-marker--attested{ background:var(--gold-gradient); box-shadow:0 0 0 5px rgba(227,184,119,.16); }
-        .race-marker--attested.is-done{ box-shadow:0 0 0 6px rgba(227,184,119,.22); }
+        .race-marker--attested{ background:var(--accent-gradient); box-shadow:0 0 0 5px rgba(0,255,198,.28); }
+        .race-marker--attested.is-done{ box-shadow:0 0 0 6px rgba(0,255,198,.34); }
         .race-marker--source{ right:-7px; left:auto !important; transform:translateY(-50%); background:var(--bg); border:2px solid var(--text-faint); }
         .race-marker--source.is-done{ opacity:0; }
 
         .race-gap{ display:flex; align-items:baseline; justify-content:center; gap:10px; padding-top:12px; }
-        .race-gap-n{ font-family:var(--font-display); font-size:44px; font-weight:800; color:var(--gold-bright); line-height:1; }
+        .race-gap-n{ font-family:var(--font-display); font-size:44px; font-weight:800; color:var(--accent-bright); line-height:1; }
         .race-gap-k{ font-size:13.5px; color:var(--text-soft); max-width:16ch; line-height:1.4; }
         .race-note{ text-align:center; font-size:12px; color:var(--text-faint); margin-top:18px; line-height:1.55; max-width:52ch; margin-left:auto; margin-right:auto; }
 
@@ -802,21 +806,21 @@ function VerifyingScreen({ navigate }: ScreenProps) {
            cramped vertical dot list borrowed from another product. */
         .rail{ width:100%; max-width:640px; position:relative; }
         .rail-track{ position:relative; height:2px; background:var(--line); border-radius:2px; margin:0 22px 20px; }
-        .rail-fill{ position:absolute; top:0; left:0; height:100%; background:var(--gold-gradient); border-radius:2px; transition:width .5s var(--ease-in-out); }
+        .rail-fill{ position:absolute; top:0; left:0; height:100%; background:var(--accent-gradient); border-radius:2px; transition:width .5s var(--ease-in-out); }
         .rail-stops{ display:flex; justify-content:space-between; }
         .rail-stop{ display:flex; flex-direction:column; align-items:center; gap:10px; flex:1; }
         .rail-dot{ width:24px; height:24px; border-radius:50%; border:2px solid var(--line); background:var(--bg);
           display:flex; align-items:center; justify-content:center; transition:border-color .2s var(--ease-out), background .2s var(--ease-out); }
-        .rail-stop.is-done .rail-dot{ background:var(--gold-gradient); border-color:transparent; }
-        .rail-stop.is-active .rail-dot{ border-color:var(--gold-bright); }
-        .rail-spin{ width:14px; height:14px; border-radius:50%; border:2px solid transparent; border-top-color:var(--gold-bright); border-right-color:var(--gold-bright); animation:r-spin .9s linear infinite; }
+        .rail-stop.is-done .rail-dot{ background:var(--accent-gradient); border-color:transparent; }
+        .rail-stop.is-active .rail-dot{ border-color:var(--accent-bright); }
+        .rail-spin{ width:14px; height:14px; border-radius:50%; border:2px solid transparent; border-top-color:var(--accent-bright); border-right-color:var(--accent-bright); animation:r-spin .9s linear infinite; }
         @keyframes r-spin{ to{ transform:rotate(360deg); } }
         .rail-label{ font-size:12.5px; color:var(--text-faint); text-align:center; transition:color .2s var(--ease-out); }
         .rail-stop.is-active .rail-label, .rail-stop.is-done .rail-label{ color:var(--text); font-weight:500; }
 
         .v-footnote{ font-size:12.5px; color:var(--text-faint); text-align:center; margin-top:48px; max-width:48ch; line-height:1.6; }
 
-        @media (prefers-reduced-motion: reduce){ .rail-spin{ animation:none; border-color:var(--gold-bright); } }
+        @media (prefers-reduced-motion: reduce){ .rail-spin{ animation:none; border-color:var(--accent-bright); } }
         @media (max-width:640px){ .race-chip{ width:96px; } .race-chip-value{ font-size:13px; } .rail-label{ font-size:10.5px; } }
       `}</style>
 
@@ -858,7 +862,7 @@ function VerifyingScreen({ navigate }: ScreenProps) {
             </div>
           ) : (
             <div className="race-gap">
-              <span className="race-gap-n"><CheckGlyph size={30} color="var(--gold-bright)" /></span>
+              <span className="race-gap-n"><CheckGlyph size={30} color="var(--accent-bright)" /></span>
               <span className="race-gap-k">Fully caught up</span>
             </div>
           )}
@@ -909,9 +913,10 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .sidebar, .main{ position:relative; z-index:1; }
         @media (max-width:860px){ .app-root{ display:block; } }
@@ -934,7 +939,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
           transition:background .15s var(--ease-out), color .15s var(--ease-out); }
-        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--gold-bright); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
 
         .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
           color:var(--text-faint); padding:0 12px 8px; }
@@ -945,7 +950,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
           padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
-        .sb-link.is-active{ background:rgba(227,184,119,.10); border-color:rgba(227,184,119,.22); color:var(--gold-bright); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
         .sidebar.is-collapsed .sb-link{ justify-content:center; }
 
@@ -959,7 +964,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
         .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
-        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-bright); flex:none; }
+        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
         .sb-wallet-net{ font-size:10.5px; color:var(--text-faint); }
 
@@ -970,7 +975,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
         .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
 
-        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
 
         .dash-grid{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:start; }
@@ -980,19 +985,19 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
-        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--gold-gradient); opacity:.5; z-index:1; }
+        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
-          background:radial-gradient(circle, rgba(227,184,119,.14), transparent 70%); pointer-events:none; }
+          background:radial-gradient(circle, rgba(74,96,122,.20), transparent 70%); pointer-events:none; }
         .credit-sheen{ position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,.04) 0%, transparent 30%); pointer-events:none; }
         .credit-status-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
         .credit-status-label{ font-size:12px; color:var(--text-soft); }
-        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gold-bright); font-family:var(--font-mono); }
+        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--accent-bright); font-family:var(--font-mono); }
         .credit-status-word{ position:relative; font-family:var(--font-display); font-size:clamp(30px,3.4vw,40px); font-weight:700; line-height:1; margin-bottom:22px; }
         .credit-highlight{ position:relative; display:flex; align-items:baseline; justify-content:space-between;
-          background:linear-gradient(120deg, rgba(227,184,119,.16), rgba(227,184,119,.05));
-          border:1px solid rgba(227,184,119,.25); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+          background:linear-gradient(120deg, rgba(0,255,198,.14), rgba(0,255,198,.04));
+          border:1px solid rgba(0,255,198,.28); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
         .credit-highlight-k{ font-size:12.5px; color:var(--text-soft); }
-        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-bright); }
+        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--accent-bright); }
         .credit-basis{ position:relative; font-size:13.5px; color:var(--text-soft); margin-bottom:22px; }
         .credit-derivation{ position:relative; font-size:12px; color:var(--text-faint); padding-top:20px; border-top:1px solid var(--line); line-height:1.6; }
 
@@ -1004,7 +1009,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .widget-sub{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:90px; margin-top:20px; }
         .chart-bar-wrap{ flex:1; display:flex; align-items:flex-end; height:100%; }
-        .chart-bar{ width:100%; background:var(--gold-gradient); border-radius:4px 4px 1px 1px; }
+        .chart-bar{ width:100%; background:var(--accent-gradient); border-radius:4px 4px 1px 1px; }
         .chart-bar.is-empty{ background:var(--line); }
         .chart-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.03em; }
         .widget--gauge{ display:flex; flex-direction:column; }
@@ -1012,10 +1017,14 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
+        /* Quick actions live in the sidebar on desktop — show this card only
+           where the sidebar is hidden (small screens), as a fallback nav. */
+        .side-widget--qa{ display:none; }
+        @media (max-width:860px){ .side-widget--qa{ display:block; } }
         .identity-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
         .identicon{ display:grid; grid-template-columns:repeat(4,9px); grid-template-rows:repeat(4,9px); gap:2px; margin-bottom:14px; padding:8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
         .identicon-cell{ border-radius:1.5px; background:transparent; }
-        .identicon-cell.is-on{ background:var(--gold-gradient); }
+        .identicon-cell.is-on{ background:var(--accent-gradient); }
         .identity-addr{ font-family:var(--font-mono); font-size:13px; color:var(--text); }
         .identity-net{ font-size:11.5px; color:var(--text-soft); margin-top:2px; }
         .identity-since{ font-size:10.5px; color:var(--text-faint); margin-top:8px; }
@@ -1023,11 +1032,11 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; }
         .qa-btn{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:10px; border:1px solid var(--line);
           background:var(--bg); color:var(--text-soft); text-decoration:none; cursor:pointer; font-size:10px; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .qa-btn:hover{ border-color:rgba(227,184,119,.35); color:var(--gold-bright); }
+        .qa-btn:hover{ border-color:rgba(0,255,198,.35); color:var(--accent-bright); }
 
         .mini-entry{ display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
         .mini-entry:first-of-type{ border-top:none; padding-top:16px; }
-        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-gradient); margin-top:5px; flex:none; }
+        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-gradient); margin-top:5px; flex:none; }
         .mini-entry-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .mini-entry-event{ font-size:12.5px; color:var(--text); }
         .mini-entry-meta{ font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
@@ -1036,7 +1045,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
         .section-title{ font-family:var(--font-display); font-size:17px; font-weight:600; }
         .section-link{ font-size:12.5px; color:var(--text-soft); text-decoration:none; display:flex; align-items:center; gap:5px; }
-        .section-link:hover{ color:var(--gold-bright); }
+        .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
         /* LEDGER — stamped entries, not a card grid */
@@ -1045,20 +1054,20 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
         .seal{ position:relative; flex:none; border-radius:50%;
           background:repeating-conic-gradient(rgba(255,255,255,.4) 0deg 1.6deg, rgba(0,0,0,.35) 1.6deg 3.2deg); }
         .seal-core{ position:absolute; inset:4px; border-radius:50%;
-          background:radial-gradient(circle at 32% 28%, #fbe6bf 0%, #e3b877 46%, #a97b3b 100%);
+          background:radial-gradient(circle at 32% 28%, #C9FFF2 0%, #4A607A 52%, #22303F 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.25); }
         .ledger-body{ flex:1; min-width:0; }
         .ledger-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px; }
         .ledger-event{ font-family:var(--font-display); font-size:15px; font-weight:600; }
-        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--gold-bright); flex:none; }
+        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--accent-bright); flex:none; }
         .ledger-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--text-faint); }
         .ledger-chain-path{ display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
         .ledger-chain-path b{ color:var(--text-soft); font-weight:500; }
         .ledger-proof{ font-family:var(--font-mono); color:var(--text-soft); }
         .ledger-dot{ width:2px; height:2px; border-radius:50%; background:var(--text-faint); }
         .ledger-view{ flex:none; font-size:12px; color:var(--text-soft); background:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .ledger-view:hover{ border-color:rgba(227,184,119,.4); color:var(--gold-bright); }
+        .ledger-view:hover{ border-color:rgba(0,255,198,.40); color:var(--accent-bright); }
 
         @media (max-width:700px){
           .content{ padding:32px 20px 60px; }
@@ -1132,7 +1141,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
                 <div className="credit-sheen" />
                 <div className="credit-status-row">
                   <span className="credit-status-label">Credit state</span>
-                  <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--gold-bright)" /> Verified</span>
+                  <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
                 <div className="credit-status-word">Building</div>
                 <div className="credit-highlight">
@@ -1205,7 +1214,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
                 <div className="identity-since">Connected since Jul 2026</div>
               </div>
 
-              <div className="side-widget">
+              <div className="side-widget side-widget--qa">
                 <div className="widget-title">Quick actions</div>
                 <div className="quick-actions">
                   <a className="qa-btn" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}><EventsIcon /><span>Events</span></a>
@@ -1243,9 +1252,10 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .sidebar, .main{ position:relative; z-index:1; }
         @media (max-width:860px){ .app-root{ display:block; } }
@@ -1268,7 +1278,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
           transition:background .15s var(--ease-out), color .15s var(--ease-out); }
-        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--gold-bright); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
 
         .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
           color:var(--text-faint); padding:0 12px 8px; }
@@ -1279,7 +1289,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
           padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
-        .sb-link.is-active{ background:rgba(227,184,119,.10); border-color:rgba(227,184,119,.22); color:var(--gold-bright); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
         .sidebar.is-collapsed .sb-link{ justify-content:center; }
 
@@ -1293,7 +1303,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
         .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
-        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-bright); flex:none; }
+        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
         .sb-wallet-net{ font-size:10.5px; color:var(--text-faint); }
 
@@ -1304,7 +1314,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
         .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
 
-        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
 
         .dash-grid{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:start; }
@@ -1314,19 +1324,19 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
-        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--gold-gradient); opacity:.5; z-index:1; }
+        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
-          background:radial-gradient(circle, rgba(227,184,119,.14), transparent 70%); pointer-events:none; }
+          background:radial-gradient(circle, rgba(74,96,122,.20), transparent 70%); pointer-events:none; }
         .credit-sheen{ position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,.04) 0%, transparent 30%); pointer-events:none; }
         .credit-status-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
         .credit-status-label{ font-size:12px; color:var(--text-soft); }
-        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gold-bright); font-family:var(--font-mono); }
+        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--accent-bright); font-family:var(--font-mono); }
         .credit-status-word{ position:relative; font-family:var(--font-display); font-size:clamp(30px,3.4vw,40px); font-weight:700; line-height:1; margin-bottom:22px; }
         .credit-highlight{ position:relative; display:flex; align-items:baseline; justify-content:space-between;
-          background:linear-gradient(120deg, rgba(227,184,119,.16), rgba(227,184,119,.05));
-          border:1px solid rgba(227,184,119,.25); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+          background:linear-gradient(120deg, rgba(0,255,198,.14), rgba(0,255,198,.04));
+          border:1px solid rgba(0,255,198,.28); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
         .credit-highlight-k{ font-size:12.5px; color:var(--text-soft); }
-        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-bright); }
+        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--accent-bright); }
         .credit-basis{ position:relative; font-size:13.5px; color:var(--text-soft); margin-bottom:22px; }
         .credit-derivation{ position:relative; font-size:12px; color:var(--text-faint); padding-top:20px; border-top:1px solid var(--line); line-height:1.6; }
 
@@ -1338,7 +1348,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .widget-sub{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:90px; margin-top:20px; }
         .chart-bar-wrap{ flex:1; display:flex; align-items:flex-end; height:100%; }
-        .chart-bar{ width:100%; background:var(--gold-gradient); border-radius:4px 4px 1px 1px; }
+        .chart-bar{ width:100%; background:var(--accent-gradient); border-radius:4px 4px 1px 1px; }
         .chart-bar.is-empty{ background:var(--line); }
         .chart-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.03em; }
         .widget--gauge{ display:flex; flex-direction:column; }
@@ -1346,10 +1356,14 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
+        /* Quick actions live in the sidebar on desktop — show this card only
+           where the sidebar is hidden (small screens), as a fallback nav. */
+        .side-widget--qa{ display:none; }
+        @media (max-width:860px){ .side-widget--qa{ display:block; } }
         .identity-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
         .identicon{ display:grid; grid-template-columns:repeat(4,9px); grid-template-rows:repeat(4,9px); gap:2px; margin-bottom:14px; padding:8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
         .identicon-cell{ border-radius:1.5px; background:transparent; }
-        .identicon-cell.is-on{ background:var(--gold-gradient); }
+        .identicon-cell.is-on{ background:var(--accent-gradient); }
         .identity-addr{ font-family:var(--font-mono); font-size:13px; color:var(--text); }
         .identity-net{ font-size:11.5px; color:var(--text-soft); margin-top:2px; }
         .identity-since{ font-size:10.5px; color:var(--text-faint); margin-top:8px; }
@@ -1357,11 +1371,11 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; }
         .qa-btn{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:10px; border:1px solid var(--line);
           background:var(--bg); color:var(--text-soft); text-decoration:none; cursor:pointer; font-size:10px; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .qa-btn:hover{ border-color:rgba(227,184,119,.35); color:var(--gold-bright); }
+        .qa-btn:hover{ border-color:rgba(0,255,198,.35); color:var(--accent-bright); }
 
         .mini-entry{ display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
         .mini-entry:first-of-type{ border-top:none; padding-top:16px; }
-        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-gradient); margin-top:5px; flex:none; }
+        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-gradient); margin-top:5px; flex:none; }
         .mini-entry-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .mini-entry-event{ font-size:12.5px; color:var(--text); }
         .mini-entry-meta{ font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
@@ -1374,7 +1388,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .factor-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .factor-k{ font-size:13.5px; color:var(--text); }
         .factor-note{ font-size:11.5px; color:var(--text-faint); }
-        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--gold-bright); font-weight:600; flex:none; }
+        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--accent-bright); font-weight:600; flex:none; }
 
         /* WHY-THIS-STATE (expandable, not hidden by default) */
         .why-panel{ border:1px solid var(--line); border-radius:14px; background:var(--bg-elevated); overflow:hidden; }
@@ -1388,14 +1402,14 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .history-strip{ position:relative; height:70px; margin-top:20px; }
         .history-line{ position:absolute; top:8px; left:2%; right:2%; height:1px; background:var(--line); }
         .history-point{ position:absolute; top:0; display:flex; flex-direction:column; align-items:center; gap:10px; transform:translateX(-50%); }
-        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--gold-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
+        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
         .history-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
 
         /* SECTION HEAD */
         .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
         .section-title{ font-family:var(--font-display); font-size:17px; font-weight:600; }
         .section-link{ font-size:12.5px; color:var(--text-soft); text-decoration:none; display:flex; align-items:center; gap:5px; }
-        .section-link:hover{ color:var(--gold-bright); }
+        .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
         /* LEDGER — stamped entries, not a card grid */
@@ -1404,20 +1418,20 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
         .seal{ position:relative; flex:none; border-radius:50%;
           background:repeating-conic-gradient(rgba(255,255,255,.4) 0deg 1.6deg, rgba(0,0,0,.35) 1.6deg 3.2deg); }
         .seal-core{ position:absolute; inset:4px; border-radius:50%;
-          background:radial-gradient(circle at 32% 28%, #fbe6bf 0%, #e3b877 46%, #a97b3b 100%);
+          background:radial-gradient(circle at 32% 28%, #C9FFF2 0%, #4A607A 52%, #22303F 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.25); }
         .ledger-body{ flex:1; min-width:0; }
         .ledger-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px; }
         .ledger-event{ font-family:var(--font-display); font-size:15px; font-weight:600; }
-        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--gold-bright); flex:none; }
+        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--accent-bright); flex:none; }
         .ledger-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--text-faint); }
         .ledger-chain-path{ display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
         .ledger-chain-path b{ color:var(--text-soft); font-weight:500; }
         .ledger-proof{ font-family:var(--font-mono); color:var(--text-soft); }
         .ledger-dot{ width:2px; height:2px; border-radius:50%; background:var(--text-faint); }
         .ledger-view{ flex:none; font-size:12px; color:var(--text-soft); background:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .ledger-view:hover{ border-color:rgba(227,184,119,.4); color:var(--gold-bright); }
+        .ledger-view:hover{ border-color:rgba(0,255,198,.40); color:var(--accent-bright); }
 
         @media (max-width:700px){
           .content{ padding:32px 20px 60px; }
@@ -1491,7 +1505,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 <div className="credit-sheen" />
                 <div className="credit-status-row">
                   <span className="credit-status-label">Credit state</span>
-                  <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--gold-bright)" /> Verified</span>
+                  <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
                 <div className="credit-status-word">Building</div>
                 <div className="credit-highlight">
@@ -1588,7 +1602,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 <div className="identity-since">Connected since Jul 2026</div>
               </div>
 
-              <div className="side-widget">
+              <div className="side-widget side-widget--qa">
                 <div className="widget-title">Quick actions</div>
                 <div className="quick-actions">
                   <a className="qa-btn" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}><EventsIcon /><span>Events</span></a>
@@ -1617,9 +1631,10 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .sidebar, .main{ position:relative; z-index:1; }
         @media (max-width:860px){ .app-root{ display:block; } }
@@ -1642,7 +1657,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
           transition:background .15s var(--ease-out), color .15s var(--ease-out); }
-        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--gold-bright); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
 
         .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
           color:var(--text-faint); padding:0 12px 8px; }
@@ -1653,7 +1668,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
           padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
-        .sb-link.is-active{ background:rgba(227,184,119,.10); border-color:rgba(227,184,119,.22); color:var(--gold-bright); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
         .sidebar.is-collapsed .sb-link{ justify-content:center; }
 
@@ -1667,7 +1682,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
         .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
-        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-bright); flex:none; }
+        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
         .sb-wallet-net{ font-size:10.5px; color:var(--text-faint); }
 
@@ -1678,7 +1693,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
         .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
 
-        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
 
         .dash-grid{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:start; }
@@ -1688,19 +1703,19 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
-        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--gold-gradient); opacity:.5; z-index:1; }
+        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
-          background:radial-gradient(circle, rgba(227,184,119,.14), transparent 70%); pointer-events:none; }
+          background:radial-gradient(circle, rgba(74,96,122,.20), transparent 70%); pointer-events:none; }
         .credit-sheen{ position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,.04) 0%, transparent 30%); pointer-events:none; }
         .credit-status-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
         .credit-status-label{ font-size:12px; color:var(--text-soft); }
-        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gold-bright); font-family:var(--font-mono); }
+        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--accent-bright); font-family:var(--font-mono); }
         .credit-status-word{ position:relative; font-family:var(--font-display); font-size:clamp(30px,3.4vw,40px); font-weight:700; line-height:1; margin-bottom:22px; }
         .credit-highlight{ position:relative; display:flex; align-items:baseline; justify-content:space-between;
-          background:linear-gradient(120deg, rgba(227,184,119,.16), rgba(227,184,119,.05));
-          border:1px solid rgba(227,184,119,.25); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+          background:linear-gradient(120deg, rgba(0,255,198,.14), rgba(0,255,198,.04));
+          border:1px solid rgba(0,255,198,.28); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
         .credit-highlight-k{ font-size:12.5px; color:var(--text-soft); }
-        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-bright); }
+        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--accent-bright); }
         .credit-basis{ position:relative; font-size:13.5px; color:var(--text-soft); margin-bottom:22px; }
         .credit-derivation{ position:relative; font-size:12px; color:var(--text-faint); padding-top:20px; border-top:1px solid var(--line); line-height:1.6; }
 
@@ -1712,7 +1727,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .widget-sub{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:90px; margin-top:20px; }
         .chart-bar-wrap{ flex:1; display:flex; align-items:flex-end; height:100%; }
-        .chart-bar{ width:100%; background:var(--gold-gradient); border-radius:4px 4px 1px 1px; }
+        .chart-bar{ width:100%; background:var(--accent-gradient); border-radius:4px 4px 1px 1px; }
         .chart-bar.is-empty{ background:var(--line); }
         .chart-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.03em; }
         .widget--gauge{ display:flex; flex-direction:column; }
@@ -1720,10 +1735,14 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
+        /* Quick actions live in the sidebar on desktop — show this card only
+           where the sidebar is hidden (small screens), as a fallback nav. */
+        .side-widget--qa{ display:none; }
+        @media (max-width:860px){ .side-widget--qa{ display:block; } }
         .identity-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
         .identicon{ display:grid; grid-template-columns:repeat(4,9px); grid-template-rows:repeat(4,9px); gap:2px; margin-bottom:14px; padding:8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
         .identicon-cell{ border-radius:1.5px; background:transparent; }
-        .identicon-cell.is-on{ background:var(--gold-gradient); }
+        .identicon-cell.is-on{ background:var(--accent-gradient); }
         .identity-addr{ font-family:var(--font-mono); font-size:13px; color:var(--text); }
         .identity-net{ font-size:11.5px; color:var(--text-soft); margin-top:2px; }
         .identity-since{ font-size:10.5px; color:var(--text-faint); margin-top:8px; }
@@ -1731,11 +1750,11 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; }
         .qa-btn{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:10px; border:1px solid var(--line);
           background:var(--bg); color:var(--text-soft); text-decoration:none; cursor:pointer; font-size:10px; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .qa-btn:hover{ border-color:rgba(227,184,119,.35); color:var(--gold-bright); }
+        .qa-btn:hover{ border-color:rgba(0,255,198,.35); color:var(--accent-bright); }
 
         .mini-entry{ display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
         .mini-entry:first-of-type{ border-top:none; padding-top:16px; }
-        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-gradient); margin-top:5px; flex:none; }
+        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-gradient); margin-top:5px; flex:none; }
         .mini-entry-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .mini-entry-event{ font-size:12.5px; color:var(--text); }
         .mini-entry-meta{ font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
@@ -1748,7 +1767,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .factor-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .factor-k{ font-size:13.5px; color:var(--text); }
         .factor-note{ font-size:11.5px; color:var(--text-faint); }
-        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--gold-bright); font-weight:600; flex:none; }
+        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--accent-bright); font-weight:600; flex:none; }
 
         /* WHY-THIS-STATE (expandable, not hidden by default) */
         .why-panel{ border:1px solid var(--line); border-radius:14px; background:var(--bg-elevated); overflow:hidden; }
@@ -1762,7 +1781,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .history-strip{ position:relative; height:70px; margin-top:20px; }
         .history-line{ position:absolute; top:8px; left:2%; right:2%; height:1px; background:var(--line); }
         .history-point{ position:absolute; top:0; display:flex; flex-direction:column; align-items:center; gap:10px; transform:translateX(-50%); }
-        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--gold-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
+        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
         .history-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
 
         /* EVENTS TOOLBAR */
@@ -1775,7 +1794,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .filter-chip{ font-size:12.5px; color:var(--text-soft); background:var(--bg-elevated); border:1px solid var(--line);
           border-radius:100px; padding:8px 15px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
         .filter-chip:hover{ color:var(--text); }
-        .filter-chip.is-active{ color:var(--gold-bright); border-color:rgba(227,184,119,.3); background:rgba(227,184,119,.08); }
+        .filter-chip.is-active{ color:var(--accent-bright); border-color:rgba(0,255,198,.32); background:rgba(0,255,198,.08); }
 
         .ledger--full{ margin-top:0; }
 
@@ -1795,7 +1814,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
         .section-title{ font-family:var(--font-display); font-size:17px; font-weight:600; }
         .section-link{ font-size:12.5px; color:var(--text-soft); text-decoration:none; display:flex; align-items:center; gap:5px; }
-        .section-link:hover{ color:var(--gold-bright); }
+        .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
         /* LEDGER — stamped entries, not a card grid */
@@ -1804,20 +1823,20 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
         .seal{ position:relative; flex:none; border-radius:50%;
           background:repeating-conic-gradient(rgba(255,255,255,.4) 0deg 1.6deg, rgba(0,0,0,.35) 1.6deg 3.2deg); }
         .seal-core{ position:absolute; inset:4px; border-radius:50%;
-          background:radial-gradient(circle at 32% 28%, #fbe6bf 0%, #e3b877 46%, #a97b3b 100%);
+          background:radial-gradient(circle at 32% 28%, #C9FFF2 0%, #4A607A 52%, #22303F 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.25); }
         .ledger-body{ flex:1; min-width:0; }
         .ledger-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px; }
         .ledger-event{ font-family:var(--font-display); font-size:15px; font-weight:600; }
-        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--gold-bright); flex:none; }
+        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--accent-bright); flex:none; }
         .ledger-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--text-faint); }
         .ledger-chain-path{ display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
         .ledger-chain-path b{ color:var(--text-soft); font-weight:500; }
         .ledger-proof{ font-family:var(--font-mono); color:var(--text-soft); }
         .ledger-dot{ width:2px; height:2px; border-radius:50%; background:var(--text-faint); }
         .ledger-view{ flex:none; font-size:12px; color:var(--text-soft); background:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .ledger-view:hover{ border-color:rgba(227,184,119,.4); color:var(--gold-bright); }
+        .ledger-view:hover{ border-color:rgba(0,255,198,.40); color:var(--accent-bright); }
 
         @media (max-width:700px){
           .content{ padding:32px 20px 60px; }
@@ -1934,11 +1953,11 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
               <div className="side-widget">
                 <div className="widget-title">Event summary</div>
                 <div className="summary-row"><span>Total events</span><span className="summary-v">{ENTRIES.length}</span></div>
-                <div className="summary-row"><span>Verified</span><span className="summary-v" style={{ color: "var(--gold-bright)" }}>{ENTRIES.filter((e) => e.status === "verified").length}</span></div>
+                <div className="summary-row"><span>Verified</span><span className="summary-v" style={{ color: "var(--accent-bright)" }}>{ENTRIES.filter((e) => e.status === "verified").length}</span></div>
                 <div className="summary-row"><span>Pending attestation</span><span className="summary-v">{ENTRIES.filter((e) => e.status === "pending").length}</span></div>
               </div>
 
-              <div className="side-widget">
+              <div className="side-widget side-widget--qa">
                 <div className="widget-title">Quick actions</div>
                 <div className="quick-actions">
                   <a className="qa-btn" href="#overview" onClick={(e) => { e.preventDefault(); navigate("overview"); }}><OverviewIcon /><span>Overview</span></a>
@@ -1962,9 +1981,10 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .sidebar, .main{ position:relative; z-index:1; }
         @media (max-width:860px){ .app-root{ display:block; } }
@@ -1987,7 +2007,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
           transition:background .15s var(--ease-out), color .15s var(--ease-out); }
-        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--gold-bright); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
 
         .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
           color:var(--text-faint); padding:0 12px 8px; }
@@ -1998,7 +2018,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
           padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
-        .sb-link.is-active{ background:rgba(227,184,119,.10); border-color:rgba(227,184,119,.22); color:var(--gold-bright); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
         .sidebar.is-collapsed .sb-link{ justify-content:center; }
 
@@ -2012,7 +2032,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
         .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
-        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-bright); flex:none; }
+        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
         .sb-wallet-net{ font-size:10.5px; color:var(--text-faint); }
 
@@ -2023,7 +2043,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
         .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
 
-        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
 
         .dash-grid{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:start; }
@@ -2033,19 +2053,19 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
-        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--gold-gradient); opacity:.5; z-index:1; }
+        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
-          background:radial-gradient(circle, rgba(227,184,119,.14), transparent 70%); pointer-events:none; }
+          background:radial-gradient(circle, rgba(74,96,122,.20), transparent 70%); pointer-events:none; }
         .credit-sheen{ position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,.04) 0%, transparent 30%); pointer-events:none; }
         .credit-status-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
         .credit-status-label{ font-size:12px; color:var(--text-soft); }
-        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gold-bright); font-family:var(--font-mono); }
+        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--accent-bright); font-family:var(--font-mono); }
         .credit-status-word{ position:relative; font-family:var(--font-display); font-size:clamp(30px,3.4vw,40px); font-weight:700; line-height:1; margin-bottom:22px; }
         .credit-highlight{ position:relative; display:flex; align-items:baseline; justify-content:space-between;
-          background:linear-gradient(120deg, rgba(227,184,119,.16), rgba(227,184,119,.05));
-          border:1px solid rgba(227,184,119,.25); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+          background:linear-gradient(120deg, rgba(0,255,198,.14), rgba(0,255,198,.04));
+          border:1px solid rgba(0,255,198,.28); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
         .credit-highlight-k{ font-size:12.5px; color:var(--text-soft); }
-        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-bright); }
+        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--accent-bright); }
         .credit-basis{ position:relative; font-size:13.5px; color:var(--text-soft); margin-bottom:22px; }
         .credit-derivation{ position:relative; font-size:12px; color:var(--text-faint); padding-top:20px; border-top:1px solid var(--line); line-height:1.6; }
 
@@ -2057,7 +2077,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .widget-sub{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:90px; margin-top:20px; }
         .chart-bar-wrap{ flex:1; display:flex; align-items:flex-end; height:100%; }
-        .chart-bar{ width:100%; background:var(--gold-gradient); border-radius:4px 4px 1px 1px; }
+        .chart-bar{ width:100%; background:var(--accent-gradient); border-radius:4px 4px 1px 1px; }
         .chart-bar.is-empty{ background:var(--line); }
         .chart-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.03em; }
         .widget--gauge{ display:flex; flex-direction:column; }
@@ -2065,10 +2085,14 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
+        /* Quick actions live in the sidebar on desktop — show this card only
+           where the sidebar is hidden (small screens), as a fallback nav. */
+        .side-widget--qa{ display:none; }
+        @media (max-width:860px){ .side-widget--qa{ display:block; } }
         .identity-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
         .identicon{ display:grid; grid-template-columns:repeat(4,9px); grid-template-rows:repeat(4,9px); gap:2px; margin-bottom:14px; padding:8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
         .identicon-cell{ border-radius:1.5px; background:transparent; }
-        .identicon-cell.is-on{ background:var(--gold-gradient); }
+        .identicon-cell.is-on{ background:var(--accent-gradient); }
         .identity-addr{ font-family:var(--font-mono); font-size:13px; color:var(--text); }
         .identity-net{ font-size:11.5px; color:var(--text-soft); margin-top:2px; }
         .identity-since{ font-size:10.5px; color:var(--text-faint); margin-top:8px; }
@@ -2076,11 +2100,11 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; }
         .qa-btn{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:10px; border:1px solid var(--line);
           background:var(--bg); color:var(--text-soft); text-decoration:none; cursor:pointer; font-size:10px; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .qa-btn:hover{ border-color:rgba(227,184,119,.35); color:var(--gold-bright); }
+        .qa-btn:hover{ border-color:rgba(0,255,198,.35); color:var(--accent-bright); }
 
         .mini-entry{ display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
         .mini-entry:first-of-type{ border-top:none; padding-top:16px; }
-        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-gradient); margin-top:5px; flex:none; }
+        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-gradient); margin-top:5px; flex:none; }
         .mini-entry-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .mini-entry-event{ font-size:12.5px; color:var(--text); }
         .mini-entry-meta{ font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
@@ -2093,7 +2117,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .factor-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .factor-k{ font-size:13.5px; color:var(--text); }
         .factor-note{ font-size:11.5px; color:var(--text-faint); }
-        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--gold-bright); font-weight:600; flex:none; }
+        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--accent-bright); font-weight:600; flex:none; }
 
         /* WHY-THIS-STATE (expandable, not hidden by default) */
         .why-panel{ border:1px solid var(--line); border-radius:14px; background:var(--bg-elevated); overflow:hidden; }
@@ -2107,7 +2131,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .history-strip{ position:relative; height:70px; margin-top:20px; }
         .history-line{ position:absolute; top:8px; left:2%; right:2%; height:1px; background:var(--line); }
         .history-point{ position:absolute; top:0; display:flex; flex-direction:column; align-items:center; gap:10px; transform:translateX(-50%); }
-        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--gold-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
+        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
         .history-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
 
         /* EVENTS TOOLBAR */
@@ -2120,7 +2144,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .filter-chip{ font-size:12.5px; color:var(--text-soft); background:var(--bg-elevated); border:1px solid var(--line);
           border-radius:100px; padding:8px 15px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
         .filter-chip:hover{ color:var(--text); }
-        .filter-chip.is-active{ color:var(--gold-bright); border-color:rgba(227,184,119,.3); background:rgba(227,184,119,.08); }
+        .filter-chip.is-active{ color:var(--accent-bright); border-color:rgba(0,255,198,.32); background:rgba(0,255,198,.08); }
 
         .ledger--full{ margin-top:0; }
 
@@ -2140,38 +2164,38 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .back-link{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text-soft); text-decoration:none; margin-bottom:22px; }
         .back-link:hover{ color:var(--text); }
         .detail-head{ margin-bottom:28px; }
-        .detail-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-family:var(--font-mono); color:var(--gold-bright); }
+        .detail-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-family:var(--font-mono); color:var(--accent-bright); }
 
         .proof-chain{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; border:1px solid var(--line); border-radius:14px;
           padding:20px 22px; background:var(--bg-elevated); margin-bottom:24px; }
         .proof-node{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft);
           border:1px solid var(--line); border-radius:9px; padding:9px 13px; }
-        .proof-node.is-done{ background:var(--gold-gradient); color:var(--bg); border-color:transparent; font-weight:600; }
+        .proof-node.is-done{ background:var(--accent-gradient); color:var(--bg); border-color:transparent; font-weight:600; }
         .proof-arrow{ color:var(--text-faint); font-size:13px; }
 
         .detail-panel{ border:1px solid var(--line); border-radius:14px; padding:20px 24px; background:var(--bg-elevated); margin-bottom:16px; }
-        .detail-panel-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:14px; }
+        .detail-panel-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:14px; }
         .detail-row{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-top:1px solid var(--line); font-size:13px; gap:16px; }
         .detail-row:first-of-type{ border-top:none; padding-top:0; }
         .detail-k{ color:var(--text-soft); flex:none; }
         .detail-v{ font-family:var(--font-mono); color:var(--text); text-align:right; }
-        .detail-v--ok{ color:var(--gold-bright); display:inline-flex; align-items:center; gap:6px; }
-        .detail-link{ display:inline-flex; align-items:center; gap:6px; color:var(--gold-bright); text-decoration:none; }
+        .detail-v--ok{ color:var(--accent-bright); display:inline-flex; align-items:center; gap:6px; }
+        .detail-link{ display:inline-flex; align-items:center; gap:6px; color:var(--accent-bright); text-decoration:none; }
         .detail-link:hover{ text-decoration:underline; }
 
         .checklist{ display:flex; flex-direction:column; gap:11px; }
         .checklist-item{ display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--text); }
 
-        .security-note{ display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(227,184,119,.22); border-radius:14px;
-          padding:18px 22px; background:rgba(227,184,119,.05); margin-top:8px; }
-        .security-note svg{ flex:none; color:var(--gold-bright); margin-top:2px; }
+        .security-note{ display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(74,96,122,.30); border-radius:14px;
+          padding:18px 22px; background:rgba(74,96,122,.07); margin-top:8px; }
+        .security-note svg{ flex:none; color:var(--accent-bright); margin-top:2px; }
         .security-note p{ font-size:12.5px; color:var(--text-soft); line-height:1.6; margin:0; }
 
         /* SECTION HEAD */
         .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
         .section-title{ font-family:var(--font-display); font-size:17px; font-weight:600; }
         .section-link{ font-size:12.5px; color:var(--text-soft); text-decoration:none; display:flex; align-items:center; gap:5px; }
-        .section-link:hover{ color:var(--gold-bright); }
+        .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
         /* LEDGER — stamped entries, not a card grid */
@@ -2180,20 +2204,20 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
         .seal{ position:relative; flex:none; border-radius:50%;
           background:repeating-conic-gradient(rgba(255,255,255,.4) 0deg 1.6deg, rgba(0,0,0,.35) 1.6deg 3.2deg); }
         .seal-core{ position:absolute; inset:4px; border-radius:50%;
-          background:radial-gradient(circle at 32% 28%, #fbe6bf 0%, #e3b877 46%, #a97b3b 100%);
+          background:radial-gradient(circle at 32% 28%, #C9FFF2 0%, #4A607A 52%, #22303F 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.25); }
         .ledger-body{ flex:1; min-width:0; }
         .ledger-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px; }
         .ledger-event{ font-family:var(--font-display); font-size:15px; font-weight:600; }
-        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--gold-bright); flex:none; }
+        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--accent-bright); flex:none; }
         .ledger-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--text-faint); }
         .ledger-chain-path{ display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
         .ledger-chain-path b{ color:var(--text-soft); font-weight:500; }
         .ledger-proof{ font-family:var(--font-mono); color:var(--text-soft); }
         .ledger-dot{ width:2px; height:2px; border-radius:50%; background:var(--text-faint); }
         .ledger-view{ flex:none; font-size:12px; color:var(--text-soft); background:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .ledger-view:hover{ border-color:rgba(227,184,119,.4); color:var(--gold-bright); }
+        .ledger-view:hover{ border-color:rgba(0,255,198,.40); color:var(--accent-bright); }
 
         @media (max-width:700px){
           .content{ padding:32px 20px 60px; }
@@ -2263,7 +2287,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
             <div>
               <span className="page-eyebrow">Loan Repayment #42</span>
               <h1 className="page-title" style={{ marginBottom: 6 }}>100 USDC</h1>
-              <span className="detail-status"><CheckGlyph size={11} color="var(--gold-bright)" /> Verified</span>
+              <span className="detail-status"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
             </div>
           </div>
 
@@ -2275,7 +2299,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
                 <span className="proof-arrow">→</span>
                 <div className="proof-node"><ShieldGlyph size={16} /><span>Attestcoin</span></div>
                 <span className="proof-arrow">→</span>
-                <div className="proof-node"><TruMark size={14} color="var(--gold-bright)" /><span>TRU</span></div>
+                <div className="proof-node"><TruMark size={14} color="var(--accent-bright)" /><span>TRU</span></div>
                 <span className="proof-arrow">→</span>
                 <div className="proof-node is-done"><CheckGlyph size={13} color="var(--bg)" /><span>Creditcoin</span></div>
               </div>
@@ -2302,7 +2326,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
                 <div className="detail-panel-title">TRU verification</div>
                 <div className="checklist">
                   {["Source contract verified", "Event verified", "Borrower verified", "Loan ID verified", "Replay protection passed"].map((c) => (
-                    <div className="checklist-item" key={c}><CheckGlyph size={13} color="var(--gold-bright)" /> {c}</div>
+                    <div className="checklist-item" key={c}><CheckGlyph size={13} color="var(--accent-bright)" /> {c}</div>
                   ))}
                 </div>
               </div>
@@ -2330,7 +2354,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
                 <div className="summary-row"><span>Time to verify</span><span className="summary-v">7 min</span></div>
               </div>
 
-              <div className="side-widget">
+              <div className="side-widget side-widget--qa">
                 <div className="widget-title">Quick actions</div>
                 <div className="quick-actions">
                   <a className="qa-btn" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}><EventsIcon /><span>Events</span></a>
@@ -2354,9 +2378,10 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
       <style>{`
         ${TOKENS}
         *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
         .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
         .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
-          background-image:radial-gradient(circle at 1px 1px, var(--gold-bright) 1px, transparent 0);
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
           background-size:5px 5px; }
         .sidebar, .main{ position:relative; z-index:1; }
         @media (max-width:860px){ .app-root{ display:block; } }
@@ -2379,7 +2404,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
           display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
           transition:background .15s var(--ease-out), color .15s var(--ease-out); }
-        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--gold-bright); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
 
         .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
           color:var(--text-faint); padding:0 12px 8px; }
@@ -2390,7 +2415,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
           padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
           border:1px solid transparent; }
         .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
-        .sb-link.is-active{ background:rgba(227,184,119,.10); border-color:rgba(227,184,119,.22); color:var(--gold-bright); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
         .sb-link svg{ flex:none; }
         .sidebar.is-collapsed .sb-link{ justify-content:center; }
 
@@ -2404,7 +2429,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .sb-wallet{ display:flex; align-items:center; gap:10px; padding:10px 12px; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
         .sidebar.is-collapsed .sb-wallet{ justify-content:center; padding:10px; }
         .sidebar.is-collapsed .sb-wallet-text{ display:none; }
-        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-bright); flex:none; }
+        .sb-wallet-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-bright); flex:none; }
         .sb-wallet-addr{ font-family:var(--font-mono); font-size:12px; color:var(--text); }
         .sb-wallet-net{ font-size:10.5px; color:var(--text-faint); }
 
@@ -2415,7 +2440,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
         .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
 
-        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
 
         .dash-grid{ display:grid; grid-template-columns:1fr 300px; gap:28px; align-items:start; }
@@ -2425,19 +2450,19 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         /* CREDIT STATE — a glass ledger object with real depth, not a flat box */
         .credit-panel{ position:relative; border:1px solid var(--line); border-radius:16px; padding:32px 36px; background:var(--bg-elevated); overflow:hidden; }
-        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--gold-gradient); opacity:.5; z-index:1; }
+        .credit-panel::before{ content:""; position:absolute; top:0; left:36px; right:36px; height:1px; background:var(--accent-gradient); opacity:.5; z-index:1; }
         .credit-glow{ position:absolute; top:-60%; right:-20%; width:340px; height:340px; border-radius:50%;
-          background:radial-gradient(circle, rgba(227,184,119,.14), transparent 70%); pointer-events:none; }
+          background:radial-gradient(circle, rgba(74,96,122,.20), transparent 70%); pointer-events:none; }
         .credit-sheen{ position:absolute; inset:0; background:linear-gradient(120deg, rgba(255,255,255,.04) 0%, transparent 30%); pointer-events:none; }
         .credit-status-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
         .credit-status-label{ font-size:12px; color:var(--text-soft); }
-        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--gold-bright); font-family:var(--font-mono); }
+        .credit-verify-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--accent-bright); font-family:var(--font-mono); }
         .credit-status-word{ position:relative; font-family:var(--font-display); font-size:clamp(30px,3.4vw,40px); font-weight:700; line-height:1; margin-bottom:22px; }
         .credit-highlight{ position:relative; display:flex; align-items:baseline; justify-content:space-between;
-          background:linear-gradient(120deg, rgba(227,184,119,.16), rgba(227,184,119,.05));
-          border:1px solid rgba(227,184,119,.25); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+          background:linear-gradient(120deg, rgba(0,255,198,.14), rgba(0,255,198,.04));
+          border:1px solid rgba(0,255,198,.28); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
         .credit-highlight-k{ font-size:12.5px; color:var(--text-soft); }
-        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-bright); }
+        .credit-highlight-v{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--accent-bright); }
         .credit-basis{ position:relative; font-size:13.5px; color:var(--text-soft); margin-bottom:22px; }
         .credit-derivation{ position:relative; font-size:12px; color:var(--text-faint); padding-top:20px; border-top:1px solid var(--line); line-height:1.6; }
 
@@ -2449,7 +2474,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .widget-sub{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .chart-bars{ display:flex; align-items:flex-end; gap:10px; height:90px; margin-top:20px; }
         .chart-bar-wrap{ flex:1; display:flex; align-items:flex-end; height:100%; }
-        .chart-bar{ width:100%; background:var(--gold-gradient); border-radius:4px 4px 1px 1px; }
+        .chart-bar{ width:100%; background:var(--accent-gradient); border-radius:4px 4px 1px 1px; }
         .chart-bar.is-empty{ background:var(--line); }
         .chart-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.03em; }
         .widget--gauge{ display:flex; flex-direction:column; }
@@ -2457,10 +2482,14 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         /* SIDEBAR WIDGETS */
         .side-widget{ border:1px solid var(--line); border-radius:14px; padding:20px 22px; background:var(--bg-elevated); }
+        /* Quick actions live in the sidebar on desktop — show this card only
+           where the sidebar is hidden (small screens), as a fallback nav. */
+        .side-widget--qa{ display:none; }
+        @media (max-width:860px){ .side-widget--qa{ display:block; } }
         .identity-widget{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
         .identicon{ display:grid; grid-template-columns:repeat(4,9px); grid-template-rows:repeat(4,9px); gap:2px; margin-bottom:14px; padding:8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
         .identicon-cell{ border-radius:1.5px; background:transparent; }
-        .identicon-cell.is-on{ background:var(--gold-gradient); }
+        .identicon-cell.is-on{ background:var(--accent-gradient); }
         .identity-addr{ font-family:var(--font-mono); font-size:13px; color:var(--text); }
         .identity-net{ font-size:11.5px; color:var(--text-soft); margin-top:2px; }
         .identity-since{ font-size:10.5px; color:var(--text-faint); margin-top:8px; }
@@ -2468,11 +2497,11 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; }
         .qa-btn{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:10px; border:1px solid var(--line);
           background:var(--bg); color:var(--text-soft); text-decoration:none; cursor:pointer; font-size:10px; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .qa-btn:hover{ border-color:rgba(227,184,119,.35); color:var(--gold-bright); }
+        .qa-btn:hover{ border-color:rgba(0,255,198,.35); color:var(--accent-bright); }
 
         .mini-entry{ display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
         .mini-entry:first-of-type{ border-top:none; padding-top:16px; }
-        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold-gradient); margin-top:5px; flex:none; }
+        .mini-entry-dot{ width:7px; height:7px; border-radius:50%; background:var(--accent-gradient); margin-top:5px; flex:none; }
         .mini-entry-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .mini-entry-event{ font-size:12.5px; color:var(--text); }
         .mini-entry-meta{ font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
@@ -2485,7 +2514,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .factor-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
         .factor-k{ font-size:13.5px; color:var(--text); }
         .factor-note{ font-size:11.5px; color:var(--text-faint); }
-        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--gold-bright); font-weight:600; flex:none; }
+        .factor-v{ font-family:var(--font-mono); font-size:15px; color:var(--accent-bright); font-weight:600; flex:none; }
 
         /* WHY-THIS-STATE (expandable, not hidden by default) */
         .why-panel{ border:1px solid var(--line); border-radius:14px; background:var(--bg-elevated); overflow:hidden; }
@@ -2499,7 +2528,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .history-strip{ position:relative; height:70px; margin-top:20px; }
         .history-line{ position:absolute; top:8px; left:2%; right:2%; height:1px; background:var(--line); }
         .history-point{ position:absolute; top:0; display:flex; flex-direction:column; align-items:center; gap:10px; transform:translateX(-50%); }
-        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--gold-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
+        .history-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-gradient); box-shadow:0 0 0 3px var(--bg-elevated); }
         .history-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
 
         /* EVENTS TOOLBAR */
@@ -2512,7 +2541,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .filter-chip{ font-size:12.5px; color:var(--text-soft); background:var(--bg-elevated); border:1px solid var(--line);
           border-radius:100px; padding:8px 15px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
         .filter-chip:hover{ color:var(--text); }
-        .filter-chip.is-active{ color:var(--gold-bright); border-color:rgba(227,184,119,.3); background:rgba(227,184,119,.08); }
+        .filter-chip.is-active{ color:var(--accent-bright); border-color:rgba(0,255,198,.32); background:rgba(0,255,198,.08); }
 
         .ledger--full{ margin-top:0; }
 
@@ -2532,46 +2561,46 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .back-link{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text-soft); text-decoration:none; margin-bottom:22px; }
         .back-link:hover{ color:var(--text); }
         .detail-head{ margin-bottom:28px; }
-        .detail-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-family:var(--font-mono); color:var(--gold-bright); }
+        .detail-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-family:var(--font-mono); color:var(--accent-bright); }
 
         .proof-chain{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; border:1px solid var(--line); border-radius:14px;
           padding:20px 22px; background:var(--bg-elevated); margin-bottom:24px; }
         .proof-node{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft);
           border:1px solid var(--line); border-radius:9px; padding:9px 13px; }
-        .proof-node.is-done{ background:var(--gold-gradient); color:var(--bg); border-color:transparent; font-weight:600; }
+        .proof-node.is-done{ background:var(--accent-gradient); color:var(--bg); border-color:transparent; font-weight:600; }
         .proof-arrow{ color:var(--text-faint); font-size:13px; }
 
         .detail-panel{ border:1px solid var(--line); border-radius:14px; padding:20px 24px; background:var(--bg-elevated); margin-bottom:16px; }
-        .detail-panel-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:14px; }
+        .detail-panel-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:14px; }
         .detail-row{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-top:1px solid var(--line); font-size:13px; gap:16px; }
         .detail-row:first-of-type{ border-top:none; padding-top:0; }
         .detail-k{ color:var(--text-soft); flex:none; }
         .detail-v{ font-family:var(--font-mono); color:var(--text); text-align:right; }
-        .detail-v--ok{ color:var(--gold-bright); display:inline-flex; align-items:center; gap:6px; }
-        .detail-link{ display:inline-flex; align-items:center; gap:6px; color:var(--gold-bright); text-decoration:none; }
+        .detail-v--ok{ color:var(--accent-bright); display:inline-flex; align-items:center; gap:6px; }
+        .detail-link{ display:inline-flex; align-items:center; gap:6px; color:var(--accent-bright); text-decoration:none; }
         .detail-link:hover{ text-decoration:underline; }
 
         .checklist{ display:flex; flex-direction:column; gap:11px; }
         .checklist-item{ display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--text); }
 
-        .security-note{ display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(227,184,119,.22); border-radius:14px;
-          padding:18px 22px; background:rgba(227,184,119,.05); margin-top:8px; }
-        .security-note svg{ flex:none; color:var(--gold-bright); margin-top:2px; }
+        .security-note{ display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(74,96,122,.30); border-radius:14px;
+          padding:18px 22px; background:rgba(74,96,122,.07); margin-top:8px; }
+        .security-note svg{ flex:none; color:var(--accent-bright); margin-top:2px; }
         .security-note p{ font-size:12.5px; color:var(--text-soft); line-height:1.6; margin:0; }
 
         /* PROTOCOL */
         .protocol-lede{ font-size:14.5px; color:var(--text-soft); line-height:1.6; max-width:64ch; margin:0 0 24px; }
         .arch-stack{ display:flex; flex-direction:column; align-items:stretch; gap:0; }
         .arch-block{ display:flex; align-items:center; gap:14px; border:1px solid var(--line); border-radius:11px; padding:14px 18px; background:var(--bg); }
-        .arch-block svg{ flex:none; color:var(--gold-bright); }
-        .arch-block.is-done{ background:var(--gold-gradient); border-color:transparent; }
+        .arch-block svg{ flex:none; color:var(--accent-bright); }
+        .arch-block.is-done{ background:var(--accent-gradient); border-color:transparent; }
         .arch-block.is-done svg{ color:var(--bg); }
         .arch-block.is-done .arch-block-name, .arch-block.is-done .arch-block-desc{ color:var(--bg); }
         .arch-block-name{ font-family:var(--font-display); font-size:13.5px; font-weight:600; }
         .arch-block-desc{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
         .arch-arrow{ color:var(--text-faint); font-size:13px; text-align:center; padding:6px 0; }
 
-        .dep-role{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+        .dep-role{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
         .dep-name{ font-family:var(--font-display); font-size:16px; font-weight:600; margin-bottom:8px; }
         .dep-body{ font-size:12.5px; color:var(--text-soft); line-height:1.55; margin:0; }
 
@@ -2580,17 +2609,17 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .dev-flow-arrow{ color:var(--text-faint); }
         .dev-snippet{ font-family:var(--font-mono); font-size:12px; color:var(--text-soft); background:var(--bg); border:1px solid var(--line);
           border-radius:10px; padding:16px 18px; line-height:1.7; margin-bottom:14px; }
-        .dev-snippet .k{ color:var(--gold-bright); }
+        .dev-snippet .k{ color:var(--accent-bright); }
         .protocol-footnote{ font-size:12px; color:var(--text-faint); line-height:1.6; margin:0; }
 
         .chain-status{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
-        .chain-status.is-live{ color:var(--gold-bright); }
+        .chain-status.is-live{ color:var(--accent-bright); }
 
         /* SECTION HEAD */
         .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
         .section-title{ font-family:var(--font-display); font-size:17px; font-weight:600; }
         .section-link{ font-size:12.5px; color:var(--text-soft); text-decoration:none; display:flex; align-items:center; gap:5px; }
-        .section-link:hover{ color:var(--gold-bright); }
+        .section-link:hover{ color:var(--accent-bright); }
         .section-sub{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
 
         /* LEDGER — stamped entries, not a card grid */
@@ -2599,20 +2628,20 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
         .seal{ position:relative; flex:none; border-radius:50%;
           background:repeating-conic-gradient(rgba(255,255,255,.4) 0deg 1.6deg, rgba(0,0,0,.35) 1.6deg 3.2deg); }
         .seal-core{ position:absolute; inset:4px; border-radius:50%;
-          background:radial-gradient(circle at 32% 28%, #fbe6bf 0%, #e3b877 46%, #a97b3b 100%);
+          background:radial-gradient(circle at 32% 28%, #C9FFF2 0%, #4A607A 52%, #22303F 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.25); }
         .ledger-body{ flex:1; min-width:0; }
         .ledger-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px; }
         .ledger-event{ font-family:var(--font-display); font-size:15px; font-weight:600; }
-        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--gold-bright); flex:none; }
+        .ledger-amount{ font-family:var(--font-mono); font-size:14.5px; color:var(--accent-bright); flex:none; }
         .ledger-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--text-faint); }
         .ledger-chain-path{ display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
         .ledger-chain-path b{ color:var(--text-soft); font-weight:500; }
         .ledger-proof{ font-family:var(--font-mono); color:var(--text-soft); }
         .ledger-dot{ width:2px; height:2px; border-radius:50%; background:var(--text-faint); }
         .ledger-view{ flex:none; font-size:12px; color:var(--text-soft); background:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; transition:border-color .15s var(--ease-out), color .15s var(--ease-out); }
-        .ledger-view:hover{ border-color:rgba(227,184,119,.4); color:var(--gold-bright); }
+        .ledger-view:hover{ border-color:rgba(0,255,198,.40); color:var(--accent-bright); }
 
         @media (max-width:700px){
           .content{ padding:32px 20px 60px; }
@@ -2681,7 +2710,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
           <div className="dash-grid">
             <div className="dash-main">
-              <p className="protocol-lede">TRU turns verified cross-chain financial events into consumable credit state. Everything below is the real pipeline, not a simplified version of it.</p>
+              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Everything below is the real pipeline, not a simplified version of it.</p>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Architecture</div>
@@ -2690,7 +2719,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
                   <span className="arch-arrow">↓</span>
                   <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Attestcoin</div><div className="arch-block-desc">Cross-chain attestation of the event</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block"><TruMark size={14} color="var(--gold-bright)" /><div><div className="arch-block-name">TRU Verification Layer</div><div className="arch-block-desc">Validates the attested event into a verified economic event</div></div></div>
+                  <div className="arch-block"><TruMark size={14} color="var(--accent-bright)" /><div><div className="arch-block-name">TRU Verification Layer</div><div className="arch-block-desc">Validates the attested event into a verified economic event</div></div></div>
                   <span className="arch-arrow">↓</span>
                   <div className="arch-block"><CreditIcon size={16} /><div><div className="arch-block-name">Creditcoin</div><div className="arch-block-desc">Stores and exposes verified history</div></div></div>
                   <span className="arch-arrow">↓</span>
@@ -2700,7 +2729,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
               <div className="widget-row">
                 <div className="widget"><div className="dep-role">Proof</div><div className="dep-name">Attestcoin</div><p className="dep-body">Without it, TRU has no reliable way to know what happened on another chain.</p></div>
-                <div className="widget"><div className="dep-role">Interpretation</div><div className="dep-name">TRU</div><p className="dep-body">Without it, an attested event stays raw data and never becomes standardized credit state.</p></div>
+                <div className="widget"><div className="dep-role">Verification</div><div className="dep-name">TRU</div><p className="dep-body">Without it, an attested event stays raw data and never becomes verified, replay-guarded history.</p></div>
               </div>
               <div className="widget" style={{ marginBottom: 24 }}>
                 <div className="dep-role">Record</div><div className="dep-name">Creditcoin</div>
@@ -2718,7 +2747,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
                   <span className="k">getCreditEvidence</span>(address) →<br />
                   &nbsp;&nbsp;{"{"} creditState, repayments, creditLimit {"}"}
                 </div>
-                <p className="protocol-footnote">A developer doesn't need to understand cross-chain attestation to use this. They query one address and get back a standardized credit state.</p>
+                <p className="protocol-footnote">A developer doesn't need to understand cross-chain attestation to use this. They query one address and get back standardized, verifiable history.</p>
               </div>
             </div>
 
@@ -2747,6 +2776,255 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
   );
 }
 
+function providerLabel(p: EIP1193Provider | undefined): string {
+  if (!p) return "Browser wallet";
+  const candidates = p.providers ?? [p];
+  const names: string[] = [];
+  for (const c of candidates) {
+    if (c.isMetaMask && !names.includes("MetaMask")) names.push("MetaMask");
+    else if (c.isCoinbaseWallet && !names.includes("Coinbase Wallet")) names.push("Coinbase Wallet");
+    else if (c.isRabby && !names.includes("Rabby")) names.push("Rabby");
+  }
+  return names.length > 0 ? names.join(" · ") : "Browser wallet";
+}
+
+function ConnectWalletScreen({ navigate }: ScreenProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const isMobile =
+    typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const provider: EIP1193Provider | undefined =
+    typeof window !== "undefined" ? window.ethereum : undefined;
+
+  const connectInjected = async () => {
+    if (!provider) {
+      setError("No injected wallet found in this browser. Install one, or continue on mobile below.");
+      return;
+    }
+    setConnecting(true);
+    setError(null);
+    try {
+      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+      if (accounts && accounts.length > 0) {
+        navigate("overview");
+      } else {
+        setError("The wallet returned no accounts. Try again.");
+      }
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "Connection was rejected.");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Copy failed — long-press the address bar to copy the link manually.");
+    }
+  };
+
+  const metamaskLink =
+    typeof window !== "undefined"
+      ? `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`
+      : "https://metamask.app.link/";
+
+  return (
+    <div className="app-root">
+      <style>{`
+        ${TOKENS}
+        *{ box-sizing:border-box; }
+        html,body{ margin:0; padding:0; background:var(--bg); }
+        .app-root{ min-height:100vh; background:var(--bg); color:var(--text); font-family:var(--font-body); display:flex; position:relative; }
+        .dither{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.04;
+          background-image:radial-gradient(circle at 1px 1px, var(--accent-bright) 1px, transparent 0);
+          background-size:5px 5px; }
+        .sidebar, .main{ position:relative; z-index:1; }
+        @media (max-width:860px){ .app-root{ display:block; } }
+
+        /* SIDEBAR */
+        .sidebar{ border-right:1px solid var(--line-soft); display:flex; flex-direction:column; padding:20px 14px; position:sticky; top:0;
+          height:100vh; flex:none; width:236px; transition:width .32s var(--ease-in-out), padding .32s var(--ease-in-out); overflow:hidden; }
+        .sidebar.is-collapsed{ width:68px; padding:20px 10px; }
+        @media (max-width:860px){ .sidebar{ display:none; } }
+        .sb-label{ display:inline-block; white-space:nowrap; transition:opacity .18s var(--ease-out), max-width .28s var(--ease-in-out); opacity:1; max-width:160px; overflow:hidden; }
+        .sidebar.is-collapsed .sb-label{ opacity:0; max-width:0; }
+        .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
+        .sidebar.is-collapsed .sb-header{ justify-content:center; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; }
+        .sb-brand svg{ flex:none; }
+        .sidebar.is-collapsed .sb-brand{ display:none; }
+        .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
+        .sb-toggle{ flex:none; width:28px; height:28px; border-radius:8px; border:none; background:transparent;
+          display:flex; align-items:center; justify-content:center; color:var(--text-faint); cursor:pointer;
+          transition:background .15s var(--ease-out), color .15s var(--ease-out); }
+        .sb-toggle:hover{ background:var(--bg-elevated); color:var(--accent-bright); }
+        .sb-section-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+          color:var(--text-faint); padding:0 12px 8px; }
+        .sidebar.is-collapsed .sb-section-label{ opacity:0; height:0; padding:0; overflow:hidden; }
+        .sb-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+        .sb-link{ position:relative; display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--text-soft); text-decoration:none;
+          padding:9px 12px; border-radius:9px; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out);
+          border:1px solid transparent; }
+        .sb-link:hover{ background:var(--bg-elevated); color:var(--text); }
+        .sb-link.is-active{ background:rgba(74,96,122,.18); border-color:rgba(74,96,122,.30); color:var(--accent-bright); }
+        .sb-link svg{ flex:none; }
+        .sidebar.is-collapsed .sb-link{ justify-content:center; }
+        .sb-tooltip{ position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%); z-index:30;
+          background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 11px;
+          font-size:12px; color:var(--text); white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s var(--ease-out); }
+        .sidebar.is-collapsed .sb-link:hover .sb-tooltip{ opacity:1; }
+        .sb-foot{ display:flex; flex-direction:column; gap:2px; padding-top:12px; border-top:1px solid var(--line-soft); }
+
+        /* MAIN */
+        .main{ flex:1; min-width:0; }
+        .topbar{ display:flex; align-items:center; justify-content:flex-end; padding:22px 40px; border-bottom:1px solid var(--line-soft); gap:14px; }
+        .net-chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-soft); border:1px solid var(--line); border-radius:100px; padding:6px 13px; }
+        .net-dot{ width:6px; height:6px; border-radius:50%; background:#5fd88a; }
+        .content{ padding:44px 40px 80px; max-width:1280px; margin:0 auto; position:relative; }
+        .page-eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:8px; }
+        .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
+        .back-link{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text-soft); text-decoration:none; margin-bottom:22px; }
+        .back-link:hover{ color:var(--text); }
+
+        /* CONNECT */
+        .connect-wrap{ max-width:620px; margin:0 auto; }
+        .connect-lede{ font-size:14.5px; color:var(--text-soft); line-height:1.65; margin:0 0 28px; max-width:52ch; }
+        .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--bg); background:var(--accent-bright);
+          border:none; border-radius:100px; padding:13px 22px; cursor:pointer; text-decoration:none; transition:transform .15s var(--ease-out), filter .2s var(--ease-out); }
+        .btn-primary:hover{ filter:brightness(1.1); }
+        .btn-primary:active{ transform:scale(.97); }
+        .btn-primary:disabled{ opacity:.45; cursor:not-allowed; }
+        .btn-ghost{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:var(--text); background:transparent;
+          border:1px solid var(--line); border-radius:100px; padding:13px 22px; cursor:pointer; text-decoration:none; transition:border-color .15s var(--ease-out), background .15s var(--ease-out), color .15s var(--ease-out); }
+        .btn-ghost:hover{ border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.03); }
+        .detail-panel{ border:1px solid var(--line); border-radius:14px; padding:20px 24px; background:var(--bg-elevated); margin-bottom:16px; }
+        .detail-panel-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent-bright); margin-bottom:14px; }
+        .detail-row{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-top:1px solid var(--line); font-size:13px; gap:16px; }
+        .detail-row:first-of-type{ border-top:none; padding-top:0; }
+        .detail-k{ color:var(--text-soft); flex:none; }
+        .detail-v{ font-family:var(--font-mono); color:var(--text); text-align:right; }
+        .btn-row{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+        .connect-divider{ display:flex; align-items:center; gap:14px; margin:26px 0; color:var(--text-faint); font-size:12px; font-family:var(--font-mono); }
+        .connect-divider::before, .connect-divider::after{ content:""; flex:1; height:1px; background:var(--line); }
+        .connect-steps{ display:flex; flex-direction:column; gap:11px; margin:16px 0 4px; }
+        .connect-step{ display:flex; gap:12px; font-size:13.5px; color:var(--text-soft); line-height:1.6; }
+        .connect-step-n{ font-family:var(--font-mono); font-size:12px; color:var(--accent-bright); flex:none; padding-top:2px; }
+        .connect-note{ font-size:12.5px; color:var(--text-faint); line-height:1.6; margin:14px 0 0; }
+        .connect-err{ font-size:12.5px; color:#e08a7a; margin:14px 0 0; line-height:1.55; }
+        .security-note{ display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(74,96,122,.30); border-radius:14px;
+          padding:18px 22px; background:rgba(74,96,122,.07); margin-top:8px; }
+        .security-note svg{ flex:none; color:var(--accent-bright); margin-top:2px; }
+        .security-note p{ font-size:12.5px; color:var(--text-soft); line-height:1.6; margin:0; }
+
+        @media (max-width:700px){
+          .content{ padding:32px 20px 60px; }
+        }
+      `}</style>
+
+      <div className="dither" />
+
+      <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
+        <div className="sb-header">
+          <div className="sb-brand">
+            <TruMark size={20} />
+            <span className="sb-brand-word sb-label">TRU</span>
+          </div>
+          <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
+            <SidebarToggleIcon />
+          </button>
+        </div>
+
+        <span className="sb-section-label">Navigation</span>
+        <nav className="sb-nav">
+          <a className="sb-link" href="#overview" onClick={(e) => { e.preventDefault(); navigate("overview"); }}>
+            <OverviewIcon /> <span className="sb-label">Overview</span>
+            {collapsed && <span className="sb-tooltip">Overview</span>}
+          </a>
+          <a className="sb-link" href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
+            <CreditIcon /> <span className="sb-label">Economic Actor</span>
+            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+          </a>
+          <a className="sb-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
+            <EventsIcon /> <span className="sb-label">Verified Events</span>
+            {collapsed && <span className="sb-tooltip">Verified Events</span>}
+          </a>
+          <a className="sb-link" href="#protocol" onClick={(e) => { e.preventDefault(); navigate("protocol"); }}>
+            <ProtocolIcon /> <span className="sb-label">Protocol</span>
+            {collapsed && <span className="sb-tooltip">Protocol</span>}
+          </a>
+        </nav>
+
+        <div className="sb-foot">
+          <a className="sb-link" href="#settings">
+            <SettingsIcon /> <span className="sb-label">Settings</span>
+            {collapsed && <span className="sb-tooltip">Settings</span>}
+          </a>
+        </div>
+      </aside>
+
+      <main className="main">
+        <div className="topbar">
+          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+        </div>
+
+        <div className="content connect-wrap">
+          <a className="back-link" href="#product" onClick={(e) => { e.preventDefault(); navigate("landing"); }}><ArrowLeft /> Back</a>
+          <span className="page-eyebrow">Wallet</span>
+          <h1 className="page-title">Connect your wallet</h1>
+          <p className="connect-lede">Connection is local and read-only. TRU never sees your keys and never moves funds — it only reads the address you connect with.</p>
+
+          <div className="detail-panel">
+            <div className="detail-panel-title">Browser wallet · injected</div>
+            <div className="detail-row"><span className="detail-k">Detected</span><span className="detail-v">{provider ? providerLabel(provider) : "None found"}</span></div>
+            <div className="detail-row"><span className="detail-k">Network</span><span className="detail-v">Ethereum Sepolia</span></div>
+            <div className="btn-row">
+              <button className="btn-primary" onClick={connectInjected} disabled={connecting || !provider}>
+                <WalletGlyph size={14} /> {connecting ? "Waiting for wallet…" : provider ? `Connect ${providerLabel(provider)}` : "Connect browser wallet"}
+              </button>
+            </div>
+            {error && <p className="connect-err">{error}</p>}
+          </div>
+
+          <div className="connect-divider"><span>or</span></div>
+
+          <div className="detail-panel">
+            <div className="detail-panel-title">Mobile · wallet browser</div>
+            {isMobile && (
+              <p className="connect-note" style={{ marginTop: 0 }}>
+                You are on mobile — open this page inside your wallet's browser below.
+              </p>
+            )}
+            <div className="connect-steps">
+              <div className="connect-step"><span className="connect-step-n">01</span><span>Open your wallet app — MetaMask, Coinbase Wallet, or Rabby.</span></div>
+              <div className="connect-step"><span className="connect-step-n">02</span><span>Open its built-in browser tab.</span></div>
+              <div className="connect-step"><span className="connect-step-n">03</span><span>Paste this page's link, or jump straight in:</span></div>
+            </div>
+            <div className="btn-row">
+              <a className="btn-primary" href={metamaskLink} target="_blank" rel="noreferrer">
+                Open in MetaMask <ArrowUpRight size={12} />
+              </a>
+              <button className="btn-ghost" onClick={copyLink}>{copied ? "Link copied" : "Copy page link"}</button>
+            </div>
+            <p className="connect-note">Desktop pages cannot reach a phone's wallets directly — the wallet's own browser injects the connection, and the step above then just works.</p>
+          </div>
+
+          <div className="security-note">
+            <ShieldGlyph size={16} />
+            <p>A connection here only reads your address for display. Verification happens on-chain: every history entry traces to an attested source-chain transaction, never to anything typed or claimed here.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function TruApp() {
   const [screen, setScreen] = useState<ScreenName>("landing");
   const navigate: NavigateFn = (s) => { setScreen(s); if (typeof window !== "undefined") window.scrollTo(0, 0); };
@@ -2758,5 +3036,6 @@ export default function TruApp() {
   if (screen === "events") return <VerifiedEventsScreen navigate={navigate} active="events" />;
   if (screen === "event-detail") return <EventDetailScreen navigate={navigate} active="events" />;
   if (screen === "protocol") return <ProtocolScreen navigate={navigate} active="protocol" />;
+  if (screen === "connect") return <ConnectWalletScreen navigate={navigate} />;
   return <LandingScreen navigate={navigate} />;
 }
