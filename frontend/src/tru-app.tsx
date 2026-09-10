@@ -13,6 +13,7 @@ import {
   fetchOutstandingObligations,
   fetchVerifiedHistory,
   formatLoanAmount,
+  formatUnits,
   LOAN_MARKET_ADDRESS,
   OBLIGATION_MARKET_ADDRESS,
   SAMPLE_ACTOR_ADDRESS,
@@ -944,7 +945,7 @@ function VerifyingScreen({ navigate, account, selectedEvent }: ScreenProps) {
             </div>
             <div className="side-panel side-panel--note">
               <div className="side-title">Why this takes time</div>
-              <p className="side-note-body">Attestcoin needs enough confirmations on Sepolia before it will attest to an event. That wait is what makes the resulting credit state reliable.</p>
+              <p className="side-note-body">Attestcoin needs enough confirmations on Sepolia before it will attest to an event. That wait is what makes the resulting record verifiable.</p>
             </div>
           </aside>
         </div>
@@ -1185,7 +1186,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
 
         <div className="content">
           <span className="page-eyebrow">Overview</span>
-          <h1 className="page-title">{account ? "Your verified history" : "Verified history — sample profile"}</h1>
+          <h1 className="page-title">{account ? "Your verified history" : "Verified history — demo profile"}</h1>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -1201,9 +1202,9 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                   <span className="credit-highlight-k">Verified events</span>
                   <span className="credit-highlight-v">{history.loading ? "…" : summary.verifiedEvents}</span>
                 </div>
-                <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history — check your connection and retry." : `Completed ${summary.completedObligations} · Active ${summary.activeObligations} · ${summary.settlementVolumeUnits} units settled across ${summary.sourceChains} source chain${summary.sourceChains === 1 ? "" : "s"}.`}</div>
+                <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history — check your connection and retry." : `${summary.verifiedEvents} verified events · ${summary.verifiedObligations} obligations · ${summary.completedObligations} completions.`}</div>
                 <div className="credit-derivation">
-                  Every figure derives from verified on-chain events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
+                  {!account && "Demo data · Ethereum Sepolia. "}Every figure derives from verified on-chain events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
                 </div>
               </div>
 
@@ -1254,7 +1255,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                   <div className="mini-entry">
                     <span className="mini-entry-dot" />
                     <div className="mini-entry-text">
-                        <span className="mini-entry-event">{summary.settlementVolumeUnits} units settled</span>
+                        <span className="mini-entry-event">{formatUnits(summary.settlementVolumeUnits)}</span>
                         <span className="mini-entry-meta">settlement volume</span>
                     </div>
                   </div>
@@ -1334,9 +1335,9 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
             <aside className="dash-side">
               <div className="side-widget identity-widget">
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
-                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
+                <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -1632,7 +1633,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
 
         <div className="content">
           <span className="page-eyebrow">Economic Actor</span>
-          <h1 className="page-title">Why this actor's history is what it is</h1>
+          <h1 className="page-title">What this actor can prove</h1>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -1643,14 +1644,14 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                   <span className="credit-status-label">Agent Passport</span>
                   <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
-                <div className="credit-status-word">{ev ? `${stateName} history` : "Verified history"}</div>
+                <div className="credit-status-word">Verified economic history</div>
                 <div className="credit-highlight">
                   <span className="credit-highlight-k">Verified obligations</span>
                   <span className="credit-highlight-v">{pp ? pp.verifiedObligations.toString() : "…"}</span>
                 </div>
-                <div className="credit-basis">{passport.loading ? "Loading Agent Passport…" : pp ? `Completed ${pp.completedObligations} · Active ${pp.activeObligations} · ${pp.verifiedSettlementVolume} units settled · ${pp.verifiedSourceChains.length} source chain${pp.verifiedSourceChains.length === 1 ? "" : "s"}.` : "Couldn't load on-chain passport — check your connection and retry."}</div>
+                <div className="credit-basis">{passport.loading ? "Loading Agent Passport…" : pp ? `${summary.verifiedEvents} verified events · ${pp.verifiedObligations} obligations · ${pp.completedObligations} completions.` : "Couldn't load on-chain passport — check your connection and retry."}</div>
                 <div className="credit-derivation">
-                  Every figure derives from verified on-chain events recorded through TRU, not assigned.
+                  {!account && "Demo data · Ethereum Sepolia. "}Every figure derives from verified on-chain events recorded through TRU, not assigned.
                 </div>
               </div>
 
@@ -1672,7 +1673,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Settlement volume</span><span className="factor-note">Sum of this actor's verified completions, in agreed units</span></div>
-                    <span className="factor-v">{pp ? `${pp.verifiedSettlementVolume} units` : "…"}</span>
+                    <span className="factor-v">{pp ? formatUnits(pp.verifiedSettlementVolume) : "…"}</span>
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Completion rate</span><span className="factor-note">Completed ÷ verified × 10000, in basis points</span></div>
@@ -1803,9 +1804,9 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
             <aside className="dash-side">
               <div className="side-widget identity-widget">
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
-                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
+                <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -2195,9 +2196,9 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
             <aside className="dash-side">
               <div className="side-widget identity-widget">
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
-                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
+                <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget">
@@ -2994,6 +2995,19 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
                   <span className="arch-arrow">↓</span>
                   <div className="arch-block is-done"><CheckGlyph size={13} color="var(--bg)" /><div><div className="arch-block-name">Applications & Agents</div><div className="arch-block-desc">Consume verified facts</div></div></div>
                 </div>
+              </div>
+
+              <div className="detail-panel">
+                <div className="detail-panel-title">What TRU verifies</div>
+                <div className="factors-list">
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Financial events</span><span className="factor-note">Loan origination · Loan repayment</span></div>
+                  </div>
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Obligation events</span><span className="factor-note">Obligation created · Obligation completed</span></div>
+                  </div>
+                </div>
+                <p className="protocol-footnote" style={{ marginTop: 14 }}>Same verification primitive. Different economic events.</p>
               </div>
 
               <div className="widget-row">

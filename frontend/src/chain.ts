@@ -146,6 +146,14 @@ export function formatLoanAmount(wei: string): { text: string; eth: number } {
   return { text: `${shown} SepoliaETH`, eth };
 }
 
+/**
+ * Settlement volume has no guaranteed denomination (obligation values are raw
+ * "agreed units"), so it renders grouped with a units label and no currency.
+ */
+export function formatUnits(value: number | bigint): string {
+  return `${Number(value).toLocaleString("en-US")} settlement units`;
+}
+
 function mapLoanEvent(raw: Record<string, unknown>, borrower: string): LedgerEntry {
   const eventType = Number(raw.eventType);
   const loanId = String(raw.loanId);
