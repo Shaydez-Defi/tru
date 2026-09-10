@@ -290,6 +290,8 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         return outstandingObligations[borrower];
     }
 
+    /// @notice loanHistory is returned in storage (chronological, oldest-first) order.
+    ///         This differs from getEvents, which returns most-recent-first pages.
     function getCreditPassport(address borrower) external view returns (CreditPassport memory) {
         CreditEvidence memory evidence = this.getCreditEvidence(borrower);
 
@@ -455,6 +457,8 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
         return obligationStatus[obligationId];
     }
 
+    /// @notice Returns the zero struct for unknown obligationIds; callers must
+    ///         check obligationStatus (or eventId != 0) before trusting the result.
     function getVerifiedObligation(uint256 obligationId) external view returns (VerifiedObligationEvent memory) {
         return obligationCreatedEvent[obligationId];
     }
@@ -485,6 +489,10 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     ///         Every field is derived from USC-verified events; no AI or
     ///         subjective scoring. The caller interprets the evidence per
     ///         their own policy (TRU provides evidence, not decisions).
+    /// @dev obligationHistory is returned in storage (chronological,
+    ///      oldest-first) order. This differs from getObligationEvents, which
+    ///      returns most-recent-first pages. All counters are recomputed live
+    ///      from storage on every call, so the view can never go stale.
     function getAgentPassport(address subject) external view returns (AgentPassport memory) {
         VerifiedObligationEvent[] storage history = subjectObligationHistory[subject];
         uint256 n = history.length;
