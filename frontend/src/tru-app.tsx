@@ -1,15 +1,25 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { EIP1193Provider, NavigateFn, PipelineNodeDatum, ScreenName, ScreenProps } from "./types";
+import type { EIP1193Provider, LedgerEntry, NavigateFn, PipelineNodeDatum, ScreenName, ScreenProps } from "./types";
 import {
   BLOCK_TIME_SEC,
-  ENTRIES,
-  MAX_COUNT,
-  MONTHS,
-  SOURCE_BLOCK,
   STAGES,
-  START_ATTESTED,
-  TOTAL_GAP,
+  summarizeHistory,
 } from "./data";
+import {
+  bucketByMonth,
+  fetchAgentPassport,
+  fetchAttestationStatus,
+  fetchCreditEvidence,
+  fetchOutstandingObligations,
+  fetchVerifiedHistory,
+  formatLoanAmount,
+  LOAN_MARKET_ADDRESS,
+  OBLIGATION_MARKET_ADDRESS,
+  SAMPLE_ACTOR_ADDRESS,
+  truncateAddress,
+  truncateHash,
+  useAsyncData,
+} from "./chain";
 
 const TOKENS = `
   @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
@@ -78,7 +88,7 @@ function PendingMark({ size = 40 }: { size?: number }) {
   );
 }
 
-function RateGauge({ pct = 100, size = 116 }: { pct?: number; size?: number }) {
+function RateGauge({ pct = 100, size = 116, caption = "on time" }: { pct?: number; size?: number; caption?: string }) {
   const stroke = 10;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -96,7 +106,7 @@ function RateGauge({ pct = 100, size = 116 }: { pct?: number; size?: number }) {
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#gaugeGrad)" strokeWidth={stroke}
         strokeDasharray={`${filled} ${c}`} strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       <text x="50%" y="47%" textAnchor="middle" fill="var(--text)" fontSize="22" fontWeight="700" fontFamily="var(--font-display)">{pct}%</text>
-      <text x="50%" y="63%" textAnchor="middle" fill="var(--text-faint)" fontSize="9.5" fontFamily="var(--font-mono)">on time</text>
+      <text x="50%" y="63%" textAnchor="middle" fill="var(--text-faint)" fontSize="9.5" fontFamily="var(--font-mono)">{caption}</text>
     </svg>
   );
 }
@@ -125,7 +135,6 @@ function Identicon({ addr = "0x7A3f92Fd" }: { addr?: string }) {
 /* ────────────────────────────────────────────────────────────
     TRU design tokens (dark, slate base, mint accent)
    ──────────────────────────────────────────────────────────── */
-function ArrowDown({ size = 14 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 4v16M12 20l-6-6M12 20l6-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function ChainGlyph({ size = 13 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M9 15l6-6M8 16l-1.5 1.5a3.5 3.5 0 0 1-5-5L3 11a3.5 3.5 0 0 1 5-5l1-1M16 8l1.5-1.5a3.5 3.5 0 0 1 5 5L21 13a3.5 3.5 0 0 1-5 5l-1 1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function LedgerGlyph({ size = 13 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2.5" stroke="currentColor" strokeWidth="1.7" /><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>); }
 function EventGlyph({ size = 13 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>); }
@@ -136,10 +145,10 @@ function GitHubGlyph({ size = 14 }: { size?: number }) { return (<svg width={siz
 function WalletGlyph({ size = 14 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v3h-4a2.5 2.5 0 0 0 0 5h4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="16.5" cy="12.5" r="1" fill="currentColor" /></svg>); }
 
 const NODES: PipelineNodeDatum[] = [
-  { label: "Ethereum Sepolia", meta: "source chain", icon: ChainGlyph, pos: "top-left" },
-  { label: "Attestcoin", meta: "attestation live", icon: ShieldGlyph, pos: "top-right" },
-  { label: "Repayment · $100", meta: "verified event", icon: EventGlyph, pos: "bottom-left" },
-  { label: "Creditcoin", meta: "verified record", icon: LedgerGlyph, pos: "bottom-right" },
+  { label: "Loan repaid", meta: "economic event → verified", icon: EventGlyph, pos: "top-left" },
+  { label: "Obligation completed", meta: "economic event → verified", icon: ShieldGlyph, pos: "top-right" },
+  { label: "Event happened", meta: "→ proven", icon: ChainGlyph, pos: "bottom-left" },
+  { label: "Verified record", meta: "reusable on Creditcoin", icon: LedgerGlyph, pos: "bottom-right" },
 ];
 function PipelineNode({ node }: { node: PipelineNodeDatum }) {
   const Icon = node.icon;
@@ -254,10 +263,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .node--bottom-left{ bottom:22%; left:6%; animation-delay:.9s; } .node--bottom-right{ bottom:18%; right:10%; animation-delay:2.3s; }
         @keyframes node-float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-9px); } }
         @media (max-width:1100px){ .node{ display:none; } }
-        .scroll-cue{ position:absolute; bottom:32px; left:40px; z-index:2; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-faint); }
-        .scroll-cue-btn{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; color:var(--text-soft); animation:bob 2.2s var(--ease-in-out) infinite; }
-        @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
-        @media (max-width:700px){ .scroll-cue{ display:none; } }
+
         .stage-indicator{ position:absolute; bottom:32px; right:40px; z-index:2; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
         .stage-label{ font-size:11px; color:var(--accent-bright); font-family:var(--font-mono); letter-spacing:.05em; text-transform:uppercase; }
         .stage-dots{ display:flex; gap:6px; }
@@ -267,7 +273,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .trust-strip{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:44px; flex-wrap:wrap; padding:28px 24px 40px; border-top:1px solid var(--line-soft); }
         .trust-item{ font-family:var(--font-display); font-size:13px; font-weight:600; color:var(--text-faint); letter-spacing:.02em; }
         .trust-item span{ color:var(--text-soft); font-weight:400; font-size:11px; margin-left:6px; }
-        @media (prefers-reduced-motion: reduce){ .node, .scroll-cue-btn{ animation:none; } }
+        @media (prefers-reduced-motion: reduce){ .node{ animation:none; } }
 
         /* SHARED SECTION SHELL */
         .section{ padding:100px 0; border-top:1px solid var(--line-soft); }
@@ -431,7 +437,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="hero-content">
 
               <h1 className="headline">Economic history<b>you can prove.</b></h1>
-              <p className="hero-sub">TRU verifies economic activity across chains, including loan repayments and agent obligations, and records verified events as reusable on-chain history on Creditcoin.</p>
+              <p className="hero-sub">TRU verifies what economic actors actually do on-chain — from loan repayments to agent obligations.</p>
 
               <div className="hero-actions">
                 <button className="btn-primary" onClick={() => navigate("connect")}>Connect Wallet <WalletGlyph size={14} /></button>
@@ -444,8 +450,6 @@ function LandingScreen({ navigate }: ScreenProps) {
                 <span className="trail" style={{ height: "46px", left: "22px", animationDelay: "1s" }} />
               </div>
             </div>
-
-            <div className="scroll-cue"><span className="scroll-cue-btn"><ArrowDown size={13} /></span>02/03 · Scroll down</div>
 
             <div className="stage-indicator">
               <span className="stage-label">Verification stages</span>
@@ -491,6 +495,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <div className="pipe-node"><span className="pipe-icon"><LedgerGlyph size={20} /></span><span className="pipe-label">Creditcoin</span><span className="pipe-sub">records verified history</span></div>
             </div>
           </Reveal>
+          <Reveal stagger={2}><p className="problem-line">Same proof. Different economic events — loans were the starting point; obligations generalize the primitive.</p></Reveal>
         </div>
       </section>
 
@@ -704,7 +709,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <p className="footer-brand-desc">Verifiable economic history infrastructure.</p>
             </div>
             <div className="footer-col"><div className="footer-col-title">Protocol</div>
-              <a href="#how">How It Works</a><a href="#profile">Credit Profiles</a><a href="#verification">Verification</a>
+              <a href="#how">How It Works</a><a href="#profile">Economic Actors</a><a href="#verification">Verification</a>
             </div>
             <div className="footer-col"><div className="footer-col-title">Developers</div>
               <a href="#docs">Documentation</a><a href="#github">GitHub</a><a href="#contracts">Contracts</a>
@@ -723,27 +728,33 @@ function LandingScreen({ navigate }: ScreenProps) {
   );
 }
 
-function VerifyingScreen({ navigate }: ScreenProps) {
-  const [attestedThrough, setAttestedThrough] = useState(START_ATTESTED);
-  const [completed, setCompleted] = useState(1); // "Submitted" already done
-
-  const blocksRemaining = Math.max(0, SOURCE_BLOCK - attestedThrough);
-  const minutesRemaining = Math.ceil((blocksRemaining * BLOCK_TIME_SEC) / 60);
-  const progressPct = ((TOTAL_GAP - blocksRemaining) / TOTAL_GAP) * 100;
-  const done = completed === STAGES.length;
-  const activeIndex = completed; // stage currently in progress, if any
-
+function VerifyingScreen({ navigate, account, selectedEvent }: ScreenProps) {
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (attestedThrough >= SOURCE_BLOCK) {
-      if (completed < STAGES.length) {
-        const t = setTimeout(() => setCompleted((c) => c + 1), 950);
-        return () => clearTimeout(t);
-      }
-      return;
-    }
-    const t = setTimeout(() => setAttestedThrough((b) => b + 1), 380);
-    return () => clearTimeout(t);
-  }, [attestedThrough, completed]);
+    const t = setInterval(() => setTick((x) => x + 1), 20000);
+    return () => clearInterval(t);
+  }, []);
+  const att = useAsyncData(() => fetchAttestationStatus(), [tick]);
+  const viewer = account ?? SAMPLE_ACTOR_ADDRESS;
+
+  const target: number | null = selectedEvent?.sourceBlock !== undefined
+    ? Number(selectedEvent.sourceBlock)
+    : att.data !== null ? att.data.sepoliaHead : null;
+  const attested: number | null = att.data !== null ? att.data.attestedHeight : null;
+  const gap: number | null = target !== null && attested !== null ? target - attested : null;
+  const done = gap !== null && gap <= 0;
+  const eventDone = selectedEvent?.status === "verified";
+  // A verified registry event necessarily completed the whole pipeline, so all
+  // stages show done. Otherwise the rail reflects live attestation only: later
+  // stages stay pending until a worker actually submits this event.
+  const completed = eventDone ? STAGES.length : selectedEvent ? (done ? 2 : 1) : 0;
+  const activeIndex = eventDone ? STAGES.length : selectedEvent ? (done ? 2 : 1) : 0;
+  const window = 1000;
+  const progressPct = done || eventDone ? 100 : attested !== null && target !== null
+    ? Math.min(98, Math.max(2, ((attested - (target - window)) / window) * 100))
+    : 2;
+  const minutesRemaining = gap !== null && gap > 0 ? Math.ceil((gap * BLOCK_TIME_SEC) / 60) : 0;
+  const refLabel = !selectedEvent ? "" : selectedEvent.refKind === "obligation" ? `Obligation ${selectedEvent.ref}` : selectedEvent.kind === "origination" ? `Loan Origination ${selectedEvent.ref}` : `Loan Repayment ${selectedEvent.ref}`;
 
   return (
     <div className="v-root">
@@ -834,31 +845,33 @@ function VerifyingScreen({ navigate }: ScreenProps) {
       <div className="v-stage">
         <div className="v-layout">
           <div className="v-main">
-            <span className="v-eyebrow">Loan Repayment #42</span>
-            <h1 className="v-headline">{done ? "Verification complete" : "Attestation is catching up"}</h1>
+            <span className="v-eyebrow">{selectedEvent ? refLabel : "Network attestation"}</span>
+            <h1 className="v-headline">{eventDone || done ? "Verification complete" : att.loading ? "Reading attestation…" : att.data === undefined ? "Attestation unavailable" : "Attestation is catching up"}</h1>
             <p className="v-sub">
-              {done
-                ? "Attestcoin confirmed the repayment. Creditcoin has recorded the resulting credit state."
-                : "Attestcoin hasn't reached your repayment's block yet. The estimate below moves as new blocks get attested."}
+              {eventDone
+                ? "Attestcoin confirmed this event and Creditcoin recorded it. The numbers below are the live attestation head, shown for transparency."
+                : selectedEvent
+                  ? "Attestcoin hasn't reached this event's block yet. The estimate below tracks the live attestation head and refreshes automatically."
+                  : "Live gap between Ethereum Sepolia's head and where Attestcoin has attested through so far. Select an event to track it specifically."}
             </p>
 
         <div className="race">
           <div className="race-row">
-            <div className="race-chip"><div className="race-chip-label">Attested through</div><div className="race-chip-value">{attestedThrough.toLocaleString()}</div></div>
+            <div className="race-chip"><div className="race-chip-label">Attested through</div><div className="race-chip-value">{attested !== null ? attested.toLocaleString() : "…"}</div></div>
             <div className="race-track">
               <div className="race-fill" style={{ width: `${progressPct}%` }} />
-              <div className={`race-marker race-marker--attested ${done ? "is-done" : ""}`} style={{ left: `${progressPct}%` }}>
-                {done && <CheckGlyph size={9} color="var(--bg)" />}
+              <div className={`race-marker race-marker--attested ${done || eventDone ? "is-done" : ""}`} style={{ left: `${progressPct}%` }}>
+                {(done || eventDone) && <CheckGlyph size={9} color="var(--bg)" />}
               </div>
-              <div className={`race-marker race-marker--source ${done ? "is-done" : ""}`} />
+              <div className={`race-marker race-marker--source ${done || eventDone ? "is-done" : ""}`} />
             </div>
-            <div className="race-chip" style={{ textAlign: "left" }}><div className="race-chip-label">Source block</div><div className="race-chip-value">{SOURCE_BLOCK.toLocaleString()}</div></div>
+            <div className="race-chip" style={{ textAlign: "left" }}><div className="race-chip-label">{selectedEvent ? "Event block" : "Sepolia head"}</div><div className="race-chip-value">{target !== null ? target.toLocaleString() : "…"}</div></div>
           </div>
 
-          {!done ? (
+          {!(done || eventDone) ? (
             <div className="race-gap">
-              <span className="race-gap-n">~{minutesRemaining}</span>
-              <span className="race-gap-k">minutes remaining · {blocksRemaining} blocks behind, closing live</span>
+              <span className="race-gap-n">~{gap !== null ? minutesRemaining : "…"}</span>
+              <span className="race-gap-k">minutes remaining · {gap !== null ? `${gap.toLocaleString()} blocks behind` : "reading live gap"}, refreshing</span>
             </div>
           ) : (
             <div className="race-gap">
@@ -886,14 +899,24 @@ function VerifyingScreen({ navigate }: ScreenProps) {
 
           <aside className="v-side">
             <div className="side-panel">
-              <div className="side-title">Event Details</div>
-              <div className="side-row"><span className="side-k">Loan ID</span><span className="side-v">#42</span></div>
-              <div className="side-row"><span className="side-k">Borrower</span><span className="side-v">0x7A3f...92Fd</span></div>
-              <div className="side-row"><span className="side-k">Amount</span><span className="side-v">100 USDC</span></div>
-              <div className="side-row"><span className="side-k">Event</span><span className="side-v">LoanRepaid</span></div>
-              <div className="side-row"><span className="side-k">Source chain</span><span className="side-v">Ethereum Sepolia</span></div>
-              <div className="side-row"><span className="side-k">Source tx</span><span className="side-v">0x8f2a...c94d</span></div>
-              <div className="side-row"><span className="side-k">Submitted</span><span className="side-v">2m ago</span></div>
+              <div className="side-title">{selectedEvent ? "Event Details" : "Network status"}</div>
+              {selectedEvent ? (
+                <>
+                  <div className="side-row"><span className="side-k">{selectedEvent.refKind === "obligation" ? "Obligation" : "Loan"} ID</span><span className="side-v">{selectedEvent.ref}</span></div>
+                  <div className="side-row"><span className="side-k">{selectedEvent.refKind === "obligation" ? "Executor" : "Borrower"}</span><span className="side-v">{truncateAddress(viewer)}</span></div>
+                  <div className="side-row"><span className="side-k">Amount</span><span className="side-v">{selectedEvent.amount}</span></div>
+                  <div className="side-row"><span className="side-k">Event</span><span className="side-v">{selectedEvent.event}</span></div>
+                  <div className="side-row"><span className="side-k">Source chain</span><span className="side-v">Ethereum Sepolia</span></div>
+                  <div className="side-row"><span className="side-k">Source tx</span><span className="side-v">{selectedEvent.tx}</span></div>
+                  <div className="side-row"><span className="side-k">Source block</span><span className="side-v">{selectedEvent.sourceBlock ?? "—"}</span></div>
+                </>
+              ) : (
+                <>
+                  <div className="side-row"><span className="side-k">Sepolia head</span><span className="side-v">{att.data !== null ? att.data.sepoliaHead.toLocaleString() : "…"}</span></div>
+                  <div className="side-row"><span className="side-k">Attested through</span><span className="side-v">{attested !== null ? attested.toLocaleString() : "…"}</span></div>
+                  <div className="side-row"><span className="side-k">Source chain</span><span className="side-v">Ethereum Sepolia</span></div>
+                </>
+              )}
             </div>
             <div className="side-panel side-panel--note">
               <div className="side-title">Why this takes time</div>
@@ -906,8 +929,14 @@ function VerifyingScreen({ navigate }: ScreenProps) {
   );
 }
 
-function OverviewScreen({ navigate, active }: ScreenProps) {
+function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const viewer = account ?? SAMPLE_ACTOR_ADDRESS;
+  const history = useAsyncData(() => fetchVerifiedHistory(viewer), [viewer]);
+  const entries = history.data ?? [];
+  const summary = summarizeHistory(entries);
+  const buckets = bucketByMonth(entries);
+  const bucketMax = Math.max(1, ...buckets.map((b) => b.count));
   return (
     <div className="app-root">
       <style>{`
@@ -931,8 +960,8 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -1083,10 +1112,10 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -1119,7 +1148,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
           </a>
           <div className="sb-wallet">
             <span className="sb-wallet-dot" />
-            <div className="sb-wallet-text"><div className="sb-wallet-addr">0x7A3f...92Fd</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
+            <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
           </div>
         </div>
       </aside>
@@ -1127,12 +1156,12 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">0x7A3f...92Fd</span>
+          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
         </div>
 
         <div className="content">
           <span className="page-eyebrow">Overview</span>
-          <h1 className="page-title">Your verified history</h1>
+          <h1 className="page-title">{account ? "Your verified history" : "Verified history — sample profile"}</h1>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -1140,51 +1169,93 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
                 <div className="credit-glow" />
                 <div className="credit-sheen" />
                 <div className="credit-status-row">
-                  <span className="credit-status-label">Credit state</span>
+                  <span className="credit-status-label">Verified economic history</span>
                   <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
-                <div className="credit-status-word">Building</div>
+                <div className="credit-status-word">Verified</div>
                 <div className="credit-highlight">
-                  <span className="credit-highlight-k">Credit capacity</span>
-                  <span className="credit-highlight-v">$200</span>
+                  <span className="credit-highlight-k">Verified events</span>
+                  <span className="credit-highlight-v">{history.loading ? "…" : summary.verifiedEvents}</span>
                 </div>
-                <div className="credit-basis">Based on 2 verified repayments across 1 loan.</div>
+                <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history — check your connection and retry." : `Completed ${summary.completedObligations} · Active ${summary.activeObligations} · ${summary.settlementVolumeUnits} units settled across ${summary.sourceChains} source chain${summary.sourceChains === 1 ? "" : "s"}.`}</div>
                 <div className="credit-derivation">
-                  Derived from verified repayment events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
+                  Every figure derives from verified on-chain events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
                 </div>
               </div>
 
               <div className="widget-row">
                 <div className="widget">
                   <div className="widget-title">Verification activity</div>
-                  <div className="widget-sub">Verified events by month</div>
+                  <div className="widget-sub">{history.loading ? "Loading…" : "Verified events by month"}</div>
                   <div className="chart-bars">
-                    {MONTHS.map((m) => (
+                    {buckets.map((m) => (
                       <div className="chart-bar-wrap" key={m.label}>
-                        <div className={`chart-bar ${m.count === 0 ? "is-empty" : ""}`} style={{ height: `${Math.max(4, (m.count / MAX_COUNT) * 78)}px` }} />
+                        <div className={`chart-bar ${m.count === 0 ? "is-empty" : ""}`} style={{ height: `${Math.max(4, (m.count / bucketMax) * 78)}px` }} />
                       </div>
                     ))}
                   </div>
-                  <div className="chart-labels">{MONTHS.map((m) => <span key={m.label}>{m.label}</span>)}</div>
+                  <div className="chart-labels">{buckets.map((m) => <span key={m.label}>{m.label}</span>)}</div>
                 </div>
 
                 <div className="widget widget--gauge">
-                  <div className="widget-title">Repayment rate</div>
-                  <div className="widget-sub">2 of 2 on time</div>
-                  <div className="gauge-wrap"><RateGauge pct={100} /></div>
+                  <div className="widget-title">Completion rate</div>
+                  <div className="widget-sub">{summary.completedObligations} of {summary.verifiedObligations} completed</div>
+                  <div className="gauge-wrap"><RateGauge pct={summary.completionRatePct} caption="completed" /></div>
+                </div>
+              </div>
+
+              <div className="widget-row">
+                <div className="widget">
+                  <div className="widget-title">Obligations</div>
+                  <div className="widget-sub">Verified obligation lifecycle</div>
+                  <div className="mini-entry">
+                    <span className="mini-entry-dot" />
+                    <div className="mini-entry-text">
+                      <span className="mini-entry-event">{summary.completedObligations} completed</span>
+                      <span className="mini-entry-meta">verified completions</span>
+                    </div>
+                  </div>
+                  <div className="mini-entry">
+                    <span className="mini-entry-dot" />
+                    <div className="mini-entry-text">
+                      <span className="mini-entry-event">{summary.activeObligations} active</span>
+                      <span className="mini-entry-meta">open obligations</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="widget">
+                  <div className="widget-title">Settlement</div>
+                  <div className="widget-sub">Value and reach</div>
+                  <div className="mini-entry">
+                    <span className="mini-entry-dot" />
+                    <div className="mini-entry-text">
+                        <span className="mini-entry-event">{summary.settlementVolumeUnits} units settled</span>
+                        <span className="mini-entry-meta">settlement volume</span>
+                    </div>
+                  </div>
+                  <div className="mini-entry">
+                    <span className="mini-entry-dot" />
+                    <div className="mini-entry-text">
+                      <span className="mini-entry-event">{summary.completionRatePct}% completion</span>
+                      <span className="mini-entry-meta">{summary.completedObligations} of {summary.verifiedObligations} verified obligations</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="section-head">
-                <span className="section-title">Verified History</span>
+                <span className="section-title">Recent Verified Activity</span>
                 <a className="section-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>View all <ArrowUpRight /></a>
               </div>
-              <p className="section-sub">Every entry here traces back to a real source-chain transaction and an Attestcoin attestation.</p>
+              <p className="section-sub">Financial events and obligation events, under one verified-history system.</p>
 
               <div className="ledger">
-                {ENTRIES.map((e, i) => (
+                {history.loading && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">Loading verified events…</span></div></div></div>}
+                {!history.loading && entries.length === 0 && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">No verified events yet</span></div><div className="ledger-meta"><span>{history.error ? "Couldn't load on-chain history." : "Complete an obligation or repay a loan on Sepolia to start history."}</span></div></div></div>}
+                {entries.map((e, i) => (
                   <div className="ledger-row" key={i}>
-                    <Seal size={40} />
+                    {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
                       <div className="ledger-top">
                         <span className="ledger-event">{e.event}</span>
@@ -1200,7 +1271,37 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
                         <span className="ledger-proof">{e.tx}</span>
                       </div>
                     </div>
-                    <button className="ledger-view" onClick={() => navigate("event-detail")}>View proof</button>
+                    <button className="ledger-view" onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>{e.status === "verified" ? "View proof" : "Track status"}</button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="section-head" style={{ marginTop: 40 }}>
+                <span className="section-title">Financial History</span>
+                <a className="section-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>View all <ArrowUpRight /></a>
+              </div>
+              <p className="section-sub">Loans are one category of verified history.</p>
+
+              <div className="ledger">
+                {entries.filter((e) => e.refKind === "loan").map((e, i) => (
+                  <div className="ledger-row" key={i}>
+                    {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
+                    <div className="ledger-body">
+                      <div className="ledger-top">
+                        <span className="ledger-event">{e.event}</span>
+                        <span className="ledger-amount">{e.amount}</span>
+                      </div>
+                      <div className="ledger-meta">
+                        <span className="ledger-chain-path"><b>Ethereum</b> → <b>Attestcoin</b> → <b>Creditcoin</b></span>
+                        <span className="ledger-dot" />
+                        <span>Loan {e.ref}</span>
+                        <span className="ledger-dot" />
+                        <span>{e.date}</span>
+                        <span className="ledger-dot" />
+                        <span className="ledger-proof">{e.tx}</span>
+                      </div>
+                    </div>
+                    <button className="ledger-view" onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>{e.status === "verified" ? "View proof" : "Track status"}</button>
                   </div>
                 ))}
               </div>
@@ -1208,10 +1309,10 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
             <aside className="dash-side">
               <div className="side-widget identity-widget">
-                <Identicon />
-                <div className="identity-addr">0x7A3f...92Fd</div>
+                <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
+                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">Connected since Jul 2026</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -1226,7 +1327,7 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
 
               <div className="side-widget">
                 <div className="widget-title">Recent activity</div>
-                {ENTRIES.slice(0, 2).map((e, i) => (
+                {entries.slice(0, 2).map((e, i) => (
                   <div className="mini-entry" key={i}>
                     <span className="mini-entry-dot" />
                     <div className="mini-entry-text">
@@ -1244,9 +1345,20 @@ function OverviewScreen({ navigate, active }: ScreenProps) {
   );
 }
 
-function CreditProfileScreen({ navigate, active }: ScreenProps) {
+function CreditProfileScreen({ navigate, active, account, onSelectEvent }: ScreenProps) {
   const [whyOpen, setWhyOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const viewer = account ?? SAMPLE_ACTOR_ADDRESS;
+  const history = useAsyncData(() => fetchVerifiedHistory(viewer), [viewer]);
+  const entries = history.data ?? [];
+  const summary = summarizeHistory(entries);
+  const evidence = useAsyncData(() => fetchCreditEvidence(viewer), [viewer]);
+  const passport = useAsyncData(() => fetchAgentPassport(viewer), [viewer]);
+  const openCount = useAsyncData(() => fetchOutstandingObligations(viewer), [viewer]);
+  const ev = evidence.data;
+  const pp = passport.data;
+  const stateName = ev ? ["New", "Building", "Established", "Verified"][ev.creditState] ?? "Unknown" : "…";
+  const strip = entries.slice(0, 8).reverse();
   return (
     <div className="app-root">
       <style>{`
@@ -1270,8 +1382,8 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -1447,10 +1559,10 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -1483,7 +1595,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
           </a>
           <div className="sb-wallet">
             <span className="sb-wallet-dot" />
-            <div className="sb-wallet-text"><div className="sb-wallet-addr">0x7A3f...92Fd</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
+            <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
           </div>
         </div>
       </aside>
@@ -1491,7 +1603,7 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">0x7A3f...92Fd</span>
+          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
         </div>
 
         <div className="content">
@@ -1504,15 +1616,18 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 <div className="credit-glow" />
                 <div className="credit-sheen" />
                 <div className="credit-status-row">
-                  <span className="credit-status-label">Credit state</span>
+                  <span className="credit-status-label">Agent Passport</span>
                   <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
-                <div className="credit-status-word">Building</div>
+                <div className="credit-status-word">{ev ? `${stateName} history` : "Verified history"}</div>
                 <div className="credit-highlight">
-                  <span className="credit-highlight-k">Credit capacity</span>
-                  <span className="credit-highlight-v">$200</span>
+                  <span className="credit-highlight-k">Verified obligations</span>
+                  <span className="credit-highlight-v">{pp ? pp.verifiedObligations.toString() : "…"}</span>
                 </div>
-                <div className="credit-basis">Based on 2 verified repayments across 1 loan.</div>
+                <div className="credit-basis">{passport.loading ? "Loading Agent Passport…" : pp ? `Completed ${pp.completedObligations} · Active ${pp.activeObligations} · ${pp.verifiedSettlementVolume} units settled · ${pp.verifiedSourceChains.length} source chain${pp.verifiedSourceChains.length === 1 ? "" : "s"}.` : "Couldn't load on-chain passport — check your connection and retry."}</div>
+                <div className="credit-derivation">
+                  Every figure derives from verified on-chain events recorded through TRU, not assigned.
+                </div>
               </div>
 
               <div className="factors-panel">
@@ -1521,26 +1636,88 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 <div className="factors-list">
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Verified obligations</span><span className="factor-note">Each one attested by Attestcoin independently</span></div>
-                    <span className="factor-v">1</span>
+                    <span className="factor-v">{pp ? pp.verifiedObligations.toString() : "…"}</span>
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Completed</span><span className="factor-note">Verified completions by this actor</span></div>
-                    <span className="factor-v">1</span>
+                    <span className="factor-v">{pp ? pp.completedObligations.toString() : "…"}</span>
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Active</span><span className="factor-note">Verified but not yet completed</span></div>
-                    <span className="factor-v">0</span>
+                    <span className="factor-v">{pp ? pp.activeObligations.toString() : "…"}</span>
                   </div>
                   <div className="factor-row">
-                    <div className="factor-text"><span className="factor-k">Settlement volume</span><span className="factor-note">Sum of this actor's verified completions</span></div>
-                    <span className="factor-v">250 USDC</span>
+                    <div className="factor-text"><span className="factor-k">Settlement volume</span><span className="factor-note">Sum of this actor's verified completions, in agreed units</span></div>
+                    <span className="factor-v">{pp ? `${pp.verifiedSettlementVolume} units` : "…"}</span>
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Completion rate</span><span className="factor-note">Completed ÷ verified × 10000, in basis points</span></div>
-                    <span className="factor-v">10000</span>
+                    <span className="factor-v">{pp ? pp.completionRateBps.toString() : "…"}</span>
+                  </div>
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Source chains</span><span className="factor-note">Distinct chains with verified events</span></div>
+                    <span className="factor-v">{pp ? pp.verifiedSourceChains.length : "…"}</span>
                   </div>
                 </div>
               </div>
+
+              <div className="section-head">
+                <span className="section-title">Verified Obligation History</span>
+                <a className="section-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>Full ledger <ArrowUpRight /></a>
+              </div>
+              <p className="section-sub">Created and completed, each with its status, chain, value, and verification state.</p>
+
+              <div className="ledger">
+                {history.loading && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">Loading verified obligations…</span></div></div></div>}
+                {!history.loading && entries.filter((e) => e.refKind === "obligation").length === 0 && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">No verified obligations yet</span></div></div></div>}
+                {entries.filter((e) => e.refKind === "obligation").map((e, i) => (
+                  <div className="ledger-row" key={i}>
+                    {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
+                    <div className="ledger-body">
+                      <div className="ledger-top">
+                        <span className="ledger-event">{e.event}</span>
+                        <span className="ledger-amount">{e.amount}</span>
+                      </div>
+                      <div className="ledger-meta">
+                        <span className="ledger-chain-path"><b>Ethereum</b> → <b>Attestcoin</b> → <b>Creditcoin</b></span>
+                        <span className="ledger-dot" />
+                        <span>Obligation {e.ref}</span>
+                        <span className="ledger-dot" />
+                        <span>{e.date}</span>
+                        <span className="ledger-dot" />
+                        <span className="ledger-proof">{e.tx}</span>
+                      </div>
+                    </div>
+                    <button className="ledger-view" onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>{e.status === "verified" ? "View proof" : "Track status"}</button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="section-head" style={{ marginTop: 40 }}>
+                <span className="section-title">Evidence, not judgment</span>
+              </div>
+              <p className="section-sub">An Agent Passport does not assign a trust score. It exposes verified economic events so applications and agents can make their own decisions.</p>
+
+              <div className="factors-panel">
+                <div className="widget-title">Same verification primitive</div>
+                <div className="widget-sub">One infrastructure serving different economic actors.</div>
+                <div className="factors-list">
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Human financial event</span><span className="factor-note">Loan originated, loan repaid</span></div>
+                    <span className="factor-v">→ verified history</span>
+                  </div>
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Agent obligation</span><span className="factor-note">Obligation created, obligation completed</span></div>
+                    <span className="factor-v">→ verified history</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="section-head" style={{ marginTop: 40 }}>
+                <span className="section-title">Financial History</span>
+                <a className="section-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>Full ledger <ArrowUpRight /></a>
+              </div>
+              <p className="section-sub">Loans are one category of verified history.</p>
 
               <div className="factors-panel">
                 <div className="widget-title">Contributing factors</div>
@@ -1548,19 +1725,23 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 <div className="factors-list">
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Verified repayments</span><span className="factor-note">Each one attested by Attestcoin independently</span></div>
-                    <span className="factor-v">2</span>
+                    <span className="factor-v">{ev ? ev.repayments.toString() : "…"}</span>
                   </div>
                   <div className="factor-row">
-                    <div className="factor-text"><span className="factor-k">Repayment rate</span><span className="factor-note">No missed or late repayments recorded</span></div>
-                    <span className="factor-v">100%</span>
+                    <div className="factor-text"><span className="factor-k">Distinct loans repaid</span><span className="factor-note">Replay-protected: each loan credited once</span></div>
+                    <span className="factor-v">{ev ? ev.distinctLoansRepaid.toString() : "…"}</span>
                   </div>
                   <div className="factor-row">
                     <div className="factor-text"><span className="factor-k">Total repaid</span><span className="factor-note">Sum of all verified repayment events</span></div>
-                    <span className="factor-v">$350</span>
+                    <span className="factor-v">{ev ? formatLoanAmount(ev.totalRepaid.toString()).text : "…"}</span>
                   </div>
                   <div className="factor-row">
-                    <div className="factor-text"><span className="factor-k">Open loan</span><span className="factor-note">Loan #39, repayment history shown below</span></div>
-                    <span className="factor-v">#39</span>
+                    <div className="factor-text"><span className="factor-k">Credit limit</span><span className="factor-note">0 + 100 per verified repayment, fixed rule</span></div>
+                    <span className="factor-v">{ev ? ev.creditLimit.toString() : "…"}</span>
+                  </div>
+                  <div className="factor-row">
+                    <div className="factor-text"><span className="factor-k">Outstanding obligations</span><span className="factor-note">Open obligations for this actor</span></div>
+                    <span className="factor-v">{openCount.data !== null ? openCount.data.toString() : "…"}</span>
                   </div>
                 </div>
               </div>
@@ -1572,8 +1753,8 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
                 </button>
                 {whyOpen && (
                   <div className="why-body">
-                    <p>TRU doesn't assign "Building" as a label someone chose. It's the output of a fixed rule: any wallet with 1–2 verified repayments sits in Building. At 3 verified repayments, this profile would move to Established. The repayment rate plays no part in the rule.</p>
-                    <p>The $200 capacity is calculated as 2 verified repayments × $100, which is the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives a completion rate, with no score assigned by anyone.</p>
+                    <p>TRU doesn't assign "{stateName}" as a label someone chose. It's the output of a fixed rule: 0 verified repayments → New, 1–2 → Building, 3–5 → Established, 6+ → Verified. {ev ? `This profile counts ${ev.repayments} verified repayment${ev.repayments === 1n ? "" : "s"}.` : ""} The rate of repayment plays no part in the rule.</p>
+                    <p>Capacity{ev ? ` is ${ev.creditLimit}` : ""}, calculated as 0 + verified repayments × 100 — the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives{pp ? ` ${pp.completionRateBps}` : ""} basis points, with no score assigned by anyone.</p>
                   </div>
                 )}
               </div>
@@ -1585,8 +1766,9 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
               <p className="section-sub">Each mark is a verified event, placed by date.</p>
               <div className="history-strip">
                 <div className="history-line" />
-                {ENTRIES.slice().reverse().map((e, i) => (
-                  <div className="history-point" key={i} style={{ left: `${12 + i * 38}%` }}>
+                {history.loading && <span className="history-label" style={{ left: "8%" }}>Loading…</span>}
+                {strip.map((e, i, arr) => (
+                  <div className="history-point" key={i} style={{ left: `${arr.length > 1 ? 8 + (i * 84) / (arr.length - 1) : 50}%` }}>
                     <span className="history-dot" />
                     <span className="history-label">{e.date.replace(", 2026", "")}</span>
                   </div>
@@ -1596,10 +1778,10 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
 
             <aside className="dash-side">
               <div className="side-widget identity-widget">
-                <Identicon />
-                <div className="identity-addr">0x7A3f...92Fd</div>
+                <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
+                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">Connected since Jul 2026</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -1613,8 +1795,8 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
               </div>
 
               <div className="side-widget">
-                <div className="widget-title">Repayment rate</div>
-                <div className="gauge-wrap"><RateGauge pct={100} size={104} /></div>
+                <div className="widget-title">Completion rate</div>
+                <div className="gauge-wrap"><RateGauge pct={summary.completionRatePct} size={104} caption="completed" /></div>
               </div>
             </aside>
           </div>
@@ -1624,8 +1806,26 @@ function CreditProfileScreen({ navigate, active }: ScreenProps) {
   );
 }
 
-function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
+type EventFilter = "all" | "loans" | "obligations" | "pending";
+
+function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: ScreenProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<EventFilter>("all");
+  const viewer = account ?? SAMPLE_ACTOR_ADDRESS;
+  const history = useAsyncData(() => fetchVerifiedHistory(viewer), [viewer]);
+  const entries = history.data ?? [];
+  const verifiedCount = entries.filter((e) => e.status === "verified").length;
+  const visible = entries.filter((e) => {
+    if (filter === "loans" && e.refKind !== "loan") return false;
+    if (filter === "obligations" && e.refKind !== "obligation") return false;
+    if (filter === "pending" && e.status !== "pending") return false;
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return [e.event, e.amount, e.ref, e.tx, e.date, e.chain].some((v) =>
+      v.toLowerCase().includes(q)
+    );
+  });
   return (
     <div className="app-root">
       <style>{`
@@ -1649,8 +1849,8 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -1852,10 +2052,10 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -1888,7 +2088,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
           </a>
           <div className="sb-wallet">
             <span className="sb-wallet-dot" />
-            <div className="sb-wallet-text"><div className="sb-wallet-addr">0x7A3f...92Fd</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
+            <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
           </div>
         </div>
       </aside>
@@ -1896,7 +2096,7 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">0x7A3f...92Fd</span>
+          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
         </div>
 
         <div className="content">
@@ -1908,17 +2108,36 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
               <div className="events-toolbar">
                 <div className="events-search">
                   <SearchIcon />
-                  <input className="events-search-input" placeholder="Search by loan ID, obligation ID, tx hash, or amount" />
+                  <input
+                    className="events-search-input"
+                    placeholder="Search by loan ID, obligation ID, tx hash, or amount"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
                 </div>
                 <div className="events-filters">
-                  <button className="filter-chip is-active">All</button>
-                  <button className="filter-chip">Verified</button>
-                  <button className="filter-chip">Pending</button>
+                  {(
+                    [
+                      ["all", "All"],
+                      ["loans", "Loans"],
+                      ["obligations", "Obligations"],
+                      ["pending", "Pending"],
+                    ] as [EventFilter, string][]
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      className={`filter-chip ${filter === key ? "is-active" : ""}`}
+                      onClick={() => setFilter(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="ledger ledger--full">
-                {ENTRIES.map((e, i) => (
+                {history.loading && <div className="ledger-row"><div className="ledger-body"><span className="ledger-event">Loading verified events…</span></div></div>}
+                {!history.loading && visible.map((e, i) => (
                   <div className="ledger-row" key={i}>
                     {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
@@ -1936,25 +2155,32 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
                         <span className="ledger-proof">{e.tx}</span>
                       </div>
                     </div>
-                    <button className="ledger-view" onClick={() => navigate(e.status === "verified" ? "event-detail" : "verifying")}>{e.status === "verified" ? "View proof" : "Track status"}</button>
+                    <button className="ledger-view" onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>{e.status === "verified" ? "View proof" : "Track status"}</button>
                   </div>
                 ))}
+                {!history.loading && visible.length === 0 && (
+                  <div className="ledger-row">
+                    <div className="ledger-body">
+                      <span className="ledger-event">{history.error ? "Couldn't load on-chain history" : entries.length === 0 ? "No verified events yet" : "No matching events"}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <aside className="dash-side">
               <div className="side-widget identity-widget">
-                <Identicon />
-                <div className="identity-addr">0x7A3f...92Fd</div>
+                <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
+                <div className="identity-addr">{account ? truncateAddress(account) : "Sample profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">Connected since Jul 2026</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Sample profile — connect to view yours"}</div>
               </div>
 
               <div className="side-widget">
                 <div className="widget-title">Event summary</div>
-                <div className="summary-row"><span>Total events</span><span className="summary-v">{ENTRIES.length}</span></div>
-                <div className="summary-row"><span>Verified</span><span className="summary-v" style={{ color: "var(--accent-bright)" }}>{ENTRIES.filter((e) => e.status === "verified").length}</span></div>
-                <div className="summary-row"><span>Pending attestation</span><span className="summary-v">{ENTRIES.filter((e) => e.status === "pending").length}</span></div>
+                <div className="summary-row"><span>Total events</span><span className="summary-v">{history.loading ? "…" : entries.length}</span></div>
+                <div className="summary-row"><span>Verified</span><span className="summary-v" style={{ color: "var(--accent-bright)" }}>{history.loading ? "…" : verifiedCount}</span></div>
+                <div className="summary-row"><span>Pending attestation</span><span className="summary-v">{history.loading ? "…" : entries.length - verifiedCount}</span></div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -1974,8 +2200,17 @@ function VerifiedEventsScreen({ navigate, active }: ScreenProps) {
   );
 }
 
-function EventDetailScreen({ navigate, active }: ScreenProps) {
+function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const viewer = account ?? SAMPLE_ACTOR_ADDRESS;
+  const history = useAsyncData(() => fetchVerifiedHistory(viewer), [viewer]);
+  const att = useAsyncData(() => fetchAttestationStatus(), []);
+  const fallback = (history.data ?? []).find((e) => e.status === "verified") ?? null;
+  const e = selectedEvent ?? fallback;
+  const isLoan = e?.refKind === "loan";
+  const solidityEvent = !e ? "" : e.kind === "repayment" ? "LoanRepaid" : e.kind === "origination" ? "LoanCreated" : e.kind === "obligation-completed" ? "ObligationCompleted" : "ObligationCreated";
+  const sourceContract = isLoan ? LOAN_MARKET_ADDRESS : OBLIGATION_MARKET_ADDRESS;
+  const attested = att.data !== null && e?.sourceBlock !== undefined && att.data.attestedHeight >= Number(e.sourceBlock);
   return (
     <div className="app-root">
       <style>{`
@@ -1999,8 +2234,8 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -2233,10 +2468,10 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -2269,7 +2504,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
           </a>
           <div className="sb-wallet">
             <span className="sb-wallet-dot" />
-            <div className="sb-wallet-text"><div className="sb-wallet-addr">0x7A3f...92Fd</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
+            <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
           </div>
         </div>
       </aside>
@@ -2277,7 +2512,7 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">0x7A3f...92Fd</span>
+          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
         </div>
 
         <div className="content">
@@ -2285,12 +2520,19 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
           <div className="detail-head">
             <div>
-              <span className="page-eyebrow">Loan Repayment #42</span>
-              <h1 className="page-title" style={{ marginBottom: 6 }}>100 USDC</h1>
-              <span className="detail-status"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
+              <span className="page-eyebrow">{e ? `${isLoan ? (e.kind === "origination" ? "Loan Origination" : "Loan Repayment") : "Obligation"} ${e.ref}` : "Event"}</span>
+              <h1 className="page-title" style={{ marginBottom: 6 }}>{history.loading && !e ? "Loading…" : e ? e.amount : "No event selected"}</h1>
+              {e && <span className="detail-status"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>}
             </div>
           </div>
 
+          {!e && !history.loading && (
+            <div className="detail-panel">
+              <div className="detail-row"><span className="detail-k">Nothing to show</span><span className="detail-v">Open an entry from Verified Events to trace it to its proof.</span></div>
+            </div>
+          )}
+
+          {e && (
           <div className="dash-grid">
             <div className="dash-main">
               {/* Chain: same node language as the rest of the product, now shown complete */}
@@ -2307,25 +2549,30 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
               <div className="detail-panel">
                 <div className="detail-panel-title">Source</div>
                 <div className="detail-row"><span className="detail-k">Chain</span><span className="detail-v">Ethereum Sepolia</span></div>
-                <div className="detail-row"><span className="detail-k">Event</span><span className="detail-v">LoanRepaid</span></div>
-                <div className="detail-row"><span className="detail-k">Source contract</span><span className="detail-v">0x2b6f...11a4</span></div>
+                <div className="detail-row"><span className="detail-k">Event</span><span className="detail-v">{solidityEvent}</span></div>
+                <div className="detail-row"><span className="detail-k">Source contract</span><span className="detail-v">{truncateHash(sourceContract)}</span></div>
+                <div className="detail-row"><span className="detail-k">Source block</span><span className="detail-v">{e.sourceBlock}</span></div>
                 <div className="detail-row">
                   <span className="detail-k">Source transaction</span>
-                  <a className="detail-v detail-link" href="https://sepolia.etherscan.io/tx/0x8f2ac94d" target="_blank" rel="noreferrer">0x8f2a...c94d <ExternalLink /></a>
+                  {e.fullTxHash ? (
+                    <a className="detail-v detail-link" href={`https://sepolia.etherscan.io/tx/${e.fullTxHash}`} target="_blank" rel="noreferrer">{e.tx} <ExternalLink /></a>
+                  ) : (
+                    <span className="detail-v">{e.tx}</span>
+                  )}
                 </div>
               </div>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Attestation</div>
                 <div className="detail-row"><span className="detail-k">Provider</span><span className="detail-v">Attestcoin</span></div>
-                <div className="detail-row"><span className="detail-k">Status</span><span className="detail-v detail-v--ok"><CheckGlyph size={11} /> Verified</span></div>
-                <div className="detail-row"><span className="detail-k">Attestation reference</span><span className="detail-v">0x4b19...2e0a</span></div>
+                <div className="detail-row"><span className="detail-k">Status</span><span className="detail-v detail-v--ok"><CheckGlyph size={11} /> {att.loading ? "Checking…" : attested ? "Verified" : "Confirming on proof builder"}</span></div>
+                <div className="detail-row"><span className="detail-k">Attested through block</span><span className="detail-v">{att.data !== null ? att.data.attestedHeight.toString() : "…"}</span></div>
               </div>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">TRU verification</div>
                 <div className="checklist">
-                  {["Source contract verified", "Event verified", "Borrower verified", "Loan ID verified", "Replay protection passed"].map((c) => (
+                  {["Source contract verified", "Event verified", isLoan ? "Borrower verified" : "Executor verified", isLoan ? "Loan ID verified" : "Obligation ID verified", "Replay protection passed"].map((c) => (
                     <div className="checklist-item" key={c}><CheckGlyph size={13} color="var(--accent-bright)" /> {c}</div>
                   ))}
                 </div>
@@ -2333,45 +2580,43 @@ function EventDetailScreen({ navigate, active }: ScreenProps) {
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Creditcoin</div>
-                <div className="detail-row"><span className="detail-k">Credit state</span><span className="detail-v detail-v--ok"><CheckGlyph size={11} /> Updated</span></div>
-                <div className="detail-row">
-                  <span className="detail-k">Credit record</span>
-                  <a className="detail-v detail-link" href="#" target="_blank" rel="noreferrer">0x1c7e...9a04 <ExternalLink /></a>
-                </div>
+                <div className="detail-row"><span className="detail-k">{isLoan ? "Credit state" : "Passport"}</span><span className="detail-v detail-v--ok"><CheckGlyph size={11} /> Updated</span></div>
+                <div className="detail-row"><span className="detail-k">Registry record</span><span className="detail-v">Recorded on Creditcoin</span></div>
               </div>
 
               <div className="security-note">
                 <ShieldGlyph size={16} />
-                <p>TRU didn't trust a submitted borrower, amount, or loan ID for this event. The contract read all three directly from the verified source-chain transaction, not from anything typed into a form.</p>
+                <p>TRU didn't trust a submitted {isLoan ? "borrower" : "executor"}, amount, or {isLoan ? "loan" : "obligation"} ID for this event. The contract read all three directly from the verified source-chain transaction, not from anything typed into a form.</p>
               </div>
             </div>
 
             <aside className="dash-side">
               <div className="side-widget">
                 <div className="widget-title">This event</div>
-                <div className="summary-row"><span>Loan</span><span className="summary-v">#42</span></div>
-                <div className="summary-row"><span>Date</span><span className="summary-v">Aug 15, 2026</span></div>
-                <div className="summary-row"><span>Time to verify</span><span className="summary-v">7 min</span></div>
+                <div className="summary-row"><span>{isLoan ? "Loan" : "Obligation"}</span><span className="summary-v">{e.ref}</span></div>
+                <div className="summary-row"><span>Date</span><span className="summary-v">{e.date}</span></div>
+                <div className="summary-row"><span>Source block</span><span className="summary-v">{e.sourceBlock ?? "—"}</span></div>
               </div>
 
               <div className="side-widget side-widget--qa">
                 <div className="widget-title">Quick actions</div>
                 <div className="quick-actions">
-                  <a className="qa-btn" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}><EventsIcon /><span>Events</span></a>
-                  <a className="qa-btn" href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}><CreditIcon /><span>Profile</span></a>
-                  <a className="qa-btn" href="#overview" onClick={(e) => { e.preventDefault(); navigate("overview"); }}><OverviewIcon /><span>Overview</span></a>
+                  <a className="qa-btn" href="#events" onClick={(ev) => { ev.preventDefault(); navigate("events"); }}><EventsIcon /><span>Events</span></a>
+                  <a className="qa-btn" href="#credit" onClick={(ev) => { ev.preventDefault(); navigate("credit"); }}><CreditIcon /><span>Profile</span></a>
+                  <a className="qa-btn" href="#overview" onClick={(ev) => { ev.preventDefault(); navigate("overview"); }}><OverviewIcon /><span>Overview</span></a>
                   <button className="qa-btn"><ExportIcon /><span>Export</span></button>
                 </div>
               </div>
             </aside>
           </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
 
-function ProtocolScreen({ navigate, active }: ScreenProps) {
+function ProtocolScreen({ navigate, active, account }: ScreenProps) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div className="app-root">
@@ -2396,8 +2641,8 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
         /* Header row: logo + toggle live together, properly */
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -2657,10 +2902,10 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -2693,7 +2938,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
           </a>
           <div className="sb-wallet">
             <span className="sb-wallet-dot" />
-            <div className="sb-wallet-text"><div className="sb-wallet-addr">0x7A3f...92Fd</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
+            <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
           </div>
         </div>
       </aside>
@@ -2701,7 +2946,7 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">0x7A3f...92Fd</span>
+          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
         </div>
 
         <div className="content">
@@ -2710,20 +2955,20 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
 
           <div className="dash-grid">
             <div className="dash-main">
-              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Everything below describes the real pipeline.</p>
+              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Lenders, RWA platforms, and autonomous agents can consume it. Everything below describes the real pipeline.</p>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Architecture</div>
                 <div className="arch-stack">
-                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Source Chain</div><div className="arch-block-desc">Where the financial activity actually happens</div></div></div>
+                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Source Chain</div><div className="arch-block-desc">Where the economic event happens</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Attestcoin</div><div className="arch-block-desc">Cross-chain attestation of the event</div></div></div>
+                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Attestation</div><div className="arch-block-desc">Evidence about the event</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block"><TruMark size={14} color="var(--accent-bright)" /><div><div className="arch-block-name">TRU Verification Layer</div><div className="arch-block-desc">Validates the attested event into a verified economic event</div></div></div>
+                  <div className="arch-block"><TruMark size={14} color="var(--accent-bright)" /><div><div className="arch-block-name">TRU Verification Layer</div><div className="arch-block-desc">Cryptographically verifies the event</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block"><CreditIcon size={16} /><div><div className="arch-block-name">Creditcoin</div><div className="arch-block-desc">Stores and exposes verified history</div></div></div>
+                  <div className="arch-block"><CreditIcon size={16} /><div><div className="arch-block-name">Creditcoin</div><div className="arch-block-desc">Stores the verified economic history</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block is-done"><CheckGlyph size={13} color="var(--bg)" /><div><div className="arch-block-name">Applications</div><div className="arch-block-desc">Lenders, RWA platforms, agents consume the state</div></div></div>
+                  <div className="arch-block is-done"><CheckGlyph size={13} color="var(--bg)" /><div><div className="arch-block-name">Applications & Agents</div><div className="arch-block-desc">Consume verified facts</div></div></div>
                 </div>
               </div>
 
@@ -2776,39 +3021,37 @@ function ProtocolScreen({ navigate, active }: ScreenProps) {
   );
 }
 
-function providerLabel(p: EIP1193Provider | undefined): string {
-  if (!p) return "Browser wallet";
-  const candidates = p.providers ?? [p];
-  const names: string[] = [];
-  for (const c of candidates) {
-    if (c.isMetaMask && !names.includes("MetaMask")) names.push("MetaMask");
-    else if (c.isCoinbaseWallet && !names.includes("Coinbase Wallet")) names.push("Coinbase Wallet");
-    else if (c.isRabby && !names.includes("Rabby")) names.push("Rabby");
+function listInjectedProviders(root: EIP1193Provider | undefined): EIP1193Provider[] {
+  if (!root) return [];
+  const out: EIP1193Provider[] = [];
+  for (const p of root.providers ?? [root]) {
+    if (p && !out.includes(p)) out.push(p);
   }
-  return names.length > 0 ? names.join(" · ") : "Browser wallet";
+  return out;
 }
 
-function ConnectWalletScreen({ navigate }: ScreenProps) {
+
+
+function ConnectWalletScreen({ navigate, onConnect }: ScreenProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const [connectingIndex, setConnectingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const isMobile =
     typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const provider: EIP1193Provider | undefined =
-    typeof window !== "undefined" ? window.ethereum : undefined;
+  const injected: EIP1193Provider[] =
+    typeof window !== "undefined" ? listInjectedProviders(window.ethereum) : [];
 
-  const connectInjected = async () => {
-    if (!provider) {
-      setError("No injected wallet found in this browser. Install one, or continue on mobile below.");
-      return;
-    }
-    setConnecting(true);
+  const connectWith = async (index: number) => {
+    const target = injected[index];
+    if (!target) return;
+    setConnectingIndex(index);
     setError(null);
     try {
-      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+      const accounts = (await target.request({ method: "eth_requestAccounts" })) as string[];
       if (accounts && accounts.length > 0) {
+        if (onConnect) onConnect(accounts[0]);
         navigate("overview");
       } else {
         setError("The wallet returned no accounts. Try again.");
@@ -2816,7 +3059,7 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : "Connection was rejected.");
     } finally {
-      setConnecting(false);
+      setConnectingIndex(null);
     }
   };
 
@@ -2829,11 +3072,6 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
       setError("Copy failed. Long-press the address bar to copy the link manually.");
     }
   };
-
-  const metamaskLink =
-    typeof window !== "undefined"
-      ? `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`
-      : "https://metamask.app.link/";
 
   return (
     <div className="app-root">
@@ -2856,8 +3094,8 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         .sb-label{ display:inline-block; white-space:nowrap; transition:opacity .18s var(--ease-out), max-width .28s var(--ease-in-out); opacity:1; max-width:160px; overflow:hidden; }
         .sidebar.is-collapsed .sb-label{ opacity:0; max-width:0; }
         .sb-header{ display:flex; align-items:center; justify-content:space-between; padding:6px 8px 26px; }
-        .sidebar.is-collapsed .sb-header{ justify-content:center; gap:12px; padding:6px 0 22px; }
-        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; transition:gap .3s var(--ease-in-out); }
+        .sidebar.is-collapsed .sb-header{ flex-direction:column; justify-content:center; gap:14px; padding:6px 0 22px; }
+        .sb-brand{ display:flex; align-items:center; gap:9px; overflow:hidden; background:none; border:none; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; transition:gap .3s var(--ease-in-out); }
         .sb-brand svg{ flex:none; }
         .sidebar.is-collapsed .sb-brand{ justify-content:center; gap:0; }
         .sb-brand-word{ font-family:var(--font-display); font-size:16px; font-weight:700; }
@@ -2892,6 +3130,10 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         .page-title{ font-family:var(--font-display); font-size:clamp(26px,2.4vw,32px); font-weight:600; margin:0 0 32px; }
         .back-link{ display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text-soft); text-decoration:none; margin-bottom:22px; }
         .back-link:hover{ color:var(--text); }
+        .connect-wrap .page-eyebrow{ display:block; }
+        .connect-head{ display:flex; align-items:center; gap:16px; margin-bottom:22px; }
+        .connect-head .back-link{ margin-bottom:0; flex:none; }
+        .connect-head .page-eyebrow{ margin-bottom:0; }
 
         /* CONNECT */
         .connect-wrap{ max-width:620px; margin:0 auto; }
@@ -2932,10 +3174,10 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
 
       <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
         <div className="sb-header">
-          <div className="sb-brand">
+          <button className="sb-brand" onClick={() => navigate("landing")} aria-label="Back to home">
             <TruMark size={20} />
             <span className="sb-brand-word sb-label">TRU</span>
-          </div>
+          </button>
           <button className="sb-toggle" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             <SidebarToggleIcon />
           </button>
@@ -2975,20 +3217,28 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
         </div>
 
         <div className="content connect-wrap">
-          <a className="back-link" href="#product" onClick={(e) => { e.preventDefault(); navigate("landing"); }}><ArrowLeft /> Back</a>
-          <span className="page-eyebrow">Wallet</span>
+          <div className="connect-head">
+            <a className="back-link" href="#product" onClick={(e) => { e.preventDefault(); navigate("landing"); }}><ArrowLeft /> Back</a>
+            <span className="page-eyebrow">Wallet</span>
+          </div>
           <h1 className="page-title">Connect your wallet</h1>
           <p className="connect-lede">Connection is local and read-only. TRU never sees your keys and never moves funds. It only reads the address you connect with.</p>
 
           <div className="detail-panel">
             <div className="detail-panel-title">Browser wallet · injected</div>
-            <div className="detail-row"><span className="detail-k">Detected</span><span className="detail-v">{provider ? providerLabel(provider) : "None found"}</span></div>
+            <div className="detail-row"><span className="detail-k">Detected</span><span className="detail-v">{injected.length === 0 ? "None found" : `${injected.length} wallet${injected.length === 1 ? "" : "s"}`}</span></div>
             <div className="detail-row"><span className="detail-k">Network</span><span className="detail-v">Ethereum Sepolia</span></div>
-            <div className="btn-row">
-              <button className="btn-primary" onClick={connectInjected} disabled={connecting || !provider}>
-                <WalletGlyph size={14} /> {connecting ? "Waiting for wallet…" : provider ? `Connect ${providerLabel(provider)}` : "Connect browser wallet"}
-              </button>
-            </div>
+            {injected.length === 0 ? (
+              <p className="connect-note">No injected wallet found in this browser. Install one, or continue on mobile below.</p>
+            ) : (
+              <div className="btn-row">
+                {injected.map((_, i) => (
+                  <button key={i} className="btn-primary" onClick={() => connectWith(i)} disabled={connectingIndex !== null}>
+                    <WalletGlyph size={14} /> {connectingIndex === i ? "Waiting for wallet…" : injected.length > 1 ? `Connect wallet ${i + 1}` : "Connect wallet"}
+                  </button>
+                ))}
+              </div>
+            )}
             {error && <p className="connect-err">{error}</p>}
           </div>
 
@@ -3002,21 +3252,17 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
               </p>
             )}
             <div className="connect-steps">
-              <div className="connect-step"><span className="connect-step-n">01</span><span>Open your wallet app, such as MetaMask, Coinbase Wallet, or Rabby.</span></div>
+              <div className="connect-step"><span className="connect-step-n">01</span><span>Open your wallet app.</span></div>
               <div className="connect-step"><span className="connect-step-n">02</span><span>Open its built-in browser tab.</span></div>
-              <div className="connect-step"><span className="connect-step-n">03</span><span>Paste this page's link, or jump straight in:</span></div>
+              <div className="connect-step"><span className="connect-step-n">03</span><span>Copy this page's link and paste it into the wallet browser.</span></div>
             </div>
             <div className="btn-row">
-              <a className="btn-primary" href={metamaskLink} target="_blank" rel="noreferrer">
-                Open in MetaMask <ArrowUpRight size={12} />
-              </a>
               <button className="btn-ghost" onClick={copyLink}>{copied ? "Link copied" : "Copy page link"}</button>
             </div>
             <p className="connect-note">Desktop pages cannot reach a phone's wallets directly. The wallet's own browser injects the connection, and the step above then just works.</p>
           </div>
 
           <div className="security-note">
-            <ShieldGlyph size={16} />
             <p>A connection here only reads your address for display. Verification happens on-chain: every history entry traces to an attested source-chain transaction, never to anything typed or claimed here.</p>
           </div>
         </div>
@@ -3027,15 +3273,21 @@ function ConnectWalletScreen({ navigate }: ScreenProps) {
 
 export default function TruApp() {
   const [screen, setScreen] = useState<ScreenName>("landing");
+  const [account, setAccount] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<LedgerEntry | null>(null);
   const navigate: NavigateFn = (s) => { setScreen(s); if (typeof window !== "undefined") window.scrollTo(0, 0); };
+  const handleSelectEvent = (entry: LedgerEntry) => {
+    setSelectedEvent(entry);
+    setScreen(entry.status === "verified" ? "event-detail" : "verifying");
+  };
 
-  if (screen === "landing") return <LandingScreen navigate={navigate} />;
-  if (screen === "verifying") return <VerifyingScreen navigate={navigate} />;
-  if (screen === "overview") return <OverviewScreen navigate={navigate} active="overview" />;
-  if (screen === "credit") return <CreditProfileScreen navigate={navigate} active="credit" />;
-  if (screen === "events") return <VerifiedEventsScreen navigate={navigate} active="events" />;
-  if (screen === "event-detail") return <EventDetailScreen navigate={navigate} active="events" />;
-  if (screen === "protocol") return <ProtocolScreen navigate={navigate} active="protocol" />;
-  if (screen === "connect") return <ConnectWalletScreen navigate={navigate} />;
-  return <LandingScreen navigate={navigate} />;
+  if (screen === "landing") return <LandingScreen navigate={navigate} account={account} />;
+  if (screen === "verifying") return <VerifyingScreen navigate={navigate} account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  if (screen === "overview") return <OverviewScreen navigate={navigate} active="overview" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  if (screen === "credit") return <CreditProfileScreen navigate={navigate} active="credit" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  if (screen === "events") return <VerifiedEventsScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  if (screen === "event-detail") return <EventDetailScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  if (screen === "protocol") return <ProtocolScreen navigate={navigate} active="protocol" account={account} />;
+  if (screen === "connect") return <ConnectWalletScreen navigate={navigate} account={account} onConnect={setAccount} />;
+  return <LandingScreen navigate={navigate} account={account} />;
 }

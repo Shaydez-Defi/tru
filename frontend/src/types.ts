@@ -17,6 +17,12 @@ export type NavigateFn = (screen: ScreenName) => void;
 export interface ScreenProps {
   navigate: NavigateFn;
   active?: ScreenName;
+  /** Connected wallet address, or null when not connected. */
+  account: string | null;
+  /** Event selected from a ledger, for the detail/tracking screens. */
+  selectedEvent?: LedgerEntry | null;
+  onSelectEvent?: (entry: LedgerEntry) => void;
+  onConnect?: (address: string) => void;
 }
 
 export type IconComponent = ComponentType<{ size?: number }>;
@@ -33,19 +39,48 @@ export interface PipelineNodeDatum {
 export type LedgerStatus = "verified" | "pending";
 export type HistoryDomain = "loan" | "obligation";
 
+export type LedgerEventKind =
+  | "repayment"
+  | "origination"
+  | "obligation-created"
+  | "obligation-completed"
+  | "pending";
+
 export interface LedgerEntry {
   event: string;
   amount: string;
+  /** Numeric value behind `amount`, for aggregation (agreed units for obligations, SepoliaETH for loans — never USD). */
+  valueUsd: number;
   /** Display reference, e.g. "#42" (loan) or "#7" (obligation). */
   ref: string;
   refKind: "loan" | "obligation";
+  kind: LedgerEventKind;
   domain: HistoryDomain;
   date: string;
   chain: string;
   tx: string;
   status: LedgerStatus;
-  /** Always true: UI shows sample data until contract reads are wired. */
-  sample: true;
+  /**
+   * True for built-in demo rows; false for entries mapped from live
+   * on-chain registry reads.
+   */
+  sample: boolean;
+  /** Full source tx hash (live entries only), for explorer links. */
+  fullTxHash?: string;
+  /** Source block number as string (live entries only), for ordering. */
+  sourceBlock?: string;
+  /** Borrower address (live loan entries only). */
+  borrower?: string;
+}
+
+export interface HistorySummary {
+  verifiedEvents: number;
+  verifiedObligations: number;
+  completedObligations: number;
+  activeObligations: number;
+  settlementVolumeUnits: number;
+  sourceChains: number;
+  completionRatePct: number;
 }
 
 export interface MonthDatum {
@@ -126,9 +161,6 @@ export interface EconomicActorView {
 
 export interface EIP1193Provider {
   request: (args: { method: string; params?: unknown }) => Promise<unknown>;
-  isMetaMask?: boolean;
-  isCoinbaseWallet?: boolean;
-  isRabby?: boolean;
   providers?: EIP1193Provider[];
 }
 

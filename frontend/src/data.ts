@@ -1,19 +1,34 @@
-import type { LedgerEntry, MonthDatum, StageDatum } from "./types";
+import type { HistorySummary, LedgerEntry, MonthDatum, StageDatum } from "./types";
 
-/*
- * SAMPLE DATA: for UI demo only. None of these values are read from
- * on-chain contracts. Every entry is explicitly marked `sample: true`
- * and the UI labels sample surfaces as examples.
+/* Live entries come from frontend/src/chain.ts (on-chain registry reads).
+ * The helpers below derive dashboard metrics from entries only —
+ * no invented numbers. Mirrors the on-chain derivation style
+ * (distinct refs, completion ratio).
  */
-
-export const ENTRIES: LedgerEntry[] = [
-  { event: "Repayment verified", amount: "100 USDC", ref: "#42", refKind: "loan", domain: "loan", date: "Aug 15, 2026", chain: "Ethereum Sepolia", tx: "0x8f2a...c94d", status: "verified", sample: true },
-  { event: "Repayment verified", amount: "250 USDC", ref: "#39", refKind: "loan", domain: "loan", date: "Jul 30, 2026", chain: "Ethereum Sepolia", tx: "0x3c91...4e0f", status: "verified", sample: true },
-  { event: "Loan originated", amount: "350 USDC", ref: "#39", refKind: "loan", domain: "loan", date: "Jul 2, 2026", chain: "Ethereum Sepolia", tx: "0xa17b...992c", status: "verified", sample: true },
-  { event: "Obligation completed", amount: "250 USDC", ref: "#7", refKind: "obligation", domain: "obligation", date: "Aug 11, 2026", chain: "Ethereum Sepolia", tx: "0x77aa...b3e1", status: "verified", sample: true },
-  { event: "Obligation created", amount: "250 USDC", ref: "#7", refKind: "obligation", domain: "obligation", date: "Jul 28, 2026", chain: "Ethereum Sepolia", tx: "0x91cf...55d2", status: "verified", sample: true },
-  { event: "Attestation pending", amount: "80 USDC", ref: "#45", refKind: "loan", domain: "loan", date: "Aug 19, 2026", chain: "Ethereum Sepolia", tx: "0x51d4...7b2a", status: "pending", sample: true },
-];
+export function summarizeHistory(entries: LedgerEntry[]): HistorySummary {
+  const verified = entries.filter((e) => e.status === "verified");
+  const createdRefs = new Set(
+    verified.filter((e) => e.kind === "obligation-created").map((e) => e.ref)
+  );
+  const completedRefs = new Set(
+    verified.filter((e) => e.kind === "obligation-completed").map((e) => e.ref)
+  );
+  const completed = [...completedRefs].length;
+  const active = [...createdRefs].filter((r) => !completedRefs.has(r)).length;
+  const settlementVolumeUsd = verified
+    .filter((e) => e.kind === "obligation-completed")
+    .reduce((sum, e) => sum + e.valueUsd, 0);
+  const verifiedObligations = new Set([...createdRefs, ...completedRefs]).size;
+  return {
+    verifiedEvents: verified.length,
+    verifiedObligations,
+    completedObligations: completed,
+    activeObligations: active,
+    settlementVolumeUnits: settlementVolumeUsd,
+    sourceChains: new Set(verified.map((e) => e.chain)).size,
+    completionRatePct: verifiedObligations === 0 ? 0 : Math.round((completed / verifiedObligations) * 100),
+  };
+}
 
 // Real, sparse, honest: TRU is early-stage, so the chart is early-stage too.
 export const MONTHS: MonthDatum[] = [
