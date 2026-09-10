@@ -330,7 +330,7 @@ async function processLoanRepaid(log) {
     );
   } catch (e) {
     const reason = e.reason ?? e.shortMessage ?? String(e);
-    if (/Query already processed/.test(reason)) {
+    if (/Query already processed/.test(reason) || /already recorded|already credited/.test(reason)) {
       timings.submit = Date.now() - s0;
       console.log(`[replay-rejected] TRUUniversalContract rejected resubmission: "${reason}"`);
       console.log(`[replay-rejected] no registry write was attempted for this resubmission`);

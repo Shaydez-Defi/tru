@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-/// @notice Sole interface TRUUniversalContract uses to forward verified repayments.
+/// @notice Sole interface TRUUniversalContract uses to forward verified events
+///         (loan repayments/originations, obligation creations/completions).
 ///         Kept in its own file so TRUUniversalContract and TRUCreditRegistry only
 ///         couple through this interface — no logic leaks across (AGENTS.md rule 6).
+/// @dev sourceTxHash parameters are relay-provided index data, NOT cryptographically
+///      verified fields. The verified identifier of every recorded event is the
+///      queryId (keccak of chainKey, blockHeight, txIndex), which is derived
+///      on-chain in TRUUniversalContract and replay-guarded. sourceChain and
+///      sourceBlock ARE bound to the verified proof (they are the chainKey and
+///      height passed to verifyAndEmit). No credit logic depends on sourceTxHash.
 interface ITRUCreditRegistry {
     function recordVerifiedRepayment(
         bytes32 queryId,

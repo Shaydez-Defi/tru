@@ -165,6 +165,7 @@ contract TRUUniversalContract {
     }
 
     function setRegistry(address registry_) external onlyOwner {
+        require(registry_ != address(0), "Zero registry");
         registry = ITRUCreditRegistry(registry_);
     }
 

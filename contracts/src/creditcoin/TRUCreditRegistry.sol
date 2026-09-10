@@ -92,7 +92,10 @@ contract TRUCreditRegistry is ITRUCreditRegistry {
     }
 
     /// @notice Sets the TRUUniversalContract allowed to record verified repayments.
+    /// @dev Zero address rejected: with universalContract unset, all record calls
+    ///      fail closed ("Only TRUUniversalContract"), so configuration must be explicit.
     function setUniversalContract(address uc) external onlyOwner {
+        require(uc != address(0), "Zero universal contract");
         universalContract = uc;
     }
 

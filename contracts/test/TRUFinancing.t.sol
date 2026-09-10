@@ -56,6 +56,14 @@ contract TRUFinancingTest is Test {
         financing.requestFinancing(10);
     }
 
+    function test_requestRevertsForZeroAmount() public {
+        _repay(borrower, 1, Q1, TX1); // BUILDING, creditLimit 100
+        vm.prank(borrower);
+        vm.expectRevert("Amount must be > 0");
+        financing.requestFinancing(0);
+        assertEq(financing.getFinancingRequestCount(borrower), 0);
+    }
+
     function test_requestRevertsForAmountExceedingCreditLimit() public {
         _repay(borrower, 1, Q1, TX1); // limit 100
         vm.prank(borrower);

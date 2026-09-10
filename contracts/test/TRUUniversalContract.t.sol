@@ -187,6 +187,27 @@ contract TRUUniversalContractTest is Test {
         uc.decodeObligationCreated(hex"1234");
     }
 
+    function test_setRegistryRejectsZeroAddress() public {
+        vm.expectRevert("Zero registry");
+        uc.setRegistry(address(0));
+    }
+
+    function test_decodeObligationCompletedRejectsForeignEmitter() public {
+        address obligationMarket = makeAddr("obligationMarket");
+        address executor = makeAddr("executor");
+        uc.setSourceObligationMarket(obligationMarket);
+        bytes32 sig = keccak256("ObligationCompleted(uint256,address,uint256)");
+        bytes32[] memory topics = new bytes32[](3);
+        topics[0] = sig;
+        topics[1] = bytes32(uint256(99));
+        topics[2] = bytes32(uint256(uint160(executor)));
+        decoder.setLog(
+            IEvmV1Decoder.LogEntry({address_: otherContract, topics: topics, data: abi.encode(uint256(5000))})
+        );
+        vm.expectRevert("Not SourceObligationMarket emitter");
+        uc.decodeObligationCompleted(hex"1234");
+    }
+
     function test_decodeObligationCompletedAcceptsSourceMarket() public {
         address obligationMarket = makeAddr("obligationMarket");
         address executor = makeAddr("executor");

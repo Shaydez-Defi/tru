@@ -118,12 +118,23 @@ contract TRUCreditRegistryTest is Test {
     }
 
     function test_unconfiguredContractCannotRecord() public {
+        // A freshly deployed registry has universalContract == address(0);
+        // no caller can match it, so recording fails closed.
+        TRUCreditRegistry fresh;
         vm.prank(owner);
-        registry.setUniversalContract(address(0));
+        fresh = new TRUCreditRegistry();
 
         vm.prank(universalContract);
         vm.expectRevert("Only TRUUniversalContract");
-        registry.recordVerifiedRepayment(QUERY_ID_1, borrower, 42, 500, CHAIN_KEY, SOURCE_TX_HASH_1, SOURCE_BLOCK);
+        fresh.recordVerifiedRepayment(QUERY_ID_1, borrower, 42, 500, CHAIN_KEY, SOURCE_TX_HASH_1, SOURCE_BLOCK);
+    }
+
+    function test_setUniversalContractRejectsZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert("Zero universal contract");
+        registry.setUniversalContract(address(0));
+        // existing configuration is preserved
+        assertEq(registry.universalContract(), universalContract);
     }
 
     function test_sameRepaymentCannotBeRecordedTwice() public {
@@ -658,6 +669,67 @@ contract TRUCreditRegistryTest is Test {
         assertEq(p.verifiedSettlementVolume, 0);
         assertEq(p.completionRateBps, 0);
         assertEq(p.verifiedSourceChains.length, 0);
+    }
+
+    // ===== Security Audit Regression Tests =====
+
+    function test_obligationDoubleCompletionReverts() public {
+        address requester = makeAddr("requester");
+        address executor = makeAddr("executor");
+        _recordObligationCreated(keccak256("ob-1"), 100, requester, executor, 5000, block.timestamp + 1000);
+        _recordObligationCompleted(keccak256("ob-1-complete"), 100, executor, 5000);
+        // Second completion with a fresh queryId must still revert: lifecycle guard.
+        vm.prank(universalContract);
+        vm.expectRevert("Obligation not active");
+        registry.recordVerifiedObligationCompleted(
+            keccak256("ob-1-complete-2"), 100, executor, 5000, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK
+        );
+        // State unchanged by the rejected attempt.
+        assertEq(uint8(registry.getObligationStatus(100)), uint8(ITRUCreditRegistry.ObligationStatus.COMPLETED));
+        ITRUCreditRegistry.AgentPassport memory p = registry.getAgentPassport(executor);
+        assertEq(p.completedObligations, 1);
+        assertEq(p.verifiedSettlementVolume, 5000);
+    }
+
+    function test_obligationZeroAddressReverts() public {
+        address executor = makeAddr("executor");
+        vm.prank(universalContract);
+        vm.expectRevert("Zero address");
+        registry.recordVerifiedObligationCreated(
+            keccak256("ob-zero"), 100, address(0), executor, 5000, block.timestamp + 1000, CHAIN_KEY, keccak256("tx"), SOURCE_BLOCK
+        );
+        vm.prank(universalContract);
+        vm.expectRevert("Zero address");
+        registry.recordVerifiedObligationCreated(
+            keccak256("ob-zero-2"), 101, executor, address(0), 5000, block.timestamp + 1000, CHAIN_KEY, keccak256("tx2"), SOURCE_BLOCK
+        );
+    }
+
+    function test_selfObligationNotDoubleCounted() public {
+        // requester == executor: history must contain each event once, settlement counted once.
+        address self = makeAddr("self");
+        _recordObligationCreated(keccak256("ob-self"), 200, self, self, 8000, block.timestamp + 1000);
+        _recordObligationCompleted(keccak256("ob-self-complete"), 200, self, 8000);
+        assertEq(registry.getObligationEventCount(self), 2); // one Created + one Completed
+        ITRUCreditRegistry.AgentPassport memory p = registry.getAgentPassport(self);
+        assertEq(p.verifiedObligations, 1);
+        assertEq(p.completedObligations, 1);
+        assertEq(p.activeObligations, 0);
+        assertEq(p.verifiedSettlementVolume, 8000);
+        assertEq(p.completionRateBps, 10000);
+    }
+
+    function test_sourceTxHashStoredAsRelayProvided() public {
+        // Documents the audit finding: sourceTxHash is relay-provided index data,
+        // not a cryptographically verified field. The registry stores exactly what
+        // the UC-gated caller passes; the verified identifier is the queryId.
+        bytes32 arbitraryTxHash = keccak256("relayer-chosen-tx-hash");
+        vm.prank(universalContract);
+        registry.recordVerifiedRepayment(QUERY_ID_1, borrower, 42, 500, CHAIN_KEY, arbitraryTxHash, SOURCE_BLOCK);
+        TRUCreditRegistry.VerifiedFinancialEvent[] memory events = registry.getEvents(borrower, 0, 10);
+        assertEq(events.length, 1);
+        assertEq(events[0].sourceTxHash, arbitraryTxHash);
+        assertEq(events[0].eventId, QUERY_ID_1); // eventId (queryId) is the verified identifier
     }
 
     function test_loanAndObligationHistoriesAreIsolated() public {
