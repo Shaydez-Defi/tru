@@ -1,5 +1,13 @@
 # Audit: Implementation Map and Gap Checklist vs. Acceptance Criteria
 
+> Addendum (2026-09-10): point-in-time audit; the implementation has moved on.
+> Gap #2 (`activeLoans` stub) is resolved — the field was removed from the
+> struct, ABI, worker log, and tests, and contracts were redeployed. The
+> obligation extension (`SourceObligationMarket`, `AgentPassport`) and all
+> redeploys after this audit postdate it; current addresses and test counts
+> are in `README.md` §§9–10/15. The verdicts below describe the system as of
+> the audit date, not the current deployment.
+
 Audit task (no code changes). Assesses the current TRU implementation — every
 component, every acceptance-criterion — against what is actually live/testnet,
 what is simulated/mocked, and what is inherited USC infrastructure. Nothing is

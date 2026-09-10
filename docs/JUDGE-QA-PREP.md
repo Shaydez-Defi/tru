@@ -59,8 +59,10 @@ pipeline changes.
 ## 5. "What stops you, the deployer, from just calling a function and giving yourself unlimited credit?"
 
 Inside the running system, nothing is callable to do that. The registry's only
-write path is `recordVerifiedRepayment`, which only the universal contract can
-call, and that contract's `execute` accepts only proof bytes, with no borrower,
+write paths are the four UC-gated record functions (`recordVerifiedRepayment`,
+`recordVerifiedLoanOrigination`, `recordVerifiedObligationCreated`,
+`recordVerifiedObligationCompleted`), which only the universal contract can
+call, and that contract's execute functions accept only proof bytes, with no borrower,
 loan, or amount parameters. The only way to credit anyone is to submit a real
 USC proof of a real repayment, which means actually repaying on Sepolia. The
 honest caveat is the deployer owns the contracts and could redeploy them, which

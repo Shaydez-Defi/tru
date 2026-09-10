@@ -98,7 +98,7 @@ SourceLoanMarket            BlockProver precompile (native)
 | Amount integrity | No amount input exists. Amount is decoded from the verified transaction. Tampered amount reverts: "Merkle proof validation failed". |
 | Duplicate protection | A loan ID credits a profile once. Same loan via a different proof reverts: "Loan already credited". |
 
-- Proof: 23 Forge tests passing, plus live end-to-end attacks rejected on the real testnet pipeline.
+- Proof: 81 Forge tests passing (7 SourceLoanMarket, 7 SourceObligationMarket, 7 TRUFinancing, 13 TRUUniversalContract, 47 TRUCreditRegistry), plus live end-to-end attacks rejected on the real testnet pipeline.
 
 ---
 
@@ -161,5 +161,5 @@ SourceLoanMarket            BlockProver precompile (native)
 **TRU**
 
 - Team: [names / handles]
-- Built: three live contracts, a real USC-verified pipeline, 23 passing tests, live adversarial security evidence on testnet.
+- Built: five live contracts, a real USC-verified pipeline (loans + obligations), 81 passing tests, live adversarial security evidence on testnet.
 - Ask: [what the team is seeking, e.g. feedback on the credit model, pilot lending partners, path to mainnet support].

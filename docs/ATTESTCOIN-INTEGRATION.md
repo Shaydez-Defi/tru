@@ -1,5 +1,12 @@
 # TRU x Attestcoin Protocol Integration
 
+> Note (2026-09-10): this document describes the loan-repayment path as
+> deployed 2026-08-16. The obligation path (`ObligationCreated` /
+> `ObligationCompleted` → `VerifiedObligationEvent` history) mirrors it
+> exactly through the same proof and emitter checks — see
+> `docs/VERIFIABLE_ECONOMIC_HISTORY.md`. Deployment addresses below are
+> superseded; current addresses are in `README.md` §15.
+
 This document explains how TRU uses the Attestcoin Protocol (also known as
 Creditcoin USC / Universal Smart Contracts) to turn verified on-chain loan
 repayments into credit history. It is written for a judge who has not read any
@@ -75,9 +82,11 @@ Current deployments, from `contracts/deployments/*` (the single source of truth
 loaded by the worker; SourceLoanMarket is redeployed fresh on each
 `deploy-production.mjs` run, so the Sepolia address below is the latest):
 
-Addresses below reflect the current deployment as of 2026-08-16, which supersedes
+Addresses below reflect the deployment as of 2026-08-16, which superseded
 the addresses cited in earlier phase reports (phase-4/5/6), since the contracts
-were redeployed after the activeLoans cleanup.
+were redeployed after the activeLoans cleanup. They are themselves superseded
+by later redeploys (obligation extension and after); the current addresses
+are in `README.md` §15 and `contracts/deployments/*`.
 
 | Component | Chain | Address |
 | --- | --- | --- |
@@ -187,8 +196,9 @@ that a Creditcoin precompile has cryptographically verified against an attested
 Sepolia block. Nobody in the loop can change the amount, borrower, or loanId and
 have it accepted, because such a change breaks the proof.
 
-This is not "zero trust." Three things are still trusted: the SourceLoanMarket
-contract's own logic (that its `repayLoan` emits truthful events), the key that
+This is not "zero trust." Three things are still trusted: the source-market
+contracts' own logic (that `SourceLoanMarket.repayLoan` and
+`SourceObligationMarket.completeObligation` emit truthful events), the key that
 deployed and owns the contracts, and the Creditcoin network's attestation of
 Sepolia blocks. What is eliminated is trust in the data delivery path: the
 worker, the frontend, any backend, and any relay. A misbehaving operator of all
