@@ -409,6 +409,8 @@ function LandingScreen({ navigate }: ScreenProps) {
         .footer-col a{ display:block; font-size:13.5px; color:var(--text-soft); text-decoration:none; padding:5px 0; }
         .footer-col a:hover{ color:var(--text); }
         .footer-bottom{ display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--line-soft); font-size:12px; color:var(--text-faint); flex-wrap:wrap; gap:12px; }
+        .footer-legal{ color:inherit; text-decoration:none; }
+        .footer-legal:hover{ color:var(--text); }
         @media (max-width:820px){ .footer-top{ grid-template-columns:1fr 1fr; } }
       `}</style>
 
@@ -709,18 +711,18 @@ function LandingScreen({ navigate }: ScreenProps) {
               <p className="footer-brand-desc">Verifiable economic history infrastructure.</p>
             </div>
             <div className="footer-col"><div className="footer-col-title">Protocol</div>
-              <a href="#how">How It Works</a><a href="#profile">Economic Actors</a><a href="#verification">Verification</a>
+              <a href="#how">How It Works</a><a href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>Economic Actors</a><a href="#verifying" onClick={(e) => { e.preventDefault(); navigate("verifying"); }}>Verification</a>
             </div>
             <div className="footer-col"><div className="footer-col-title">Developers</div>
-              <a href="#docs">Documentation</a><a href="#github">GitHub</a><a href="#contracts">Contracts</a>
+              <a href="#docs">Documentation</a><a href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer">GitHub</a><a href="https://github.com/Shaydez-Defi/tru/tree/main/contracts/src" target="_blank" rel="noreferrer">Contracts</a>
             </div>
             <div className="footer-col"><div className="footer-col-title">Ecosystem</div>
-              <a href="#creditcoin">Creditcoin</a><a href="#attestcoin">Attestcoin</a><a href="#chains">Supported Chains</a>
+              <a href="https://creditcoin.org" target="_blank" rel="noreferrer">Creditcoin</a><a href="https://github.com/Shaydez-Defi/tru/blob/main/docs/ATTESTCOIN-INTEGRATION.md" target="_blank" rel="noreferrer">Attestcoin</a><a href="#protocol" onClick={(e) => { e.preventDefault(); navigate("protocol"); }}>Supported Chains</a>
             </div>
           </div>
           <div className="footer-bottom">
             <span>© 2026 TRU. Verifiable economic history infrastructure.</span>
-            <span>MIT License</span>
+            <span><a className="footer-legal" href="https://github.com/Shaydez-Defi/tru/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a></span>
           </div>
         </div>
       </footer>
