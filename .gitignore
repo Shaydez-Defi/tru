@@ -13,3 +13,6 @@ contracts/lib/
 
 # misc
 *.log
+# frontend
+frontend/dist/
+frontend/node_modules/
