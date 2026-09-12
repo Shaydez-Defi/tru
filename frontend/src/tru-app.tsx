@@ -291,14 +291,14 @@ function LandingScreen({ navigate }: ScreenProps) {
         /* MOBILE HERO: let the card hug its content instead of stretching a
            lean column down the whole viewport. Stacked full-width pills. */
         @media (max-width:700px){
-          .page-backdrop{ padding:12px; }
+          .page-backdrop{ padding:14px; }
           .hero-frame{ border-radius:22px; }
-          .hero{ min-height:0; padding:30px 20px 28px; }
-          .headline{ font-size:clamp(34px,10.5vw,44px); }
-          .hero-sub{ font-size:15px; margin-bottom:24px; }
+          .hero{ min-height:0; padding:46px 20px 38px; }
+          .headline{ font-size:clamp(36px,11vw,48px); }
+          .hero-sub{ font-size:15.5px; margin-bottom:28px; }
           .hero-actions{ flex-direction:column; align-items:stretch; width:100%; max-width:330px; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost{ width:100%; justify-content:center; }
-          .trust-strip{ gap:16px 22px; padding:20px 16px 24px; }
+          .trust-strip{ gap:20px 24px; padding:24px 16px 28px; }
         }
 
         .node{ position:absolute; z-index:2; display:flex; align-items:center; gap:10px; animation:node-float 7s var(--ease-in-out) infinite; }
