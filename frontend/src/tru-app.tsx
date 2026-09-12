@@ -241,9 +241,16 @@ function LandingScreen({ navigate }: ScreenProps) {
         .nav-cta:active{ transform:translateY(1px) scale(.97); box-shadow:inset 0 2px 6px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.45); }
         @media (max-width:900px){ .nav-center{ display:none; } .nav{ display:flex; justify-content:space-between; padding:18px 22px; } }
 
-        /* HERO */
-        .hero{ position:relative; min-height:calc(100vh - 200px); display:flex; flex-direction:column; align-items:center; justify-content:center;
-          text-align:center; padding:20px 24px 60px; overflow:hidden; }
+        /* HERO: sized so nav + hero + trust strip land inside one viewport
+           (svh for mobile browser chrome), with a short-screen fallback. */
+        .hero{ position:relative; min-height:calc(100vh - 230px); min-height:calc(100svh - 230px); display:flex; flex-direction:column; align-items:center; justify-content:center;
+          text-align:center; padding:20px 24px 44px; overflow:hidden; }
+        @media (max-height:780px){
+          .hero{ padding:12px 24px 30px; }
+          .hero-sub{ margin-bottom:24px; }
+          .headline{ font-size:clamp(32px,4.6vw,58px); margin-bottom:16px; }
+          .trail-lines{ height:52px !important; }
+        }
         .hero-glow{ position:absolute; top:-14%; left:0; right:0; height:680px; pointer-events:none; z-index:0;
           background:
             radial-gradient(ellipse 460px 260px at 36% 6%, rgba(255,255,255,.14), transparent 62%),
@@ -255,7 +262,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .headline{ font-family:var(--font-display); font-weight:500; font-size:clamp(38px, 5.4vw, 68px); line-height:1.08; letter-spacing:-.02em; margin:0 0 22px; color:var(--text-faint); }
         .headline b{ display:block; font-weight:800; color:var(--text); }
         .hero-sub{ font-size:clamp(15.5px, 1.2vw, 18px); line-height:1.6; color:var(--text-soft); max-width:46ch; margin:0 0 36px; }
-        .hero-actions{ display:flex; align-items:center; gap:14px; }
+        .hero-actions{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
         .btn-primary{ display:inline-flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; color:#d9fff5;
           background:linear-gradient(135deg, #2a6a5c 0%, #2c4f66 58%, #2B3D52 100%);
           border:1px solid rgba(0,255,198,.28); border-radius:100px; padding:13px 22px; cursor:pointer;
@@ -270,7 +277,7 @@ function LandingScreen({ navigate }: ScreenProps) {
           transition:border-color .3s var(--ease-out), background .3s var(--ease-out), color .3s var(--ease-out), box-shadow .3s var(--ease-out); }
         .btn-ghost:hover{ border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.03); }
 
-        .trail-lines{ position:relative; width:100%; height:110px; margin-top:6px; pointer-events:none; }
+        .trail-lines{ position:relative; width:100%; height:88px; margin-top:6px; pointer-events:none; }
         .trail{ position:absolute; top:0; left:50%; width:1px; background:linear-gradient(to bottom, rgba(255,255,255,.28), transparent);
           animation:trail-pulse 2.6s var(--ease-in-out) infinite; }
         @keyframes trail-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
