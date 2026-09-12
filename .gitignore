@@ -16,3 +16,5 @@ contracts/lib/
 # frontend
 frontend/dist/
 frontend/node_modules/
+
+.vercel/
