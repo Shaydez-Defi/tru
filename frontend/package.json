@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "TRU verifiable economic history demo UI (sample data until contract reads are wired).",
+  "description": "TRU verification-infrastructure demo UI (live on-chain reads).",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",

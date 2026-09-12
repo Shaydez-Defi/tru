@@ -60,6 +60,11 @@ const TOKENS = `
   *{ -webkit-tap-highlight-color:transparent; }
   .tru-root,.app-root,.v-root{ overflow-x:clip; }
   @media (max-width:700px){ .events-search .events-search-input{ font-size:16px; } }
+  /* MOBILE TOPBAR: tighter padding wins over per-screen rules via .main
+     ancestry; the Sepolia chip drops on phones where width runs out. */
+  @media (max-width:860px){ .main .topbar{ padding:16px 20px; gap:10px; } }
+  @media (max-width:560px){ .main .topbar .net-chip--net{ display:none; } }
+  .ledger-row--tap{ cursor:pointer; }
   /* PERSISTENT NAV: brand returns home, wallet chip opens connect. The brand
      shows only where the sidebar is hidden (mobile); chips are tappable. */
   .topbar-brand{ display:none; align-items:center; gap:8px; background:none; border:none; cursor:pointer;
@@ -1237,7 +1242,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
           <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
@@ -1336,7 +1341,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                 {history.loading && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">Loading verified events…</span></div></div></div>}
                 {!history.loading && entries.length === 0 && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">No verified events yet</span></div><div className="ledger-meta"><span>{history.error ? "Couldn't load on-chain history." : "Complete an obligation or repay a loan on Sepolia to start history."}</span></div></div></div>}
                 {entries.map((e, i) => (
-                  <div className="ledger-row" key={i}>
+                  <div className="ledger-row ledger-row--tap" key={i} onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>
                     {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
                       <div className="ledger-top">
@@ -1366,7 +1371,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
 
               <div className="ledger">
                 {entries.filter((e) => e.refKind === "loan").map((e, i) => (
-                  <div className="ledger-row" key={i}>
+                  <div className="ledger-row ledger-row--tap" key={i} onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>
                     {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
                       <div className="ledger-top">
@@ -1685,7 +1690,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
           <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
@@ -1754,7 +1759,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                 {history.loading && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">Loading verified obligations…</span></div></div></div>}
                 {!history.loading && entries.filter((e) => e.refKind === "obligation").length === 0 && <div className="ledger-row"><div className="ledger-body"><div className="ledger-top"><span className="ledger-event">No verified obligations yet</span></div></div></div>}
                 {entries.filter((e) => e.refKind === "obligation").map((e, i) => (
-                  <div className="ledger-row" key={i}>
+                  <div className="ledger-row ledger-row--tap" key={i} onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>
                     {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
                       <div className="ledger-top">
@@ -2179,7 +2184,7 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
           <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
@@ -2222,7 +2227,7 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
               <div className="ledger ledger--full">
                 {history.loading && <div className="ledger-row"><div className="ledger-body"><span className="ledger-event">Loading verified events…</span></div></div>}
                 {!history.loading && visible.map((e, i) => (
-                  <div className="ledger-row" key={i}>
+                  <div className="ledger-row ledger-row--tap" key={i} onClick={() => { onSelectEvent?.(e); navigate(e.status === "verified" ? "event-detail" : "verifying"); }}>
                     {e.status === "verified" ? <Seal size={40} /> : <PendingMark size={40} />}
                     <div className="ledger-body">
                       <div className="ledger-top">
@@ -2596,7 +2601,7 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
           <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
@@ -3031,7 +3036,7 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
           <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
@@ -3319,7 +3324,7 @@ function ConnectWalletScreen({ navigate, onConnect }: ScreenProps) {
       <main className="main">
         <div className="topbar">
           <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
-          <span className="net-chip"><span className="net-dot" /> Sepolia</span>
+          <span className="net-chip net-chip--net"><span className="net-dot" /> Sepolia</span>
         </div>
 
         <div className="content connect-wrap">
