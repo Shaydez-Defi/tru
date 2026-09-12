@@ -49,7 +49,7 @@ export type LedgerEventKind =
 export interface LedgerEntry {
   event: string;
   amount: string;
-  /** Numeric value behind `amount`, for aggregation (agreed units for obligations, SepoliaETH for loans — never USD). */
+  /** Numeric value behind `amount`, for aggregation (agreed units for obligations, SepoliaETH for loans, never USD). */
   valueUsd: number;
   /** Display reference, e.g. "#42" (loan) or "#7" (obligation). */
   ref: string;

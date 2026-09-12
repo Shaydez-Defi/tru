@@ -462,7 +462,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="hero-content">
 
               <h1 className="headline">Economic history<b>you can prove.</b></h1>
-              <p className="hero-sub">TRU verifies what economic actors actually do on-chain — from loan repayments to agent obligations.</p>
+              <p className="hero-sub">TRU verifies what economic actors actually do on-chain, from loan repayments to agent obligations.</p>
 
               <div className="hero-actions">
                 <button className="btn-primary" onClick={() => navigate("connect")}>Connect Wallet <WalletGlyph size={14} /></button>
@@ -520,7 +520,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <div className="pipe-node"><span className="pipe-icon"><LedgerGlyph size={20} /></span><span className="pipe-label">Creditcoin</span><span className="pipe-sub">records verified history</span></div>
             </div>
           </Reveal>
-          <Reveal stagger={2}><p className="problem-line">Same proof. Different economic events — loans were the starting point; obligations generalize the primitive.</p></Reveal>
+          <Reveal stagger={2}><p className="problem-line">Same proof. Different economic events: loans were the starting point, obligations generalize the primitive.</p></Reveal>
         </div>
       </section>
 
@@ -933,7 +933,7 @@ function VerifyingScreen({ navigate, account, selectedEvent }: ScreenProps) {
                   <div className="side-row"><span className="side-k">Event</span><span className="side-v">{selectedEvent.event}</span></div>
                   <div className="side-row"><span className="side-k">Source chain</span><span className="side-v">Ethereum Sepolia</span></div>
                   <div className="side-row"><span className="side-k">Source tx</span><span className="side-v">{selectedEvent.tx}</span></div>
-                  <div className="side-row"><span className="side-k">Source block</span><span className="side-v">{selectedEvent.sourceBlock ?? "—"}</span></div>
+                  <div className="side-row"><span className="side-k">Source block</span><span className="side-v">{selectedEvent.sourceBlock ?? "n/a"}</span></div>
                 </>
               ) : (
                 <>
@@ -1186,7 +1186,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
 
         <div className="content">
           <span className="page-eyebrow">Overview</span>
-          <h1 className="page-title">{account ? "Your verified history" : "Verified history — demo profile"}</h1>
+          <h1 className="page-title">{account ? "Your verified history" : "Verified history: demo profile"}</h1>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -1202,7 +1202,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                   <span className="credit-highlight-k">Verified events</span>
                   <span className="credit-highlight-v">{history.loading ? "…" : summary.verifiedEvents}</span>
                 </div>
-                <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history — check your connection and retry." : `${summary.verifiedEvents} verified events · ${summary.verifiedObligations} obligations · ${summary.completedObligations} completions.`}</div>
+                <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history. Check your connection and retry." : `${summary.verifiedEvents} verified events · ${summary.verifiedObligations} obligations · ${summary.completedObligations} completions.`}</div>
                 <div className="credit-derivation">
                   {!account && "Demo data · Ethereum Sepolia. "}Every figure derives from verified on-chain events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
                 </div>
@@ -1337,7 +1337,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
                 <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile: connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -1649,7 +1649,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                   <span className="credit-highlight-k">Verified obligations</span>
                   <span className="credit-highlight-v">{pp ? pp.verifiedObligations.toString() : "…"}</span>
                 </div>
-                <div className="credit-basis">{passport.loading ? "Loading Agent Passport…" : pp ? `${summary.verifiedEvents} verified events · ${pp.verifiedObligations} obligations · ${pp.completedObligations} completions.` : "Couldn't load on-chain passport — check your connection and retry."}</div>
+                <div className="credit-basis">{passport.loading ? "Loading Agent Passport…" : pp ? `${summary.verifiedEvents} verified events · ${pp.verifiedObligations} obligations · ${pp.completedObligations} completions.` : "Couldn't load on-chain passport. Check your connection and retry."}</div>
                 <div className="credit-derivation">
                   {!account && "Demo data · Ethereum Sepolia. "}Every figure derives from verified on-chain events recorded through TRU, not assigned.
                 </div>
@@ -1779,7 +1779,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                 {whyOpen && (
                   <div className="why-body">
                     <p>TRU doesn't assign "{stateName}" as a label someone chose. It's the output of a fixed rule: 0 verified repayments → New, 1–2 → Building, 3–5 → Established, 6+ → Verified. {ev ? `This profile counts ${ev.repayments} verified repayment${ev.repayments === 1n ? "" : "s"}.` : ""} The rate of repayment plays no part in the rule.</p>
-                    <p>Capacity{ev ? ` is ${ev.creditLimit}` : ""}, calculated as 0 + verified repayments × 100 — the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives{pp ? ` ${pp.completionRateBps}` : ""} basis points, with no score assigned by anyone.</p>
+                    <p>Capacity{ev ? ` is ${ev.creditLimit}` : ""}, calculated as 0 + verified repayments × 100, the contract's fixed rule. It rises automatically as more repayments verify, not on request. The same verified-events principle covers obligations: completions ÷ verified × 10000 gives{pp ? ` ${pp.completionRateBps}` : ""} basis points, with no score assigned by anyone.</p>
                   </div>
                 )}
               </div>
@@ -1806,7 +1806,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
                 <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile: connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -2198,7 +2198,7 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
                 <Identicon addr={account ?? SAMPLE_ACTOR_ADDRESS} />
                 <div className="identity-addr">{account ? truncateAddress(account) : "Demo profile"}</div>
                 <div className="identity-net">Ethereum Sepolia</div>
-                <div className="identity-since">{account ? "Connected wallet" : "Demo profile — connect a wallet for live history"}</div>
+                <div className="identity-since">{account ? "Connected wallet" : "Demo profile: connect a wallet for live history"}</div>
               </div>
 
               <div className="side-widget">
@@ -2620,7 +2620,7 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
                 <div className="widget-title">This event</div>
                 <div className="summary-row"><span>{isLoan ? "Loan" : "Obligation"}</span><span className="summary-v">{e.ref}</span></div>
                 <div className="summary-row"><span>Date</span><span className="summary-v">{e.date}</span></div>
-                <div className="summary-row"><span>Source block</span><span className="summary-v">{e.sourceBlock ?? "—"}</span></div>
+                <div className="summary-row"><span>Source block</span><span className="summary-v">{e.sourceBlock ?? "n/a"}</span></div>
               </div>
 
               <div className="side-widget side-widget--qa">

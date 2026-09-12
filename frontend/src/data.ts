@@ -1,7 +1,7 @@
 import type { HistorySummary, LedgerEntry, MonthDatum, StageDatum } from "./types";
 
 /* Live entries come from frontend/src/chain.ts (on-chain registry reads).
- * The helpers below derive dashboard metrics from entries only —
+ * The helpers below derive dashboard metrics from entries only,
  * no invented numbers. Mirrors the on-chain derivation style
  * (distinct refs, completion ratio).
  */
