@@ -313,9 +313,11 @@ Confirmed by `docs/ENGINE_AUDIT.md` and `docs/SECURITY_AUDIT.md`:
 
 ## Testing
 
-`forge test`: **81 passed, 0 failed, 0 skipped** across 5 suites
+`forge test`: **92 passed, 0 failed, 0 skipped** across 8 suites
 (7 `SourceLoanMarket`, 7 `SourceObligationMarket`, 7 `TRUFinancing`,
-13 `TRUUniversalContract`, 47 `TRUCreditRegistry`), solc `0.8.28`.
+13 `TRUUniversalContract`, 47 `TRUCreditRegistry`, 11 audit:
+relay-boundary, rotation-immutability, lifecycle-pinning, gas-scaling,
+UC-admin, full-path replay/tamper), solc `0.8.28`.
 `forge build` is clean apart from pre-existing `block.timestamp`/typecast
 lint notes. There is no separate typecheck step in this repo; contract
 correctness is covered by the Forge suite plus live testnet runs.
@@ -382,6 +384,19 @@ the owner key, separate before production. Proof submission itself is permission
 for loans. Cold attestation takes ~7–9 minutes (predictable from the
 attested-height gap, not reducible). Active-loan stubs were removed rather
 than faked; `TRUFinancing` approves on eligibility alone with no disbursement.
+Audit additions (2026-09-12, forge-proven, no redeploy): the passport and
+evidence views scan history with nested dedup loops, so read cost grows
+superlinearly (forge-measured: passport 33k gas at 2 obligations vs 159k at
+8; evidence 3.9k at 2 repayments vs 24k at 8). All state-changing writes are
+O(1). The only on-chain read of a view is `TRUFinancing.requestFinancing`
+via `getCreditEvidence`; safe at current volume, first bottleneck to remove
+in production (incremental counters). Separately, `queryId =
+keccak(chainKey, blockHeight, txIndex)` carries no event type, so two
+different event types in one source transaction would collide and the second
+could never be recorded. Neither finding permits forgery or double-credit;
+both are liveness-at-scale bounds, now pinned by tests. No timelock exists:
+at testnet stage the owner key is fully trusted by design, and a timelock's
+production model is documented, not implemented.
 
 ## Roadmap / Future Applications
 
