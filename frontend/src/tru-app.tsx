@@ -49,6 +49,15 @@ const TOKENS = `
   *{ -webkit-tap-highlight-color:transparent; }
   .tru-root,.app-root,.v-root{ overflow-x:clip; }
   @media (max-width:700px){ .events-search .events-search-input{ font-size:16px; } }
+  /* PERSISTENT NAV: brand returns home, wallet chip opens connect. The brand
+     shows only where the sidebar is hidden (mobile); chips are tappable. */
+  .topbar-brand{ display:none; align-items:center; gap:8px; background:none; border:none; cursor:pointer;
+    color:inherit; font-family:var(--font-display); font-size:15px; font-weight:700; margin-right:auto; padding:4px 0; }
+  @media (max-width:860px){ .topbar-brand{ display:inline-flex; } }
+  .net-chip--btn{ cursor:pointer; background:none; font:inherit; }
+  .net-chip--btn:hover{ border-color:rgba(0,255,198,.4); color:var(--text); }
+  .sb-wallet{ cursor:pointer; background:none; font:inherit; color:inherit; text-align:left; width:100%; }
+  .sb-wallet:hover{ border-color:rgba(0,255,198,.35); }
   /* BUTTERY CTA HOVER: a sheen overlay fading in (opacity is the cheapest
      property to animate) instead of a filter snap. Applied to every pill. */
   .btn-primary,.btn-ghost,.nav-cta{ position:relative; overflow:hidden; }
@@ -823,6 +832,7 @@ function VerifyingScreen({ navigate, account, selectedEvent }: ScreenProps) {
         .v-back{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-soft); background:none; border:none; cursor:pointer; }
         .v-back:hover{ color:var(--text); }
         .v-brand{ display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:17px; font-weight:700; }
+        .v-brand-btn{ display:flex; align-items:center; gap:9px; background:none; border:none; cursor:pointer; color:inherit; font:inherit; padding:0; }
 
         .v-stage{ position:relative; z-index:2; padding:20px 24px 100px; }
         .v-layout{ display:grid; grid-template-columns:1fr 320px; gap:56px; max-width:1080px; margin:0 auto; align-items:start; }
@@ -889,7 +899,7 @@ function VerifyingScreen({ navigate, account, selectedEvent }: ScreenProps) {
 
       <div className="v-top">
         <button className="v-back" onClick={() => navigate("events")}><ArrowLeft /> Verified Events</button>
-        <div className="v-brand"><TruMark size={20} /> TRU</div>
+        <div className="v-brand"><button className="v-brand-btn" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={20} /> TRU</button></div>
       </div>
 
       <div className="v-stage">
@@ -1196,17 +1206,18 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
             <SettingsIcon /> <span className="sb-label">Settings</span>
             {collapsed && <span className="sb-tooltip">Settings</span>}
           </a>
-          <div className="sb-wallet">
+          <button className="sb-wallet" onClick={() => navigate("connect")} aria-label="Connect wallet">
             <span className="sb-wallet-dot" />
             <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
-          </div>
+          </button>
         </div>
       </aside>
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
+          <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
         <div className="content">
@@ -1643,17 +1654,18 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
             <SettingsIcon /> <span className="sb-label">Settings</span>
             {collapsed && <span className="sb-tooltip">Settings</span>}
           </a>
-          <div className="sb-wallet">
+          <button className="sb-wallet" onClick={() => navigate("connect")} aria-label="Connect wallet">
             <span className="sb-wallet-dot" />
             <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
-          </div>
+          </button>
         </div>
       </aside>
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
+          <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
         <div className="content">
@@ -2136,17 +2148,18 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
             <SettingsIcon /> <span className="sb-label">Settings</span>
             {collapsed && <span className="sb-tooltip">Settings</span>}
           </a>
-          <div className="sb-wallet">
+          <button className="sb-wallet" onClick={() => navigate("connect")} aria-label="Connect wallet">
             <span className="sb-wallet-dot" />
             <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
-          </div>
+          </button>
         </div>
       </aside>
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
+          <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
         <div className="content">
@@ -2552,17 +2565,18 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
             <SettingsIcon /> <span className="sb-label">Settings</span>
             {collapsed && <span className="sb-tooltip">Settings</span>}
           </a>
-          <div className="sb-wallet">
+          <button className="sb-wallet" onClick={() => navigate("connect")} aria-label="Connect wallet">
             <span className="sb-wallet-dot" />
             <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
-          </div>
+          </button>
         </div>
       </aside>
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
+          <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
         <div className="content">
@@ -2986,17 +3000,18 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
             <SettingsIcon /> <span className="sb-label">Settings</span>
             {collapsed && <span className="sb-tooltip">Settings</span>}
           </a>
-          <div className="sb-wallet">
+          <button className="sb-wallet" onClick={() => navigate("connect")} aria-label="Connect wallet">
             <span className="sb-wallet-dot" />
             <div className="sb-wallet-text"><div className="sb-wallet-addr">{account ? truncateAddress(account) : "Not connected"}</div><div className="sb-wallet-net">Ethereum Sepolia</div></div>
-          </div>
+          </button>
         </div>
       </aside>
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
-          <span className="net-chip">{account ? truncateAddress(account) : "Not connected"}</span>
+          <button className="net-chip net-chip--btn" onClick={() => navigate("connect")}>{account ? truncateAddress(account) : "Not connected"}</button>
         </div>
 
         <div className="content">
@@ -3282,6 +3297,7 @@ function ConnectWalletScreen({ navigate, onConnect }: ScreenProps) {
 
       <main className="main">
         <div className="topbar">
+          <button className="topbar-brand" onClick={() => navigate("landing")} aria-label="Back to home"><TruMark size={18} /><span>TRU</span></button>
           <span className="net-chip"><span className="net-dot" /> Sepolia</span>
         </div>
 
