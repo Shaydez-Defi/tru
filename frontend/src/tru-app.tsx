@@ -43,6 +43,17 @@ const TOKENS = `
   *::-webkit-scrollbar-thumb{ background:rgba(74,96,122,.55); border-radius:8px; border:3px solid var(--bg); background-clip:padding-box; }
   *::-webkit-scrollbar-thumb:hover{ background:rgba(0,255,198,.45); border:3px solid var(--bg); background-clip:padding-box; }
   ::selection{ background:rgba(0,255,198,.28); }
+  /* SCREEN TRANSITIONS: every screen fades/rises in on mount; TruApp holds
+     the old screen for 200ms with .screen-exit so exits fade too. */
+  html{ scroll-behavior:smooth; }
+  .screen-anim{ animation:screen-in .38s var(--ease-out); }
+  @keyframes screen-in{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+  .screen-anim.screen-exit{ animation:none; opacity:0; transform:translateY(10px); transition:opacity .2s ease-out, transform .2s ease-out; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .screen-anim{ animation:none; }
+    .screen-anim.screen-exit{ transition:none; opacity:1; transform:none; }
+  }
   /* IPHONE HARDENING: no text inflation, no sideways scroll, no tap flash,
      no Safari auto-zoom on the search field (needs 16px). */
   html{ -webkit-text-size-adjust:100%; }
@@ -3370,19 +3381,37 @@ export default function TruApp() {
   const [screen, setScreen] = useState<ScreenName>("landing");
   const [account, setAccount] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<LedgerEntry | null>(null);
-  const navigate: NavigateFn = (s) => { setScreen(s); if (typeof window !== "undefined") window.scrollTo(0, 0); };
+  const [exiting, setExiting] = useState(false);
+  const timer = useRef<number | null>(null);
+  useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
+  const navigate: NavigateFn = (s) => {
+    if (s === screen || exiting) return;
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setScreen(s);
+      window.scrollTo(0, 0);
+      return;
+    }
+    setExiting(true);
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setScreen(s);
+      setExiting(false);
+      window.scrollTo(0, 0);
+    }, 200);
+  };
   const handleSelectEvent = (entry: LedgerEntry) => {
     setSelectedEvent(entry);
-    setScreen(entry.status === "verified" ? "event-detail" : "verifying");
+    navigate(entry.status === "verified" ? "event-detail" : "verifying");
   };
 
-  if (screen === "landing") return <LandingScreen navigate={navigate} account={account} />;
-  if (screen === "verifying") return <VerifyingScreen navigate={navigate} account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
-  if (screen === "overview") return <OverviewScreen navigate={navigate} active="overview" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
-  if (screen === "credit") return <CreditProfileScreen navigate={navigate} active="credit" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
-  if (screen === "events") return <VerifiedEventsScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
-  if (screen === "event-detail") return <EventDetailScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
-  if (screen === "protocol") return <ProtocolScreen navigate={navigate} active="protocol" account={account} />;
-  if (screen === "connect") return <ConnectWalletScreen navigate={navigate} account={account} onConnect={setAccount} />;
-  return <LandingScreen navigate={navigate} account={account} />;
+  let view;
+  if (screen === "verifying") view = <VerifyingScreen navigate={navigate} account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  else if (screen === "overview") view = <OverviewScreen navigate={navigate} active="overview" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  else if (screen === "credit") view = <CreditProfileScreen navigate={navigate} active="credit" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  else if (screen === "events") view = <VerifiedEventsScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  else if (screen === "event-detail") view = <EventDetailScreen navigate={navigate} active="events" account={account} selectedEvent={selectedEvent} onSelectEvent={handleSelectEvent} />;
+  else if (screen === "protocol") view = <ProtocolScreen navigate={navigate} active="protocol" account={account} />;
+  else if (screen === "connect") view = <ConnectWalletScreen navigate={navigate} account={account} onConnect={setAccount} />;
+  else view = <LandingScreen navigate={navigate} account={account} />;
+  return <div key={screen} className={`screen-anim${exiting ? " screen-exit" : ""}`}>{view}</div>;
 }
