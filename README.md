@@ -135,13 +135,13 @@ without disbursing funds.
 
 ```mermaid
 flowchart TD
-    SRC[Source Chain: economic event] --> ATT[Attestcoin: cryptographic proof]
-    ATT --> BP[Creditcoin BlockProver: verifies the proof]
-    BP --> TRU[TRU Verification Layer: replay guard, decode, emitter check]
-    TRU --> HIST[Verified Economic History]
-    HIST --> HUMAN[Human Credit History]
-    HIST --> AGENT[Agent Passport]
-    HUMAN --> APPS[Applications / Agents]
+    SRC["Source Chain: economic event"] --> ATT["Attestcoin: cryptographic proof"]
+    ATT --> BP["Creditcoin BlockProver: verifies the proof"]
+    BP --> TRU["TRU Verification Layer: replay guard, decode, emitter check"]
+    TRU --> HIST["Verified Economic History"]
+    HIST --> HUMAN["Human Credit History"]
+    HIST --> AGENT["Agent Passport"]
+    HUMAN --> APPS["Applications / Agents"]
     AGENT --> APPS
 ```
 
@@ -326,7 +326,7 @@ correctness is covered by the Forge suite plus live testnet runs.
 contracts/src/sepolia/        SourceLoanMarket, SourceObligationMarket
 contracts/src/creditcoin/     TRUUniversalContract, TRUCreditRegistry, TRUFinancing
 contracts/src/creditcoin/interfaces/  ITRUCreditRegistry (shared types)
-contracts/test/               5 Forge suites, 81 tests
+contracts/test/               8 Forge suites, 92 tests
 contracts/deployments/        current addresses + ABIs (single source of truth)
 creditcoin/src/worker.mjs     proof relay for all four event types
 creditcoin/src/driver.mjs     source-chain helper (create/repay loans)
