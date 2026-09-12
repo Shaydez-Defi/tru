@@ -6,7 +6,7 @@ TRU addresses a foundational infrastructure gap for a cross-chain credit ecosyst
 
 ## The Problem
 
-Economic activity happens on different chains, but downstream applications need reusable proof that an economic event actually happened. A repayment on Ethereum, or work completed for a counterparty on another chain, leaves no portable proof behind: a protocol on Creditcoin cannot independently verify it. Applications fall back on self-reported history, centralized APIs, or subjective scores, all of which ask you to trust the reporter rather than the evidence.
+Economic activity happens on different chains, but downstream applications need reusable proof that an economic event actually happened. A repayment on Ethereum, or work completed for a counterparty on another chain, does not automatically become reusable, verified economic history on Creditcoin. Applications fall back on self-reported history, centralized APIs, or subjective scores, all of which ask you to trust the reporter rather than the evidence.
 
 ## The Primitive
 
@@ -14,13 +14,22 @@ TRU's infrastructure primitive is one pipeline:
 
 Economic event → Attestcoin evidence → TRU verification → verified economic history → applications
 
+> Verified event → reusable history
+
 TRU verifies the underlying source-chain event and records the verified fact, so consuming applications never rebuild cross-chain verification or historical recording themselves. TRU verifies facts; it never assigns subjective trust.
 
 ## Where TRU Fits
 
 Other Chains → Attestcoin → TRU → Verified Economic History → Credit / Agents / Applications
 
-Attestcoin provides the evidence. TRU makes that evidence useful.
+> Attestcoin provides the evidence. TRU makes that evidence useful.
+
+## Why This Matters
+
+TRU lets future Creditcoin applications consume verified economic events
+without independently rebuilding cross-chain verification and historical
+recording. Verification happens once, on shared infrastructure; every consumer
+reads the same facts.
 
 ## Why Attestcoin
 
@@ -51,13 +60,6 @@ and completion ratios recomputed from on-chain records. It is not an
 AI-generated trust score, not an NFT, and not a token. Applications and agents
 read it and apply their own policies.
 
-## Why This Matters
-
-TRU lets future Creditcoin applications consume verified economic events
-without independently rebuilding cross-chain verification and historical
-recording. Verification happens once, on shared infrastructure; every consumer
-reads the same facts.
-
 ## Current Applications
 
 Only cross-chain credit history and autonomous-agent obligation history are
@@ -79,9 +81,11 @@ Agent performs economic obligation
 Facts, not subjective scores.
 
 Obligation completion history for executors, where the executor may be an
-autonomous agent. An agent here means **any address**: the code treats every
-executor uniformly as an address with a verifiable history. The live demo executor was a fresh wallet acting as an autonomous executor address; no
-autonomous AI operates anywhere in the system.
+autonomous agent. An 'agent' here means an economic actor represented by an
+address. The live demo uses a fresh wallet as the executor; no autonomous AI
+operates anywhere in the system. See the technical documentation in
+`docs/VERIFIABLE_ECONOMIC_HISTORY.md` for the full contract-level design;
+what follows is the product-level flow.
 
 ```
 Obligation → completion → attestation → cryptographic proof → BlockProver → TRU → verified obligation history
@@ -98,15 +102,16 @@ prove both events on Creditcoin (`executeObligationCreated` /
 COMPLETED`).
 
 **Agent Passport is a deterministic view of an agent's verified economic
-history.** It is the struct returned by `getAgentPassport`: nine fields
-(`subject`, `verifiedObligations`, `completedObligations`,
-`failedObligations`, `activeObligations`, `verifiedSettlementVolume`,
-`verifiedSourceChains`, `obligationHistory`, `completionRateBps`), each
-recomputed live from verified events. For example, `completionRateBps =
-completed * 10000 / verified`. It is not an NFT, not a token, and not an
-AI-generated reputation score. It currently records `Created` and `Completed`
-events; `failedObligations` is deterministically `0` because no verified
-failure path exists yet (see Current Limitations).
+history.** It is the struct returned by `getAgentPassport` (`subject`,
+`verifiedObligations`, `completedObligations`, `failedObligations`,
+`activeObligations`, `verifiedSettlementVolume`, `verifiedSourceChains`,
+`obligationHistory`, `completionRateBps`), each recomputed live from verified
+events. For example, `completionRateBps = completed * 10000 / verified`. It
+is not an NFT, not a token, and not an AI-generated reputation score. It
+currently records `Created` and `Completed` events; `failedObligations` is
+deterministically `0` because no verified failure path exists yet (see
+Current Limitations). Field-level detail lives in
+`docs/VERIFIABLE_ECONOMIC_HISTORY.md`.
 
 TRU does NOT assign a subjective trust score. It records verifiable facts
 such as completed obligations. An application or autonomous agent then applies
@@ -341,13 +346,13 @@ Requires Sepolia and Creditcoin CC3 testnet RPC endpoints plus funded
 testnet keys in `creditcoin/.env` (`SOURCE_RPC_URL`, `SEPOLIA_PRIVATE_KEY`,
 `CREDITCOIN_RPC_URL`, `CREDITCOIN_PRIVATE_KEY`, `PROOF_BUILDER_URL`).
 
-```
+```bash
 cd contracts
 forge build
 forge test
 ```
 
-```
+```bash
 cd creditcoin
 node src/deploy-production.mjs
 ```
@@ -359,14 +364,17 @@ This deploys `SourceLoanMarket` and `SourceObligationMarket` to Sepolia, then
 configures `TRUCreditRegistry.setUniversalContract`. All addresses and ABIs
 are written to `contracts/deployments`.
 
-```
-# process a single loan or obligation event (auto-detected)
+```bash
+# from the repository root: process a single loan or obligation event (auto-detected)
 node creditcoin/src/worker.mjs --tx <sepoliaTxHash>
 
 # listen from a block
 node creditcoin/src/worker.mjs --from-block <N> --process-count 1
+```
 
-# reproducible obligation demo against live registry state
+```bash
+# from creditcoin/: reproducible obligation demo against live registry state
+cd creditcoin
 npm run demo:obligation -- <agentAddress>
 ```
 
