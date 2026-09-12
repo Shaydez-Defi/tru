@@ -239,8 +239,9 @@ the fit is technical: TRU exercises the Attestcoin stack end to end.
   `/tx/<hash>` pattern).
 - Source markets (Sepolia, chain `11155111`): `0x9953AC50803f85EaA666B7724a7B165504B9c2e1`,
   `0x133A8Fe8408066B95034Ed638f5C7083Be94d14F`.
-- Demo video / frontend / screenshots: [PLACEHOLDER, not yet produced; no
-  frontend exists in the repository].
+- Live frontend: https://tru-ctc.vercel.app (no wallet needed to browse
+  verified history; connecting a wallet shows live state for that address).
+- Demo video: [TODO, to be recorded].
 
 ## 18. Judge Takeaway
 
