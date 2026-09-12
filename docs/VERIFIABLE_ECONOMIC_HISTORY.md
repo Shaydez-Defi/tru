@@ -10,6 +10,30 @@ TRU originally proved: a loan repayment on Sepolia can be cryptographically veri
 
 The extension is minimal, production-minded, and preserves all existing loan functionality (73 tests passing, no loan code path changed).
 
+Positioning within TRU: verification infrastructure first.
+
+```
+TRU = verification infrastructure
+  -> verified economic events
+  -> reusable economic history
+  -> applications (credit, agents, and future consumers)
+```
+
+The generalized model is `verified economic event -> reusable economic
+history`. It is not hardcoded to `loan -> repayment -> credit score`: loans
+are one event family flowing through the primitive, and obligations prove the
+same primitive serves other economic actors with no change to the trust
+boundary. The relationship in full:
+
+```
+Other chains
+  -> economic event (loan originated/repaid, obligation created/completed)
+  -> Attestcoin evidence (attested block + Merkle/continuity proof)
+  -> TRU verification (BlockProver precompile + TRUUniversalContract checks)
+  -> verified economic history (TRUCreditRegistry, UC-gated)
+  -> downstream applications (read-only views, each with its own policy)
+```
+
 ## 2. Design Principle
 
 Separation of concerns, as established in AGENTS.md rule 6, is extended:
@@ -19,6 +43,14 @@ Separation of concerns, as established in AGENTS.md rule 6, is extended:
 3. **Interpretation**, Applications, protocols, or autonomous agents query the history and apply their own policy (credit, access, financing). TRU never uses an LLM to decide trust and never invents a reputation number. Any derived metric is deterministic and traceable to verified events.
 
 This mirrors the existing loan flow and keeps the trust boundary unchanged.
+
+Explicitly, TRU does NOT:
+
+- generate AI trust scores (no models anywhere in the pipeline)
+- infer reputation (completion proves the on-chain event, not work quality)
+- accept self-reported history (only UC-verified events are recorded)
+- require an NFT or token (the passport is a view over stored events)
+- decide whether an actor is trustworthy (consumers apply their own policy)
 
 ## 3. What Changed: Minimal Extension
 
@@ -193,6 +225,8 @@ const passport = await registry.getAgentPassport(agentAddress);
 
 No frontend redesign was necessary to demonstrate the primitive. The existing human/loan flow (create loan, repay, view CreditPassport) remains understandable. The new primitive is exposed as `Agent Passport` and `Verified Economic History` views that reuse the same `getAgentPassport` / `getObligationEvents` calls as `getCreditPassport` / `getEvents` do for loans. A focused addition such as an Agent Passport page showing the passport fields and a table of `obligationHistory` with source chain and settlement volume is sufficient; it is not implemented in this phase to keep the change minimal and production-minded, and is documented as immediate next UI work.
 
+Update (2026-09-12): implemented after this phase. `frontend/` now has live Economic Actor (passport), Verified Events, event-detail proof, and attestation-tracking views reading `getAgentPassport` / `getObligationEvents` on-chain; deployed at https://tru-ctc.vercel.app.
+
 ## 9. Remaining Work
 
 **Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (73 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it, it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
@@ -200,6 +234,8 @@ No frontend redesign was necessary to demonstrate the primitive. The existing hu
 **Implemented but not yet run live in this deployment:** A unified `VerifiedEconomicEvent` timeline that merges loan `borrowerEvents` and obligation `subjectObligationHistory` into a single `getEconomicHistory` view. The current `getCreditPassport` (loans) and `getAgentPassport` (obligations) already provide clean, separate histories, so the unified view is optional and was not faked.
 
 **Future work:** Frontend, add `Agent Passport` page and obligation detail with verification evidence links (source tx hash, proof header, Creditcoin verification tx, and `AgentPassport` fields). No new cryptography is needed; it is a read-only view over `getAgentPassport` / `getObligationEvents`.
+
+Update (2026-09-12): done. The passport page, obligation-filtered ledger, event-detail proof view, and live attestation tracker are implemented in `frontend/src/tru-app.tsx` (TypeScript, on-chain reads only) and deployed.
 
 All of the above can be done without inventing reputation numbers or trusting off-chain reports; every new field will continue to trace to a `queryId`-verified event.
 
@@ -209,4 +245,21 @@ All of the above can be done without inventing reputation numbers or trusting of
 - No fake or simulated verification layer exists; `verifyAndEmit` is always called before any state update, per AGENTS.md rule 2.
 - No speculative fields are stored; every stored event maps to a real `ObligationCreated` or `ObligationCompleted` log from the configured `SourceObligationMarket`.
 - The extension does not copy another project's terminology, architecture, UI, or demo flow; it grows directly from TRU's verified-event pipeline described in `docs/ATTESTCOIN-INTEGRATION.md`.
+
+## 11. TRU as Infrastructure
+
+Without a shared verification and history layer, every downstream application
+would have to independently verify cross-chain events and maintain its own
+interpretation of economic history: run its own attestation tracking, build
+its own proof handling, re-derive the same facts, and defend its own replay
+and emitter checks. That work is identical for a lender, an underwriter, and
+an autonomous agent deciding whether to transact, so it belongs in shared
+infrastructure, not in each application.
+
+TRU is that layer for the cross-chain credit ecosystem: one verified pipeline
+turns source-chain events into reusable on-chain history, and each consumer,
+human credit, agent passports, and future applications, reads the same facts
+under its own policy. This addresses an infrastructure gap; no claim is made
+that Creditcoin officially requires TRU, only that verifiable economic memory
+is missing and TRU provides it.
 
