@@ -269,7 +269,7 @@ function LandingScreen({ navigate }: ScreenProps) {
 
         /* HERO: sized so nav + hero + trust strip land inside one viewport
            (svh for mobile browser chrome), with a short-screen fallback. */
-        .hero{ position:relative; min-height:calc(100vh - 178px); min-height:calc(100svh - 178px); display:flex; flex-direction:column; align-items:center; justify-content:center;
+        .hero{ position:relative; min-height:calc(100vh - 186px); min-height:calc(100svh - 186px); display:flex; flex-direction:column; align-items:center; justify-content:center;
           text-align:center; padding:20px 24px 44px; overflow:hidden; }
         @media (max-height:780px){
           .hero{ padding:12px 24px 30px; }
