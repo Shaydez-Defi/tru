@@ -43,6 +43,12 @@ const TOKENS = `
   *::-webkit-scrollbar-thumb{ background:rgba(74,96,122,.55); border-radius:8px; border:3px solid var(--bg); background-clip:padding-box; }
   *::-webkit-scrollbar-thumb:hover{ background:rgba(0,255,198,.45); border:3px solid var(--bg); background-clip:padding-box; }
   ::selection{ background:rgba(0,255,198,.28); }
+  /* IPHONE HARDENING: no text inflation, no sideways scroll, no tap flash,
+     no Safari auto-zoom on the search field (needs 16px). */
+  html{ -webkit-text-size-adjust:100%; }
+  *{ -webkit-tap-highlight-color:transparent; }
+  .tru-root,.app-root,.v-root{ overflow-x:clip; }
+  @media (max-width:700px){ .events-search .events-search-input{ font-size:16px; } }
   /* BUTTERY CTA HOVER: a sheen overlay fading in (opacity is the cheapest
      property to animate) instead of a filter snap. Applied to every pill. */
   .btn-primary,.btn-ghost,.nav-cta{ position:relative; overflow:hidden; }
@@ -281,7 +287,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .trail{ position:absolute; top:0; left:50%; width:1px; background:linear-gradient(to bottom, rgba(255,255,255,.28), transparent);
           animation:trail-pulse 2.6s var(--ease-in-out) infinite; }
         @keyframes trail-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
-        @media (max-width:640px){ .trail-lines{ display:none; } }
+        @media (max-width:640px){ .trail-lines{ display:none; } .nav-pill{ display:none; } }
 
         .node{ position:absolute; z-index:2; display:flex; align-items:center; gap:10px; animation:node-float 7s var(--ease-in-out) infinite; }
         .node-icon{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--bg-elevated);
@@ -354,8 +360,8 @@ function LandingScreen({ navigate }: ScreenProps) {
         .proof-v{ font-family:var(--font-mono); color:var(--text); }
         .proof-v--ok{ color:var(--accent-bright); display:flex; align-items:center; gap:5px; }
         .proof-cmd{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; border-top:1px solid var(--line); background:var(--bg); }
-        .proof-cmd code{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft); }
-        .proof-copy{ font-size:12px; font-weight:600; color:var(--text); background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; transition:color .15s var(--ease-out), border-color .15s var(--ease-out), background .15s var(--ease-out); }
+        .proof-cmd code{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-soft); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .proof-copy{ font-size:12px; font-weight:600; color:var(--text); background:var(--bg-elevated-2); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; flex:none; transition:color .15s var(--ease-out), border-color .15s var(--ease-out), background .15s var(--ease-out); }
         .proof-copy:hover{ color:var(--accent-bright); border-color:rgba(0,255,198,.4); }
         @media (max-width:860px){ .proof-stage{ grid-template-columns:1fr; } .proof-cell{ border-right:none; border-bottom:1px solid var(--line); } }
 
