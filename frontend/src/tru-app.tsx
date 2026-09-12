@@ -296,7 +296,17 @@ function LandingScreen({ navigate }: ScreenProps) {
         .trail{ position:absolute; top:0; left:50%; width:1px; background:linear-gradient(to bottom, rgba(255,255,255,.28), transparent);
           animation:trail-pulse 2.6s var(--ease-in-out) infinite; }
         @keyframes trail-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
-        @media (max-width:640px){ .trail-lines{ display:none; } .nav-pill{ display:none; } }
+        @media (max-width:640px){ .trail-lines{ display:none; } }
+        /* MOBILE NAV: collapse to icons so everything fits one row. */
+        .nav-cta-icon{ display:none; }
+        .nav-cta-icon svg{ display:block; }
+        @media (max-width:640px){
+          .nav-pill{ padding:8px 10px; }
+          .nav-pill-label{ display:none; }
+          .nav-cta{ padding:9px 12px; }
+          .nav-cta-label{ display:none; }
+          .nav-cta-icon{ display:inline-flex; }
+        }
         /* MOBILE HERO: let the card hug its content instead of stretching a
            lean column down the whole viewport. Stacked full-width pills. */
         @media (max-width:700px){
@@ -484,8 +494,8 @@ function LandingScreen({ navigate }: ScreenProps) {
               <a className="nav-link" href="#docs">Documentation</a>
             </div>
             <div className="nav-right">
-              <a className="nav-pill" href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer"><GitHubGlyph size={14} /> GitHub</a>
-              <button className="nav-cta" onClick={() => navigate("connect")}>Connect Wallet</button>
+              <a className="nav-pill" href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer"><GitHubGlyph size={14} /> <span className="nav-pill-label">GitHub</span></a>
+              <button className="nav-cta" onClick={() => navigate("connect")}><span className="nav-cta-icon"><WalletGlyph size={15} /></span><span className="nav-cta-label">Connect Wallet</span></button>
             </div>
           </nav>
 
