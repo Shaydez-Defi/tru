@@ -352,7 +352,7 @@ registry enforces deadlines. Obligation and loan IDs live in single-market
 namespaces (one market per type assumed). Passport views loop in `O(n²)`,
 correct at current volume. The deployment owner key is fully trusted (can
 re-point markets/registry), and on testnet the operator key currently equals
-the owner key — separate before production. The known self-loan gap persists
+the owner key — separate before production. Proof submission itself is permissionless (no access control on the UC `execute*` functions, only proof-validity and replay checks), so additional relayers can run without coordination. The known self-loan gap persists
 for loans. Cold attestation takes ~7–9 minutes (predictable from the
 attested-height gap, not reducible). Active-loan stubs were removed rather
 than faked; `TRUFinancing` approves on eligibility alone with no disbursement.

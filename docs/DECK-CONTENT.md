@@ -68,7 +68,7 @@ SourceLoanMarket            BlockProver precompile (native)
                                   creditLimit = 0 + repayments × 100
 ```
 
-- The worker relays proof bytes only. It never decides who gets credit.
+- The worker relays proof bytes only. It never decides who gets credit. Anyone can run one: submission is permissionless (no access control on `execute*`, only proof + replay checks), and duplicates revert harmlessly.
 - The registry accepts only verified events. No borrower, loan, or amount is ever passed in as a parameter.
 - Separation by design: source market emits, universal contract verifies, registry scores.
 

@@ -97,6 +97,18 @@ Source-chain event (Sepolia: LoanCreated / LoanRepaid / ObligationCreated / Obli
 → Verified economic history (getCreditPassport / getAgentPassport / paginated event views)
 ```
 
+### Relayer model (who runs the worker)
+
+The worker is unprivileged infrastructure, not a trusted party. All four
+`execute*` entry points on `TRUUniversalContract` carry no access control —
+only proof-validity and `queryId` replay checks — so anyone holding CC3
+testnet tokens can construct and submit a valid proof; duplicate submissions
+revert harmlessly on `Query already processed`. A malicious or faulty relayer
+cannot invent, alter, or duplicate history: verification lives in the native
+precompile, not in the delivery path. The current demo runs a single
+operator relay for convenience; the roadmap is in-app submission from the
+user's own wallet, which requires no contract changes.
+
 ## 9. Why Agents
 
 An agent claims it completed an economic obligation. Today a counterparty
