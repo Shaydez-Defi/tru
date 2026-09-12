@@ -1,37 +1,26 @@
-# TRU: Verifiable Economic History for Humans & Autonomous Agents
+# TRU — Verification Infrastructure for Cross-Chain Economic History
 
-TRU gives Creditcoin a verifiable memory of what wallets and autonomous agents actually did across chains.
+TRU turns cross-chain economic events into cryptographically verified, reusable on-chain history.
 
-Economic activity happens across many chains, but its history does not travel
-with it. A repayment made on one chain, or work completed for another party
-on another chain, leaves no portable proof behind. TRU closes that gap: a
-Creditcoin contract cryptographically verifies that a specific source-chain
-transaction happened, and the verified fact becomes reusable on-chain history
-that any application or autonomous agent can read and interpret under its own
-policy.
+TRU addresses a foundational infrastructure gap for a cross-chain credit ecosystem: turning verified cross-chain events into reusable economic history.
 
 ## The Problem
 
-Economic activity happens across chains, but its history is fragmented. A
-protocol on one chain cannot independently verify that an economic event
-happened somewhere else. A borrower who repays reliably on Ethereum has no way
-to make that history count on Creditcoin. An agent that completes work for a
-counterparty has no portable proof of having done so.
+Economic activity happens on different chains, but downstream applications need reusable proof that an economic event actually happened. A repayment on Ethereum, or work completed for a counterparty on another chain, leaves no portable proof behind: a protocol on Creditcoin cannot independently verify it. Applications fall back on self-reported history, centralized APIs, or subjective scores, all of which ask you to trust the reporter rather than the evidence.
 
-Applications therefore depend on self-reported history, centralized APIs, or
-opaque reputation systems, all of which ask you to trust the reporter rather
-than the evidence.
+## The Primitive
 
-## The Solution
+TRU's infrastructure primitive is one pipeline:
 
-TRU's primitive is: cross-chain economic event → cryptographic verification →
-reusable verified record.
+Economic event → Attestcoin evidence → TRU verification → verified economic history → applications
 
-Instead of copying a score or asking an oracle to report what happened, a
-Creditcoin contract checks a Merkle proof that the exact source transaction
-was included in an attested source block, decodes the event from the verified
-receipt, and records it as history. The fact arrives self-certifying, not
-reported. TRU verifies facts; it never assigns subjective trust.
+TRU verifies the underlying source-chain event and records the verified fact, so consuming applications never rebuild cross-chain verification or historical recording themselves. TRU verifies facts; it never assigns subjective trust.
+
+## Where TRU Fits
+
+Other Chains → Attestcoin → TRU → Verified Economic History → Credit / Agents / Applications
+
+Attestcoin provides the evidence. TRU makes that evidence useful.
 
 ## Why Attestcoin
 
@@ -41,34 +30,43 @@ returns a Merkle plus continuity proof for the transaction. TRU uses that
 proof to establish verifiable economic history on Creditcoin. Without it, the
 only alternatives are self-reports or trusted oracles.
 
-## Why It Matters
+## Event Model
 
-Verified economic history can become infrastructure for systems that today
-depend on trusted reporters:
+TRU verifies economic events, not applications. Four event types flow through
+the same primitive today:
 
-- **Credit (implemented):** verified repayment history grows a deterministic
-  credit limit; gated financing reads it.
-- **Underwriting (future):** lenders could underwrite against proven
-  repayment and completion histories instead of self-reported claims.
-- **Autonomous-agent commerce (enabled):** agents can query each other's
-  verified completion history before transacting, the infrastructure exists
-  and is live; agent adoption itself is future.
-- **Delegation (future):** a principal could gate delegation on an agent's
-  verified track record.
-- **Reputation (future):** any reputation system built on TRU would inherit
-  cryptographic evidence instead of self-reports. TRU itself issues no
-  reputation scores.
-- **Autonomous finance (future):** machine-to-machine payments and credit
-  could settle against verified history.
+- Loan originated
+- Loan repaid
+- Obligation created
+- Obligation completed
 
-Only credit and the agent-history infrastructure are implemented. Everything
-else in this list is a future application of the same primitive.
+Loans are one application of the underlying verification primitive.
+Obligations generalize it to any economic actor, including autonomous agents.
+
+## Agent Passport
+
+Agent Passport is a consumer of verified history, not the core product. It is
+a deterministic view derived from verified obligation events: counts, volumes,
+and completion ratios recomputed from on-chain records. It is not an
+AI-generated trust score, not an NFT, and not a token. Applications and agents
+read it and apply their own policies.
+
+## Why This Matters
+
+TRU lets future Creditcoin applications consume verified economic events
+without independently rebuilding cross-chain verification and historical
+recording. Verification happens once, on shared infrastructure; every consumer
+reads the same facts.
+
+## Current Applications
+
+Only cross-chain credit history and autonomous-agent obligation history are
+implemented. Everything else is a future consumer of the same primitive.
 
 ## Agent Economic History
 
-Agent Passport is one of TRU's major differentiators: the same verification
-primitive, generalized from human loans to any economic actor, including
-autonomous agents.
+Obligation history is the second implemented consumer of the primitive. The
+flow in full:
 
 ```
 Agent performs economic obligation
@@ -398,15 +396,19 @@ both are liveness-at-scale bounds, now pinned by tests. No timelock exists:
 at testnet stage the owner key is fully trusted by design, and a timelock's
 production model is documented, not implemented.
 
-## Roadmap / Future Applications
+## Future Consumers
 
-Short, and labeled by status. **Implemented:** verified loan history with
-credit tiers and financing gating; verified obligation history with
-deterministic Agent Passport. **Future applications:** verified failure
-lifecycle, unified loan+obligation timeline view, additional source chains,
-mainnet deployment, Agent Passport frontend views, and consumer policies
-built on `getAgentPassport`, autonomous agent commerce, cross-chain
-underwriting, delegation, lending, and machine-to-machine payments.
+None of the following are implemented. Each would consume verified history
+rather than rebuilding verification:
+
+- Underwriting against proven repayment and completion histories
+- Delegated finance gated on verified track records
+- Merchant and counterparty risk decisions from verified events
+- Autonomous commerce between agents reading each other's passports
+
+Protocol-side future work (also not implemented): verified failure lifecycle,
+unified loan-plus-obligation timeline view, additional source chains, and
+mainnet deployment.
 
 ## Contract Addresses
 
