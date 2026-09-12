@@ -1,4 +1,4 @@
-# TRU — Final Security Audit
+# TRU: Final Security Audit
 
 **Date:** 2026-09-09
 **Scope:** Full audit and hardening of the implemented system. No new product
@@ -6,7 +6,7 @@ features, no UI, no NFTs, no AI, no tokens, no new reputation systems.
 `ObligationFailed` verification was not added: the audit found no
 security-critical reason requiring it (`failedObligations` is deterministically
 `0` by design, documented in `docs/VERIFIABLE_ECONOMIC_HISTORY.md`).
-**Result: PASS WITH FINDINGS** — no Critical or High findings. Three LOW
+**Result: PASS WITH FINDINGS**, no Critical or High findings. Three LOW
 hardening fixes applied with regression tests. All other findings are
 documented trust assumptions or observations with no code change.
 
@@ -14,15 +14,15 @@ documented trust assumptions or observations with no code change.
 
 All code paths that can modify persistent credit or economic-history state:
 
-- `contracts/src/sepolia/SourceLoanMarket.sol` — loan creation/repayment, `LoanCreated`/`LoanRepaid`
-- `contracts/src/sepolia/SourceObligationMarket.sol` — obligation lifecycle, `ObligationCreated`/`ObligationCompleted`/`ObligationFailed`
-- `contracts/src/creditcoin/TRUUniversalContract.sol` — `execute`, `executeLoanOrigination`, `executeObligationCreated`, `executeObligationCompleted`, all decoders, replay guard, admin setters
-- `contracts/src/creditcoin/TRUCreditRegistry.sol` — `recordVerifiedRepayment`, `recordVerifiedLoanOrigination`, `recordVerifiedObligationCreated`, `recordVerifiedObligationCompleted`, all views (`getCreditEvidence`, `getCreditPassport`, `getAgentPassport`, pagination)
-- `contracts/src/creditcoin/interfaces/ITRUCreditRegistry.sol` — shared types and entry points
-- `contracts/src/creditcoin/TRUFinancing.sol` — `requestFinancing`, request storage and views
-- `creditcoin/src/worker.mjs` — all four event handlers, `listen`, `--tx` path, error classification
-- `creditcoin/src/deploy-production.mjs` — deployment and wiring order
-- `creditcoin/src/demo-obligation.mjs` — read-only demo, no state writes
+- `contracts/src/sepolia/SourceLoanMarket.sol`, loan creation/repayment, `LoanCreated`/`LoanRepaid`
+- `contracts/src/sepolia/SourceObligationMarket.sol`, obligation lifecycle, `ObligationCreated`/`ObligationCompleted`/`ObligationFailed`
+- `contracts/src/creditcoin/TRUUniversalContract.sol`, `execute`, `executeLoanOrigination`, `executeObligationCreated`, `executeObligationCompleted`, all decoders, replay guard, admin setters
+- `contracts/src/creditcoin/TRUCreditRegistry.sol`, `recordVerifiedRepayment`, `recordVerifiedLoanOrigination`, `recordVerifiedObligationCreated`, `recordVerifiedObligationCompleted`, all views (`getCreditEvidence`, `getCreditPassport`, `getAgentPassport`, pagination)
+- `contracts/src/creditcoin/interfaces/ITRUCreditRegistry.sol`, shared types and entry points
+- `contracts/src/creditcoin/TRUFinancing.sol`, `requestFinancing`, request storage and views
+- `creditcoin/src/worker.mjs`, all four event handlers, `listen`, `--tx` path, error classification
+- `creditcoin/src/deploy-production.mjs`, deployment and wiring order
+- `creditcoin/src/demo-obligation.mjs`, read-only demo, no state writes
 - All Forge tests (`contracts/test/*.sol`)
 
 Out of scope for changes (reviewed, not modified): spike contracts, `TestRepayment`, decoder library, SDK, precompiles.

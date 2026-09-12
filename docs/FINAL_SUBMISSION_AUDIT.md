@@ -33,7 +33,7 @@ TRU does not read as another credit/reputation app. The title, one-liner,
 and Solution frame it as verification infrastructure; credit is explicitly
 "the first application, not the boundary"; the passport is defined by what
 it is not (NFT/token/score) before what it is. Residual risk is only that a
-skimming judge stops at the loan demo — mitigated by the agent section
+skimming judge stops at the loan demo, mitigated by the agent section
 preceding the pipeline and the demo plan leading with the agent story.
 
 ## Technical Credibility
@@ -66,9 +66,10 @@ autonomous AI. No identity, reputation, or autonomy claims exist.
 - **TEST SUITE:** 81/81 Forge, freshly run (7+7+7+13+47).
 - **ARCHITECTURAL:** mechanism descriptions in audits; correctly labeled.
 - Older phase hashes are explicitly marked historical, not live state.
-- Cannot be independently verified from-repo: Sepolia explorer URL pattern
-  (correctly flagged as placeholder in README); per-tx Blockscout URLs
-  (base URL confirmed, full links need hand-verification on submission).
+- Explorer links verified this session: Sepolia hashes confirmed on-chain at
+  the stated blocks (Etherscan pattern, also used by the live frontend);
+  CC3 links resolve on the repo-cited Blockscout instance
+  (`creditcoin-testnet.blockscout.com`, HTTP 200 with hash present).
 
 ## Demo Assessment
 
@@ -85,7 +86,7 @@ Installation (`forge`, `npm install` via `creditcoin/package.json`), env
 vars (all five documented; `.env` gitignored), deployment
 (`deploy-production.mjs` five contracts), worker commands, test commands,
 and `demo:obligation` script are all documented and reference files that
-exist. No frontend exists, so no frontend startup applies — the demo plan
+exist. No frontend exists, so no frontend startup applies, the demo plan
 correctly uses terminal + explorers. Contract addresses and chain IDs are
 current.
 
@@ -105,7 +106,7 @@ or linter is configured; no production build applies (no frontend).
 
 ## Hard Judge Questions
 
-1. **Why isn't this just a credit score?** It isn't one at all — TRU stores
+1. **Why isn't this just a credit score?** It isn't one at all, TRU stores
    verified events; the deterministic limit formula and passport are
    downstream readings any consumer could replace.
 2. **Why do you need Creditcoin?** A Creditcoin contract cannot see Ethereum;
@@ -114,18 +115,17 @@ or linter is configured; no production build applies (no frontend).
 3. **Why not use an oracle?** An oracle moves trust to the relay operator;
    a Merkle proof moves it to cryptography plus the source contract's logic.
 4. **What exactly does BlockProver prove?** Inclusion of the exact
-   transaction bytes in the attested block — nothing about semantics,
+   transaction bytes in the attested block, nothing about semantics,
    quality, or honesty.
 5. **Why is the worker trusted?** It isn't. It relays proof bytes; forged
    bytes fail `verifyAndEmit`, and stored values come from decoded receipts.
 6. **Can history be fabricated?** Only by compromising the owner key (re-point
-   markets), the source contract logic, or attestation itself — all documented
+   markets), the source contract logic, or attestation itself, all documented
    trust assumptions, none hidden.
 7. **Can events be replayed?** No: global `processedQueries` plus per-domain
    replay maps; live replays revert.
 8. **What makes this useful for agents?** Any agent can read any other
-   address's verified completion history and apply its own thresholds —
-   evidence without a trusted intermediary.
+   address's verified completion history and apply its own thresholds,    evidence without a trusted intermediary.
 9. **What happens if an obligation fails?** Today: nothing is recorded; the
    source emits `ObligationFailed` but TRU has no verified failure path, so
    `failedObligations` stays `0`. Stated openly.

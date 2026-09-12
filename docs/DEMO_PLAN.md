@@ -7,8 +7,8 @@ testnet state. Nothing is simulated.
 ## 1. Demo Objective
 
 Answer one question in two minutes: "Can an economic actor prove it kept
-its promise?" Show a real agent obligation — created and completed on
-Sepolia, proven by Merkle proof, verified on Creditcoin — resolving into a
+its promise?" Show a real agent obligation, created and completed on
+Sepolia, proven by Merkle proof, verified on Creditcoin, resolving into a
 deterministic, queryable Agent Passport. A non-technical judge should follow
 the story; a technical judge should see enough hashes, blocks, and guards
 to recognize real infrastructure.
@@ -33,19 +33,19 @@ flow appears once, briefly, to prove the same primitive serves both.
   live state in seconds; no attestation wait, no pending transactions.
 - **Honesty:** a fresh end-to-end verification takes ~7–9 minutes of cold
   attestation and cannot fit in two minutes. Presenting already-verified
-  history — while saying so out loud — is the only honest shape.
+  history, while saying so out loud, is the only honest shape.
 
 ## 4. Exact Timeline
 
-- **0:00–0:15 — Problem.** Economic history is fragmented; claims are cheap.
-- **0:15–0:30 — TRU concept.** Verify the event, don't trust the claim.
-- **0:30–1:20 — Live obligation verification.** Terminal: run the demo
+- **0:00–0:15, Problem.** Economic history is fragmented; claims are cheap.
+- **0:15–0:30, TRU concept.** Verify the event, don't trust the claim.
+- **0:30–1:20, Live obligation verification.** Terminal: run the demo
   script against the real agent; open the four real transactions in
   explorers.
-- **1:20–1:40 — Verified history / Agent Passport.** Passport fields on
+- **1:20–1:40, Verified history / Agent Passport.** Passport fields on
   screen; each traced to its verified event.
-- **1:40–1:55 — Architecture.** One diagram: same primitive, two applications.
-- **1:55–2:00 — Takeaway.** The closing line.
+- **1:40–1:55, Architecture.** One diagram: same primitive, two applications.
+- **1:55–2:00, Takeaway.** The closing line.
 
 ## 5. Exact Actions
 
@@ -53,8 +53,7 @@ flow appears once, briefly, to prove the same primitive serves both.
    `node creditcoin/src/demo-obligation.mjs 0x4987510f276d0650cE8A86bA7bd7a4490cBcE812`.
    Viewer sees: source market address, Created event (obligation 2, value
    12000), Completed event, passport (`verified 1, completed 1, settlement
-   12000, rate 10000`). Say: "This is live chain state, read seconds ago —
-   not a mock." Proves: history exists on-chain and is queryable.
+   12000, rate 10000`). Say: "This is live chain state, read seconds ago,    not a mock." Proves: history exists on-chain and is queryable.
 2. **Etherscan tab (Sepolia).** Open create tx
    `0x1d4bd42658192bf68d140bfe594ade49d6081ab0ef4bfa8509185fc7a0e3f742`
    (block `11667875`). Viewer sees `ObligationCreated` log from
@@ -70,16 +69,16 @@ flow appears once, briefly, to prove the same primitive serves both.
    (block `5457726`, `ObligationCreatedVerified`) and
    `0xadc7783d19d30e4c8c590228f61f78c4a6a692af76da870a42714279630c8c72`
    (block `5457729`, `ObligationCompletedVerified`). Say: "Creditcoin checked
-   the Merkle proof for each event and recorded it — tamper with one byte
+   the Merkle proof for each event and recorded it, tamper with one byte
    and the precompile reverts." Proves: verification really happened
    on-chain.
 5. **Back to terminal.** Scroll to the passport block. Say: "One verified,
    one completed, zero active, twelve thousand settled, one hundred percent
-   — every number computed from those two events." Proves: the passport is
+, every number computed from those two events." Proves: the passport is
    derivation, not opinion.
 6. **Architecture slide/diagram (static image).** Same primitive, two
    applications (human loan chain `0xc21ea7d1…` → `0xe0a48f58…` shown as one
-   line). Say: "Loans use the identical path — credit is the first app, not
+   line). Say: "Loans use the identical path, credit is the first app, not
    the boundary." Proves: generality without extra claims.
 
 Total on-screen actions: one command, four explorer pages, one diagram.
@@ -92,13 +91,13 @@ APIs, opaque scores.
 
 TRU replaces the claim with a proof. When an economic event happens on
 Sepolia, Creditcoin attests the block, a Merkle proof is built, and a
-Creditcoin contract verifies that exact transaction happened — then records
+Creditcoin contract verifies that exact transaction happened, then records
 the fact as history. Nothing is trusted except the cryptography and the
 source contract's own rules.
 
 Here is a real one. An agent was given an obligation worth twelve thousand.
 This is the creation, logged by the source contract on Sepolia. And this is
-its completion, one block later in history — not the agent saying it
+its completion, one block later in history, not the agent saying it
 finished, but the contract logging that it did.
 
 Creditcoin then checked the Merkle proof behind each event. Both verifications
@@ -108,7 +107,7 @@ everything. Tamper with a single byte and the whole thing reverts.
 
 And this is what the agent now owns: a passport. One obligation verified,
 one completed, zero active, twelve thousand settled. Every number computed
-from those two verified events — no score, no judge, no AI deciding
+from those two verified events, no score, no judge, no AI deciding
 anything.
 
 The same path already verifies human loan repayments into credit history.
@@ -124,7 +123,7 @@ Minimum on-screen evidence, in priority order:
 1. Sepolia create tx `0x1d4bd426…` (block `11667875`, `ObligationCreated` log).
 2. Sepolia complete tx `0x25336758…` (block `11667877`, `ObligationCompleted` log).
 3. CC3 verify txs `0x07c5fe9f…` (block `5457726`) and `0xadc7783d…` (block `5457729`).
-4. Live `getAgentPassport` output (`1/1/0/9000→12000…` — actual: `1, 1, 0, 12000, 10000`).
+4. Live `getAgentPassport` output (`1/1/0/9000→12000…`, actual: `1, 1, 0, 12000, 10000`).
 5. Referenced verbally, not shown: attestation waits (`494.3s` cold /
    `2.3s` warm), proof headers/txIndexes, replay-guard behavior.
 

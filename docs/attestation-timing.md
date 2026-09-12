@@ -1,4 +1,4 @@
-# Attestation Timing — Diagnostic
+# Attestation Timing: Diagnostic
 
 Diagnostic task (not a build step) to inform frontend/demo design. Three full
 end-to-end runs through the real wired pipeline (SourceLoanMarket on Sepolia →
@@ -34,32 +34,32 @@ shows exactly what governs the delay:
 
 1. **The proof-builder cache mirrors the on-chain attested height exactly.** In
    every sample, `pb cache` == `on-chain attested height`. There is no ingestion
-   lag or cache-build cost to speak of — the service simply reports the height
+   lag or cache-build cost to speak of, the service simply reports the height
    the Creditcoin chain has actually attested.
 
 2. **Attestation lags the Sepolia head by a roughly constant depth.** At each
    run's start the attested height was 39–44 blocks behind the target (which was
    the head at repayment time). As the head advanced during the wait, attestation
    trailed it by ~34–35 blocks the whole way (end-of-run depth: 35, 34, 35). So
-   the attestation system is not "eventually catching up" — it tracks the head
+   the attestation system is not "eventually catching up", it tracks the head
    with a **~35-block standing lag**.
 
 3. **Attestation advances in 10-block batches.** The trajectory jumps exactly
    +10 blocks every ~120–140 s (e.g. run 3: 11503330 → …40 at ~74 s → …50 at
    ~193 s → …60 at ~328 s → …70 at ~451 s). That cadence matches Sepolia's ~12 s
-   block time × 10 — the attestation is produced in lock-step with the source
+   block time × 10, the attestation is produced in lock-step with the source
    chain, not in big bursts.
 
 So the wait is: `(standing lag ≈ 35–44 blocks) × (~12 s/block) ≈ 7–9 minutes`.
 A freshly-mined repayment at the head must wait for attestation to climb from
-~35 blocks behind up to the repayment's own block — and because attestation
+~35 blocks behind up to the repayment's own block, and because attestation
 only advances at the head's own rate, this gap never shrinks faster than
 wall-clock.
 
 ### Why phase-0 looked fast (~10 s)
 In phase 0 the processed tx was already **old** (mined well before processing),
 so its block was already below the attested height at the moment the worker
-started — attestation was immediately available. Same reason run 2 of phase-4
+started, attestation was immediately available. Same reason run 2 of phase-4
 was ~2 s. It is not that attestation is sometimes fast; it is that
 **already-attested** blocks are instant. A repayment processed *promptly after
 mining* always hits the ~8-minute cold wait (phase-4: 340.5 s, phase-6: 463.4 s,
@@ -74,7 +74,7 @@ this diagnostic: 451–549 s).
   with the attested height advancing in ~10-block batches. A frontend can show
   a live, accurate "verification pending, ~N minutes" from the attested-height
   gap at any moment.
-- **Tunable: no.** The ~35-block standing lag is structural — it is the
+- **Tunable: no.** The ~35-block standing lag is structural, it is the
   Creditcoin network's block-height attestation policy (how deep behind the
   source head the network attests), not our worker's polling interval (10 s) and
   not Sepolia congestion. The worker can poll faster and get the signal at the
@@ -89,8 +89,8 @@ this diagnostic: 451–549 s).
 **Cold attestation is reliably slow: ~7–9 minutes (5 runs: 340, 451, 464, 500,
 549 s), not ~10–15 s.** The fast (~10 s) numbers we saw earlier were always
 already-attested blocks. The delay is a fixed structural property of the
-Creditcoin network — it attests to Sepolia blocks about 35 deep behind the head,
-catching up in 10-block steps at the same rate the chain produces them — so it
+Creditcoin network, it attests to Sepolia blocks about 35 deep behind the head,
+catching up in 10-block steps at the same rate the chain produces them, so it
 is *predictable in advance* (read the attested-height gap, multiply by ~12 s)
 but *not controllable or reducible* from our side. The frontend/demo must
 therefore treat the post-repayment state as a **pending-verification state of

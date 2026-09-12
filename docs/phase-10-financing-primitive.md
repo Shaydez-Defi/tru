@@ -1,4 +1,4 @@
-# Phase 10 — Financing Primitive
+# Phase 10: Financing Primitive
 
 Two tasks. Task 1 fixes a small gap in `TRUCreditRegistry.getCreditPassport`
 where `verifiedSourceChains` missed chains that only had a verified origination.
@@ -6,13 +6,13 @@ Task 2 is backend upgrade brief section 7, the last piece before README/pitch
 work: a minimal credit-gated financing primitive that reads verified state and
 records a request.
 
-## Task 1 — verifiedSourceChains gap
+## Task 1: verifiedSourceChains gap
 
 ### Problem
 
 `getCreditPassport` derived `verifiedSourceChains` only from `borrowerEvents`
-(repayment history). A borrower who had only a verified `LoanCreated` — no
-`LoanRepaid` yet — would report `verifiedSourceChains = []` even though a
+(repayment history). A borrower who had only a verified `LoanCreated`, no
+`LoanRepaid` yet, would report `verifiedSourceChains = []` even though a
 chain had a verified fact.
 
 ### Fix
@@ -34,14 +34,14 @@ Updated `test_creditPassportAfterOriginationAndRepayment` to expect
 `verifiedSourceChains = [1]` immediately after origination (was `[]` before the
 fix). Added:
 
-- `test_verifiedSourceChainsWithOnlyOrigination` — verifies only an origination
+- `test_verifiedSourceChainsWithOnlyOrigination`, verifies only an origination
   (no repayment) for a borrower and asserts `verifiedSourceChains == [CHAIN_KEY]`,
   `loanHistory == 0`, `outstandingObligations == 1`.
 
 `test_verifiedSourceChainsDistinct` still asserts two repayments on the same
 chain dedup to `[1]`.
 
-## Task 2 — TRUFinancing.sol
+## Task 2: TRUFinancing.sol
 
 New, separate contract on Creditcoin CC3. It reads verified credit state, it
 does not verify anything itself, and it does not disburse funds. The trust
@@ -66,7 +66,7 @@ already-verified state, nothing more.
     explicit and not ambiguous, matching how phase 9 documented its edge case.
   - Emits `FinancingRequested(borrower, requestId, amount, creditStateAtRequest,
     status)`.
-  - Explicitly does not transfer tokens, mint, or disburse — recorded,
+  - Explicitly does not transfer tokens, mint, or disburse, recorded,
     credit-gated request only.
 - Read methods: `getFinancingRequests(address)` and `getFinancingRequestCount(address)`.
 - Storage: `mapping(address => FinancingRequest[])`.
@@ -76,18 +76,18 @@ already-verified state, nothing more.
 All in `contracts/test/TRUFinancing.t.sol` using a real `TRUCreditRegistry`
 deployed in `setUp`:
 
-- `test_requestSucceedsWithinBounds` — one verified repayment (BUILDING, limit
+- `test_requestSucceedsWithinBounds`, one verified repayment (BUILDING, limit
   100) then `requestFinancing(50)` succeeds, stored with `APPROVED` and
   snapshot `BUILDING`.
-- `test_requestRevertsForNewState` — fresh borrower (0 repayments, NEW) reverts
+- `test_requestRevertsForNewState`, fresh borrower (0 repayments, NEW) reverts
   "Insufficient credit state".
-- `test_requestRevertsForAmountExceedingCreditLimit` — limit 100, request 101
+- `test_requestRevertsForAmountExceedingCreditLimit`, limit 100, request 101
   reverts "Amount exceeds credit limit", 100 succeeds.
-- `test_multipleRequestsRecorded` — two requests 10 and 20 both stored, count 2.
-- `test_creditStateAtRequestSnapshot` — request at BUILDING, add two more
+- `test_multipleRequestsRecorded`, two requests 10 and 20 both stored, count 2.
+- `test_creditStateAtRequestSnapshot`, request at BUILDING, add two more
   repayments to reach ESTABLISHED, second request snapshots ESTABLISHED while
   first remains BUILDING (does not retroactively change).
-- `test_requestDoesNotDisburseFunds` — balances unchanged, financing contract
+- `test_requestDoesNotDisburseFunds`, balances unchanged, financing contract
   holds no funds.
 
 ## Deployments (current)
@@ -123,7 +123,7 @@ Flow after the fresh redeploy:
    CC3 block 5385870) → `repayments 1, creditLimit 100, status BUILDING`,
    `loanStatus REPAID`, `outstanding 0`, `loanHistory 1`, `verifiedSourceChains [1]`.
 
-3. Financing — as `0x2b374a…` on CC3:
+3. Financing, as `0x2b374a…` on CC3:
    - `getCreditEvidence` before: `BUILDING, 1, 100, 1, 0`.
    - `requestFinancing(50)` (tx `0xa8117461a266471e2b67ebccc8d5d7f302d3e6484f31d2698872f0613525b097`,
      block 5385873, gas 150544) succeeded.
@@ -149,6 +149,6 @@ Task 2's financing suite are included; all earlier phase tests still pass.
 
 - `TRUFinancing` never calls the USC verifier and never writes to
   `TRUCreditRegistry`; it is a pure consumer of already-verified state.
-- No funds disbursed — financing is a recorded eligibility check, not a transfer.
+- No funds disbursed, financing is a recorded eligibility check, not a transfer.
 - Credit-state threshold `BUILDING` and `APPROVED` status are documented in
   contract comments so the choice is not left implicit.

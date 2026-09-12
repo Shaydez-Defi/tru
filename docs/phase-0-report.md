@@ -1,7 +1,7 @@
-# Phase 0 — Integration Spike: Status Report
+# Phase 0: Integration Spike: Status Report
 
 **Date**: 2026-08-16
-**Status**: ✅ SUCCESS — a real Ethereum Sepolia repayment event was cryptographically
+**Status**: ✅ SUCCESS, a real Ethereum Sepolia repayment event was cryptographically
 verified through Creditcoin USC (Attestcoin) and consumed on-chain by a throwaway
 contract on the CC3 testnet.
 
@@ -46,7 +46,7 @@ Debugging (`VerifyProbe`, `SpikeProbe`, raw `eth_call`) isolated the culprit:
   (`ReceiptFields,bytes32` and `LogEntry[],bytes32`) revert with empty data on valid
   input, from EOA **and** contract callers. On-chain runtime bytecode exactly matches
   the Blockscout-verified bytecode, so this is the real deployed contract.
-- The SDK itself never calls `getLogsByEventSignature` — it reads `receiptLogs` from
+- The SDK itself never calls `getLogsByEventSignature`, it reads `receiptLogs` from
   `decodeTransactionTypeX` and filters in JS (`@gluwa/usc-sdk/dist/utils/decoder.js`).
 
 Fix: `SpikeConsumer._decodeRepayment` now filters `receipt.receiptLogs` in-contract
@@ -57,13 +57,13 @@ the broken function. Note the console-debugging caveat: ethers v6.17 also trips 
 
 ## Deliverables / files
 
-- `docs/usc-research.md` — network/SDK/precompile/proof-builder reference (chainKey 1=Sepolia, 3=Ethereum mainnet; CC3 chainId 102031; proof-builder URL; precompile addresses).
-- `contracts/src/TestRepayment.sol` — Sepolia source contract.
-- `contracts/src/spike/SpikeConsumer.sol` — throwaway CC3 consumer (verify + decode + replay guard).
-- `contracts/deployments/sepolia/TestRepayment.json` — deployed address + ABI.
-- `creditcoin/src/prove-and-verify.mjs` — full flow worker (attestation → proof → verify → execute → parse → state check).
+- `docs/usc-research.md`, network/SDK/precompile/proof-builder reference (chainKey 1=Sepolia, 3=Ethereum mainnet; CC3 chainId 102031; proof-builder URL; precompile addresses).
+- `contracts/src/TestRepayment.sol`, Sepolia source contract.
+- `contracts/src/spike/SpikeConsumer.sol`, throwaway CC3 consumer (verify + decode + replay guard).
+- `contracts/deployments/sepolia/TestRepayment.json`, deployed address + ABI.
+- `creditcoin/src/prove-and-verify.mjs`, full flow worker (attestation → proof → verify → execute → parse → state check).
 - `creditcoin/src/proof-check.mjs`, `deploy-consumer.mjs`, `list-chains.mjs`, `decode-tx.mjs`, `debug.mjs`.
-- `contracts/src/spike/VerifyProbe.sol`, `SpikeProbe.sol` — debug probes used to isolate the decoder bug.
+- `contracts/src/spike/VerifyProbe.sol`, `SpikeProbe.sol`, debug probes used to isolate the decoder bug.
 
 ## Notes / open items for Phase 1+
 

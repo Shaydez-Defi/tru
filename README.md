@@ -1,6 +1,6 @@
-# TRU — Verifiable Economic History for Humans & Autonomous Agents
+# TRU: Verifiable Economic History for Humans & Autonomous Agents
 
-TRU turns cross-chain economic events into cryptographically verified, reusable records.
+TRU gives Creditcoin a verifiable memory of what wallets and autonomous agents actually did across chains.
 
 Economic activity happens across many chains, but its history does not travel
 with it. A repayment made on one chain, or work completed for another party
@@ -19,7 +19,7 @@ to make that history count on Creditcoin. An agent that completes work for a
 counterparty has no portable proof of having done so.
 
 Applications therefore depend on self-reported history, centralized APIs, or
-opaque reputation systems — all of which ask you to trust the reporter rather
+opaque reputation systems, all of which ask you to trust the reporter rather
 than the evidence.
 
 ## The Solution
@@ -33,6 +33,14 @@ was included in an attested source block, decodes the event from the verified
 receipt, and records it as history. The fact arrives self-certifying, not
 reported. TRU verifies facts; it never assigns subjective trust.
 
+## Why Attestcoin
+
+Attestcoin provides the cryptographic proof that the source-chain event
+actually happened: Creditcoin attests the source block, and the proof builder
+returns a Merkle plus continuity proof for the transaction. TRU uses that
+proof to establish verifiable economic history on Creditcoin. Without it, the
+only alternatives are self-reports or trusted oracles.
+
 ## Why It Matters
 
 Verified economic history can become infrastructure for systems that today
@@ -43,7 +51,7 @@ depend on trusted reporters:
 - **Underwriting (future):** lenders could underwrite against proven
   repayment and completion histories instead of self-reported claims.
 - **Autonomous-agent commerce (enabled):** agents can query each other's
-  verified completion history before transacting — the infrastructure exists
+  verified completion history before transacting, the infrastructure exists
   and is live; agent adoption itself is future.
 - **Delegation (future):** a principal could gate delegation on an agent's
   verified track record.
@@ -56,32 +64,25 @@ depend on trusted reporters:
 Only credit and the agent-history infrastructure are implemented. Everything
 else in this list is a future application of the same primitive.
 
-## Human Economic History
-
-Loan repayment history for human borrowers. **Credit is TRU's first
-application, not the boundary of the protocol.**
-
-```
-Loan → repayment → cross-chain proof → verified registry event → reusable repayment history
-```
-
-A borrower creates a loan on Ethereum Sepolia through `SourceLoanMarket`
-(`LoanCreated`), then repays it (`LoanRepaid`). The worker waits for
-Creditcoin attestation of the Sepolia block, builds a Merkle plus continuity
-proof, and submits it to `TRUUniversalContract`, which verifies the proof,
-checks the emitter, and forwards the facts to `TRUCreditRegistry`. The
-registry updates the borrower's profile (`repayments`, `totalRepaid`,
-`creditLimit = 0 + repayments*100`), appends a `VerifiedFinancialEvent`, and
-tracks loan lifecycle (`NONE → ACTIVE → REPAID`). `TRUFinancing` gates
-`requestFinancing` on `creditState >= BUILDING` and `amount <= creditLimit`
-without disbursing funds.
-
 ## Agent Economic History
 
+Agent Passport is one of TRU's major differentiators: the same verification
+primitive, generalized from human loans to any economic actor, including
+autonomous agents.
+
+```
+Agent performs economic obligation
+→ Obligation is completed
+→ Source-chain event is proven (Attestcoin / BlockProver verification)
+→ Creditcoin records the verified fact
+→ Agent Passport updates
+```
+
+Facts, not subjective scores.
+
 Obligation completion history for executors, where the executor may be an
-autonomous agent. An agent here means **any address** — the code treats every
-executor uniformly as an address with a verifiable history. The live demo
-executor was a fresh wallet acting as an autonomous executor address; no
+autonomous agent. An agent here means **any address**: the code treats every
+executor uniformly as an address with a verifiable history. The live demo executor was a fresh wallet acting as an autonomous executor address; no
 autonomous AI operates anywhere in the system.
 
 ```
@@ -103,15 +104,80 @@ history.** It is the struct returned by `getAgentPassport`: nine fields
 (`subject`, `verifiedObligations`, `completedObligations`,
 `failedObligations`, `activeObligations`, `verifiedSettlementVolume`,
 `verifiedSourceChains`, `obligationHistory`, `completionRateBps`), each
-recomputed live from verified events — for example, `completionRateBps =
+recomputed live from verified events. For example, `completionRateBps =
 completed * 10000 / verified`. It is not an NFT, not a token, and not an
 AI-generated reputation score. It currently records `Created` and `Completed`
 events; `failedObligations` is deterministically `0` because no verified
 failure path exists yet (see Current Limitations).
 
-TRU provides the verification layer that autonomous agents can consume. An
-agent queries a counterparty's passport, applies its own thresholds, and
-decides whether and how to transact.
+TRU does NOT assign a subjective trust score. It records verifiable facts
+such as completed obligations. An application or autonomous agent then applies
+its OWN policy to those facts: it queries a counterparty's passport, applies
+its own thresholds, and decides whether and how to transact.
+
+## Human Economic History
+
+Loan repayment history for human borrowers. **Credit is TRU's first
+application, not the boundary of the protocol.**
+
+```
+Loan → repayment → cross-chain proof → verified registry event → reusable repayment history
+```
+
+A borrower creates a loan on Ethereum Sepolia through `SourceLoanMarket`
+(`LoanCreated`), then repays it (`LoanRepaid`). The worker waits for
+Creditcoin attestation of the Sepolia block, builds a Merkle plus continuity
+proof, and submits it to `TRUUniversalContract`, which verifies the proof,
+checks the emitter, and forwards the facts to `TRUCreditRegistry`. The
+registry updates the borrower's profile (`repayments`, `totalRepaid`,
+`creditLimit = 0 + repayments*100`), appends a `VerifiedFinancialEvent`, and
+tracks loan lifecycle (`NONE → ACTIVE → REPAID`). `TRUFinancing` gates
+`requestFinancing` on `creditState >= BUILDING` and `amount <= creditLimit`
+without disbursing funds.
+
+```mermaid
+flowchart TD
+    SRC[Source Chain: economic event] --> ATT[Attestcoin: cryptographic proof]
+    ATT --> BP[Creditcoin BlockProver: verifies the proof]
+    BP --> TRU[TRU Verification Layer: replay guard, decode, emitter check]
+    TRU --> HIST[Verified Economic History]
+    HIST --> HUMAN[Human Credit History]
+    HIST --> AGENT[Agent Passport]
+    HUMAN --> APPS[Applications / Agents]
+    AGENT --> APPS
+```
+
+## Live Testnet Proof
+
+Every entry below was re-verified against live RPCs: the Sepolia
+transactions exist at the stated blocks, and all five CC3 execute
+transactions carry receipts with status 1 at the stated blocks. Sepolia links
+open Etherscan; CC3 links open the Creditcoin testnet Blockscout instance
+cited in `docs/usc-research.md`. Registry state grows as new events verify;
+figures describe these runs.
+
+| Step | Source tx (Sepolia) | Proof tx (CC3) | Result |
+| --- | --- | --- | --- |
+| Loan originated (borrower `0x2b37…`) | [`0x74d0e459…`](https://sepolia.etherscan.io/tx/0x74d0e459379fb89894db4d2b7903f15cb18ec27e90669c0f8743380f9749ac8a) block `11580721` | [`0xdd9e4e71…`](https://creditcoin-testnet.blockscout.com/tx/0xdd9e4e7183c816776aab9b69b45f5578406035555181fee24ee5bc09bccfaf3c) block `5385429` | `loanStatus ACTIVE` |
+| Loan repaid | [`0xc21ea7d1…`](https://sepolia.etherscan.io/tx/0xc21ea7d1505fcbbc10ff1ebbf1e5774e3608296652cb0bca17787bd35a34db8e) block `11581259` | [`0xe0a48f58…`](https://creditcoin-testnet.blockscout.com/tx/0xe0a48f58639dcb7aab0d1f84ffe6eeade1df7076eaf9040fb815ee660d5f2b4d) block `5385870` | `repayments 1`, `totalRepaid 123456789`, `creditLimit 100`, `BUILDING` |
+| `requestFinancing(50)` | CC3-only call | [`0xa8117461…`](https://creditcoin-testnet.blockscout.com/tx/0xa8117461a266471e2b67ebccc8d5d7f302d3e6484f31d2698872f0613525b097) block `5385873` | recorded; over-limit and `NEW`-state requests revert |
+| Obligation created (agent `0x8FC1…`, fresh wallet as autonomous executor) | [`0x9591e621…`](https://sepolia.etherscan.io/tx/0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617) block `11663848` | [`0xe7961a54…`](https://creditcoin-testnet.blockscout.com/tx/0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1) block `5454388` | `ACTIVE` (464.0s cold attestation) |
+| Obligation completed | [`0x3aa9af68…`](https://sepolia.etherscan.io/tx/0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c) block `11663849` | [`0xc19bc7df…`](https://creditcoin-testnet.blockscout.com/tx/0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8) block `5454391` | `COMPLETED` (2.3s, already attested) |
+| Agent Passport (view) | n/a, read-only view | n/a | `verified 1, completed 1, active 0, volume 9000, 10000 bps, chains [1]` |
+
+A second self-obligation for `0x2b37…` (create `0x5a2757…`, complete
+`0x9eb372…`) was also verified live, showing the primitive works for both
+human and agent addresses. Earlier independent runs (phases 0, 4, 6,
+attestation timing) used superseded deployments and are historical proof, not
+live state.
+
+## Demo Flow
+
+Create → Complete → Prove → Passport Update. The reproducible script is
+`creditcoin/src/demo-obligation.mjs` (`npm run demo:obligation --
+<agentAddress>`); the full click-by-click script is `docs/DEMO_PLAN.md`. Live
+frontend: https://tru-ctc.vercel.app. No wallet is needed to browse verified
+history; connecting one shows live state for that address.
 
 ## The Verification Pipeline
 
@@ -119,25 +185,25 @@ decides whether and how to transact.
 Source Chain (Sepolia)
   SourceLoanMarket / SourceObligationMarket emit the event
   ↓
-Attestcoin — Creditcoin attests the source block (~35-block standing lag,
+Attestcoin, Creditcoin attests the source block (~35-block standing lag,
 10-block batches; cold attestation ~7–9 min, predictable, already-attested
 blocks instant)
   ↓
-Merkle / continuity proof — proof builder returns proof for the tx hash;
+Merkle / continuity proof, proof builder returns proof for the tx hash;
 worker sanity-checks with BlockProver verifySingle (eth_call)
   ↓
-Creditcoin BlockProver (precompile 0x…0FD2) — verifyAndEmit proves inclusion,
+Creditcoin BlockProver (precompile 0x…0FD2), verifyAndEmit proves inclusion,
 reverts on any tampered byte
   ↓
-TRUUniversalContract — txIndex via precompile → queryId =
+TRUUniversalContract, txIndex via precompile → queryId =
 keccak(chainKey, blockHeight, txIndex) → replay guard → verify → decode
 expected event from verified receipt → emitter check against configured
 market → forward to registry
   ↓
-TRUCreditRegistry — UC-gated record (replay + duplicate + lifecycle guards),
+TRUCreditRegistry, UC-gated record (replay + duplicate + lifecycle guards),
 history append
   ↓
-Verified Economic History — getCreditPassport / getAgentPassport and
+Verified Economic History, getCreditPassport / getAgentPassport and
 paginated event views
 ```
 
@@ -245,45 +311,6 @@ Confirmed by `docs/ENGINE_AUDIT.md` and `docs/SECURITY_AUDIT.md`:
   tampered bytes, wrong events, and failed source transactions all revert
   with explicit reasons.
 
-## Live Testnet Evidence
-
-Only real transaction hashes, addresses, and results already present in the
-repository are shown. Current deployment (see Contract Addresses):
-
-* Loan chain, borrower `0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0`:
-  - Origination tx `0x74d0e459379fb89894db4d2b7903f15cb18ec27e90669c0f8743380f9749ac8a`
-    block `11580721` → `executeLoanOrigination` tx
-    `0xdd9e4e7183c816776aab9b69b45f5578406035555181fee24ee5bc09bccfaf3c`
-    CC3 block `5385429` → `loanStatus ACTIVE`, `outstandingObligations 1`.
-  - Repayment tx `0xc21ea7d1505fcbbc10ff1ebbf1e5774e3608296652cb0bca17787bd35a34db8e`
-    block `11581259` → `execute` tx
-    `0xe0a48f58639dcb7aab0d1f84ffe6eeade1df7076eaf9040fb815ee660d5f2b4d`
-    CC3 block `5385870` → `repayments 1, totalRepaid 123456789,
-    creditLimit 100`, `BUILDING`.
-  - Financing `requestFinancing(50)` tx
-    `0xa8117461a266471e2b67ebccc8d5d7f302d3e6484f31d2698872f0613525b097`
-    CC3 block `5385873`; over-limit and `NEW`-state requests revert as tested.
-* Obligation chain, agent `0x8FC1b779592De32B507014103ebBEbbE91566FB1`
-  (fresh wallet acting as autonomous executor):
-  - Create tx `0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617`
-    block `11663848` → `executeObligationCreated` tx
-    `0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1`
-    CC3 block `5454388` (464.0s attestation) → `ACTIVE`.
-  - Complete tx `0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c`
-    block `11663849` → `executeObligationCompleted` tx
-    `0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8`
-    CC3 block `5454391` (2.3s, already attested) → `COMPLETED`.
-  - `getAgentPassport` returns `verifiedObligations 1,
-    completedObligations 1, activeObligations 0, verifiedSettlementVolume
-    9000, completionRateBps 10000, verifiedSourceChains [1]`.
-  - A second self-obligation (create `0x5a2757…` block `11663734` →
-    `0x720a42…`; complete `0x9eb372…` block `11663735` → `0xf342b72c…`) was
-    also verified live for `0x2b37…`, showing the primitive works for both
-    human and agent addresses.
-* Earlier independent runs (phases 0, 4, 6, attestation timing) show the same
-  pipeline succeeding across different blocks; those used superseded
-  deployments and are historical proof, not live state.
-
 ## Testing
 
 `forge test`: **81 passed, 0 failed, 0 skipped** across 5 suites
@@ -346,13 +373,12 @@ npm run demo:obligation -- <agentAddress>
 ## Current Limitations
 
 Testnet only; no mainnet state exists. `failedObligations` is deterministically
-`0` because `ObligationFailed` has a source event but no verified path yet —
-a deliberate boundary, not a missing test. Neither source completion nor the
+`0` because `ObligationFailed` has a source event but no verified path yet, a deliberate boundary, not a missing test. Neither source completion nor the
 registry enforces deadlines. Obligation and loan IDs live in single-market
 namespaces (one market per type assumed). Passport views loop in `O(n²)`,
 correct at current volume. The deployment owner key is fully trusted (can
 re-point markets/registry), and on testnet the operator key currently equals
-the owner key — separate before production. Proof submission itself is permissionless (no access control on the UC `execute*` functions, only proof-validity and replay checks), so additional relayers can run without coordination. The known self-loan gap persists
+the owner key, separate before production. Proof submission itself is permissionless (no access control on the UC `execute*` functions, only proof-validity and replay checks), so additional relayers can run without coordination. The known self-loan gap persists
 for loans. Cold attestation takes ~7–9 minutes (predictable from the
 attested-height gap, not reducible). Active-loan stubs were removed rather
 than faked; `TRUFinancing` approves on eligibility alone with no disbursement.
@@ -364,7 +390,7 @@ credit tiers and financing gating; verified obligation history with
 deterministic Agent Passport. **Future applications:** verified failure
 lifecycle, unified loan+obligation timeline view, additional source chains,
 mainnet deployment, Agent Passport frontend views, and consumer policies
-built on `getAgentPassport` — autonomous agent commerce, cross-chain
+built on `getAgentPassport`, autonomous agent commerce, cross-chain
 underwriting, delegation, lending, and machine-to-machine payments.
 
 ## Contract Addresses
@@ -378,23 +404,22 @@ Current deployment only (previous phase addresses superseded):
 | TRUCreditRegistry | CC3 (`102031`) | `0x0D2707D258A87b971fd4cd78232304a672CA43c0` | `0x54e5f166cf17048ee471ef2e4699677f9afd1fbf095ff15bd7f47cc032689d27` |
 | TRUUniversalContract | CC3 (`102031`) | `0xa33fd898502de87aA52C5992483b74f471613Ef0` | `0x1264d53753736398f33330340f983e4be5f0f336f514a2f13af612105b64a125` |
 | TRUFinancing | CC3 (`102031`) | `0xd971aeaAc0D7216c41CccEdc5F4d6EF539Cad0bB` | `0x634cbf7119c03c1d3a4d6bcb96e592ef22cce2770717ce80eaa3ef33d7f0bca6` |
-| EvmV1Decoder (deployed library) | CC3 | `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` | — |
-| BlockProver precompile | CC3 | `0x0000000000000000000000000000000000000FD2` | — |
-| ChainInfo precompile | CC3 | `0x0000000000000000000000000000000000000fd3` | — |
+| EvmV1Decoder (deployed library) | CC3 | `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` |, |
+| BlockProver precompile | CC3 | `0x0000000000000000000000000000000000000FD2` |, |
+| ChainInfo precompile | CC3 | `0x0000000000000000000000000000000000000fd3` |, |
 
 ## Technical Documentation
 
-- `docs/ATTESTCOIN-INTEGRATION.md` — why Attestcoin is load-bearing, SDK
+- `docs/ATTESTCOIN-INTEGRATION.md`, why Attestcoin is load-bearing, SDK
   calls, chainKey vs chainId, attestation timing, tamper walkthrough, oracle
   comparison.
-- `docs/VERIFIABLE_ECONOMIC_HISTORY.md` — the obligation extension: design,
+- `docs/VERIFIABLE_ECONOMIC_HISTORY.md`, the obligation extension: design,
   trust model, tests, live verification with exact hashes and blocks.
-- `docs/ENGINE_AUDIT.md` — the shared five-step primitive, history storage,
+- `docs/ENGINE_AUDIT.md`, the shared five-step primitive, history storage,
   passport derivations, remaining limitations.
-- `docs/SECURITY_AUDIT.md` — full audit: trust model, verification boundary,
+- `docs/SECURITY_AUDIT.md`, full audit: trust model, verification boundary,
   access control, replay/duplicate protection, findings (no Critical/High),
   explicit trust assumptions.
-- `docs/PRODUCT_ARCHITECTURE.md` — product mapping, core primitive evidence,
+- `docs/PRODUCT_ARCHITECTURE.md`, product mapping, core primitive evidence,
   claims audit (claim now / carefully / do not claim), canonical narrative.
-- `docs/phase-*.md`, `docs/attestation-timing.md`, `docs/usc-research.md` —
-  per-phase build evidence and protocol research.
+- `docs/phase-*.md`, `docs/attestation-timing.md`, `docs/usc-research.md`,   per-phase build evidence and protocol research.

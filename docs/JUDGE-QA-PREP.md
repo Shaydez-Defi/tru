@@ -1,4 +1,4 @@
-# TRU — Judge QA Prep
+# TRU: Judge QA Prep
 
 Prep sheet for live, adversarial questioning at the demo table. Format is
 question, then the answer as you would actually say it out loud. Every answer
@@ -31,7 +31,7 @@ the design, not a failure mode: verification gates every write, so an outage
 means no new credit is written, but it also means no credit can ever be written
 on an unverified event. When the service returns, pending repayments process.
 
-## 3. "Your demo took 8 minutes to verify — is that a real limitation?"
+## 3. "Your demo took 8 minutes to verify: is that a real limitation?"
 
 Yes, it is real and structural. Creditcoin attests Sepolia blocks about 35
 blocks deep behind the head, advancing in 10-block batches at Sepolia's own
@@ -69,7 +69,7 @@ honest caveat is the deployer owns the contracts and could redeploy them, which
 is an owner-governance limit, not a cryptographic one. That is a standard trust
 assumption for any owned contract, and we state it rather than hide it.
 
-## 6. "This is testnet only — what would break moving to mainnet?"
+## 6. "This is testnet only: what would break moving to mainnet?"
 
 The pipeline itself is environment-agnostic: it loads addresses and ABIs from
 deployment files, and the chainKey mapping is queried rather than hardcoded, so
@@ -134,7 +134,7 @@ Ethereum mainnet and the pipeline is not Sepolia-specific.
 
 ## Additional questions we anticipate
 
-### "Anyone can call execute — what stops spam or griefing?"
+### "Anyone can call execute: what stops spam or griefing?"
 
 Anyone can submit any proof, but a submission only credits if it is a verified
 `LoanRepaid` emitted by the configured source contract. A failed verification

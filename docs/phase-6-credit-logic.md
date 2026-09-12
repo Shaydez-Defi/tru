@@ -1,4 +1,4 @@
-# Phase 6 — Deterministic Credit Logic
+# Phase 6: Deterministic Credit Logic
 
 Build-order step 6: implement the deterministic credit rule in
 `TRUCreditRegistry`, wired into the existing USC-verified repayment recording
@@ -15,18 +15,18 @@ with `BASE_LIMIT = 0` and `INCREMENT_PER_REPAYMENT = 100`, both exposed as
 `public constant` so the formula is readable on-chain
 (`registry.BASE_LIMIT() == 0`, `registry.INCREMENT_PER_REPAYMENT() == 100`).
 
-### Units — confirmed, no silent change
+### Units: confirmed, no silent change
 
 `creditLimit` uses the same unit as `totalRepaid`: the base unit (wei) of the
 verified `LoanRepaid.amount`, which is `msg.value` at `SourceLoanMarket.repayLoan`
 (Sepolia). Phase-5 amounts in the registry were already in this unit
 (e.g. `987654321`), so `INCREMENT_PER_REPAYMENT = 100` is 100 base units per
-verified repayment — not a new or scaled unit. No deviation from the requested
+verified repayment, not a new or scaled unit. No deviation from the requested
 formula was needed.
 
 ## Implementation
 
-Only `TRUCreditRegistry.sol` changed. No separate entry point was added — the
+Only `TRUCreditRegistry.sol` changed. No separate entry point was added, the
 update happens inside the existing `recordVerifiedRepayment`:
 
 ```solidity
@@ -46,12 +46,12 @@ AGENTS.md rule 6).
 
 New/updated registry tests:
 
-- `test_verifiedRepaymentUpdatesProfile` — first verified repayment moves
+- `test_verifiedRepaymentUpdatesProfile`, first verified repayment moves
   `creditLimit` from **0 → 100** (and asserts it equals the formula result).
-- `test_thirdVerifiedRepaymentSetsCreditLimitTo300` — three distinct verified
+- `test_thirdVerifiedRepaymentSetsCreditLimitTo300`, three distinct verified
   repayments (distinct loans + queryIds) bring it to **300**, then 400 and 500
   on the fourth/fifth.
-- `test_creditLimitHasNoExternalSetter` — reads the compiled ABI artifact and
+- `test_creditLimitHasNoExternalSetter`, reads the compiled ABI artifact and
   asserts no setter-style function exists (`setCreditLimit`, `updateCreditLimit`,
   `setProfile`, `updateProfile`, `setCreditProfile`, `setBaseLimit`,
   `setIncrementPerRepayment`). `creditLimit` is read-only from outside; the only
@@ -85,13 +85,12 @@ repayments=1  totalRepaid=123456789  activeLoans=0  creditLimit=100
 
 `creditLimit` moved **0 → 100** on-chain through the real pipeline, not just in
 unit tests. Replaying the same proof was rejected: **"Query already processed"**,
-and the profile was unchanged (repayments still 1, creditLimit still 100) —
-replay/duplicate protections hold with credit logic live.
+and the profile was unchanged (repayments still 1, creditLimit still 100), replay/duplicate protections hold with credit logic live.
 
 ## One-sentence explanation (pitch-deck / judge Q&A)
 
 > "Every time we cryptographically verify on a real blockchain that you repaid a
-> loan, your credit limit grows by a fixed 100 — starting from zero — so the
+> loan, your credit limit grows by a fixed 100, starting from zero, so the
 > more verified repayments you make, the more you're trusted with."
 
 ## Notes
@@ -100,6 +99,6 @@ replay/duplicate protections hold with credit logic live.
   `0x3e1FF41C...`, loanId counter restarted); deployment JSONs in
   `contracts/deployments/*` are the single source of truth.
 - Fixed a latent worker bug on the way: the `--tx` CLI path called
-  `SEPSource.getReceipt`, which does not exist in ethers v6 — replaced with
+  `SEPSource.getReceipt`, which does not exist in ethers v6, replaced with
   `getTransactionReceipt` (`creditcoin/src/worker.mjs`).
 - `activeLoans` remains an unfilled stub (not part of this step).

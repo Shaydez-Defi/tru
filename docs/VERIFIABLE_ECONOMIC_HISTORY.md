@@ -1,4 +1,4 @@
-# Verifiable Economic History — Generalized Primitive
+# Verifiable Economic History: Generalized Primitive
 
 **Date:** 2026-09-08
 **Status:** Implemented and verified live on testnet: a real obligation creation and completion on Sepolia were verified through the live Attestcoin proof path and recorded on Creditcoin, with deterministic Agent Passport derived.
@@ -14,24 +14,24 @@ The extension is minimal, production-minded, and preserves all existing loan fun
 
 Separation of concerns, as established in AGENTS.md rule 6, is extended:
 
-1. **Verification** — TRU proves that an event actually happened. The BlockProver precompile (`0x…0FD2`) verifies the Merkle proof against an attested Sepolia block. No worker, API, or agent claim is trusted.
-2. **History** — TRU records the verified event as reusable on-chain history in `TRUCreditRegistry`. The registry only updates state from `TRUUniversalContract`, which only forwards events that passed verification and emitter checks.
-3. **Interpretation** — Applications, protocols, or autonomous agents query the history and apply their own policy (credit, access, financing). TRU never uses an LLM to decide trust and never invents a reputation number. Any derived metric is deterministic and traceable to verified events.
+1. **Verification**, TRU proves that an event actually happened. The BlockProver precompile (`0x…0FD2`) verifies the Merkle proof against an attested Sepolia block. No worker, API, or agent claim is trusted.
+2. **History**, TRU records the verified event as reusable on-chain history in `TRUCreditRegistry`. The registry only updates state from `TRUUniversalContract`, which only forwards events that passed verification and emitter checks.
+3. **Interpretation**, Applications, protocols, or autonomous agents query the history and apply their own policy (credit, access, financing). TRU never uses an LLM to decide trust and never invents a reputation number. Any derived metric is deterministic and traceable to verified events.
 
 This mirrors the existing loan flow and keeps the trust boundary unchanged.
 
-## 3. What Changed — Minimal Extension
+## 3. What Changed: Minimal Extension
 
 ### 3.1 Source chain: SourceObligationMarket (Sepolia)
 
-New contract `contracts/src/sepolia/SourceObligationMarket.sol` — same trust model as `SourceLoanMarket`: it knows nothing about Creditcoin or TRU.
+New contract `contracts/src/sepolia/SourceObligationMarket.sol`, same trust model as `SourceLoanMarket`: it knows nothing about Creditcoin or TRU.
 
 - `struct Obligation { id, requester, executor, value, deadline, status }`
-- `ObligationCreated(uint256 indexed obligationId, address indexed requester, address indexed executor, uint256 value, uint256 deadline)` — emitted by `createObligation(address executor, uint256 value, uint256 deadline)` where `requester = msg.sender`, `status = ACTIVE`.
-- `ObligationCompleted(uint256 indexed obligationId, address indexed executor, uint256 settlementAmount)` — emitted by `completeObligation(uint256 obligationId)` where `executor == msg.sender` and `status == ACTIVE` -> `COMPLETED`.
+- `ObligationCreated(uint256 indexed obligationId, address indexed requester, address indexed executor, uint256 value, uint256 deadline)`, emitted by `createObligation(address executor, uint256 value, uint256 deadline)` where `requester = msg.sender`, `status = ACTIVE`.
+- `ObligationCompleted(uint256 indexed obligationId, address indexed executor, uint256 settlementAmount)`, emitted by `completeObligation(uint256 obligationId)` where `executor == msg.sender` and `status == ACTIVE` -> `COMPLETED`.
 - `ObligationFailed` also emitted by `failObligation` for completeness, though the minimal demo uses Created and Completed.
 
-This is the smallest useful primitive for "this economic obligation was actually completed" — a requester creates an obligation for an executor (human wallet or agent address), the executor completes it, both events are verifiable. It is not a marketplace, not a reputation system, and does not add identity infrastructure beyond the address.
+This is the smallest useful primitive for "this economic obligation was actually completed", a requester creates an obligation for an executor (human wallet or agent address), the executor completes it, both events are verifiable. It is not a marketplace, not a reputation system, and does not add identity infrastructure beyond the address.
 
 ### 3.2 Verification: TRUUniversalContract (Creditcoin)
 
@@ -40,8 +40,8 @@ Extended, not replaced, reusing the exact same USC proof path as loan events:
 - New state: `sourceObligationMarket` address, set via `setSourceObligationMarket` (owner-only), initially `address(0)` for backward compatibility.
 - New signatures: `OBLIGATION_CREATED_EVENT_SIGNATURE = keccak("ObligationCreated(uint256,address,address,uint256,uint256)")` (4 topics: sig + obligationId + requester + executor), `OBLIGATION_COMPLETED_EVENT_SIGNATURE = keccak("ObligationCompleted(uint256,address,uint256)")` (3 topics).
 - New events: `ObligationCreatedVerified` and `ObligationCompletedVerified`.
-- New view decoders: `_decodeObligationCreated` and `_decodeObligationCompleted` — same pattern as loan decoders: check `txType`, `decodeReceiptFields`, filter `receiptLogs` in-contract (workaround for deployed `EvmV1Decoder.getLogsByEventSignature` breakage), check `log.address_ == sourceObligationMarket`, decode indexed topics and `abi.decode(data)`.
-- New verification entry points: `executeObligationCreated` and `executeObligationCompleted` — identical steps to `execute` / `executeLoanOrigination`: compute `txIndex` via precompile, `queryId = keccak(chainKey, blockHeight, txIndex)`, check `processedQueries[queryId]` replay guard, call `verifyAndEmit`, decode, emit verified event, forward to registry via new UC-gated registry calls. No new trust boundary.
+- New view decoders: `_decodeObligationCreated` and `_decodeObligationCompleted`, same pattern as loan decoders: check `txType`, `decodeReceiptFields`, filter `receiptLogs` in-contract (workaround for deployed `EvmV1Decoder.getLogsByEventSignature` breakage), check `log.address_ == sourceObligationMarket`, decode indexed topics and `abi.decode(data)`.
+- New verification entry points: `executeObligationCreated` and `executeObligationCompleted`, identical steps to `execute` / `executeLoanOrigination`: compute `txIndex` via precompile, `queryId = keccak(chainKey, blockHeight, txIndex)`, check `processedQueries[queryId]` replay guard, call `verifyAndEmit`, decode, emit verified event, forward to registry via new UC-gated registry calls. No new trust boundary.
 
 Existing loan functions (`execute`, `executeLoanOrigination`, `decodeRepayment`, `decodeLoanCreated`) are unchanged.
 
@@ -64,14 +64,14 @@ Generalized while preserving loan storage:
   - `processedObligationCreations[queryId]` and `processedObligationCompletions[queryId]` replay guards (separate from loan replay guards, same pattern)
 
 - New UC-gated writes:
-  - `recordVerifiedObligationCreated(queryId, obligationId, requester, executor, value, deadline, sourceChain, sourceTxHash, sourceBlock)` — checks `!processedObligationCreations[queryId]`, `obligationStatus == NONE`, sets `ACTIVE`, pushes to both `requester` and `executor` histories, tracks distinct chain for both, emits `ObligationCreatedRecorded`.
-  - `recordVerifiedObligationCompleted(queryId, obligationId, executor, settlementAmount, sourceChain, sourceTxHash, sourceBlock)` — checks `!processedObligationCompletions[queryId]`, `status == ACTIVE`, checks `executor` matches created event's executor, sets `COMPLETED`, pushes Completed event to both parties' histories, tracks chains, emits `ObligationCompletedRecorded`.
+  - `recordVerifiedObligationCreated(queryId, obligationId, requester, executor, value, deadline, sourceChain, sourceTxHash, sourceBlock)`, checks `!processedObligationCreations[queryId]`, `obligationStatus == NONE`, sets `ACTIVE`, pushes to both `requester` and `executor` histories, tracks distinct chain for both, emits `ObligationCreatedRecorded`.
+  - `recordVerifiedObligationCompleted(queryId, obligationId, executor, settlementAmount, sourceChain, sourceTxHash, sourceBlock)`, checks `!processedObligationCompletions[queryId]`, `status == ACTIVE`, checks `executor` matches created event's executor, sets `COMPLETED`, pushes Completed event to both parties' histories, tracks chains, emits `ObligationCompletedRecorded`.
 
 No loan code path was changed; `recordVerifiedRepayment` and loan lifecycle remain.
 
 - New views:
   - `getObligationStatus`, `getVerifiedObligation`, `getObligationEventCount`, `getObligationEvents` (paginated, reverse chronological)
-  - `getAgentPassport(address subject)` — deterministic, no AI. Derived fields:
+  - `getAgentPassport(address subject)`, deterministic, no AI. Derived fields:
     - `verifiedObligations` = distinct `Created` obligationIds in subject's history
     - `completedObligations` = count of `Completed` events
     - `failedObligations` = count of `Failed` events (currently 0, future)
@@ -87,7 +87,7 @@ No loan code path was changed; `recordVerifiedRepayment` and loan lifecycle rema
 Extended `creditcoin/src/worker.mjs` to handle four event types without deciding what deserves credit:
 
 - Loads `SourceObligationMarket` deployment optionally via `tryLoadDeployment` (backward compatible if not yet deployed).
-- Adds `processObligationCreated` and `processObligationCompleted` — same steps as loan handlers: wait for attestation via `ProofBuilder.waitUntilHeightAttested`, request proof via `getProof`, sanity check `verifySingle`, submit to `TRUUniversalContract.executeObligationCreated` / `executeObligationCompleted` with `sourceTxHash`, parse verified event, check registry status.
+- Adds `processObligationCreated` and `processObligationCompleted`, same steps as loan handlers: wait for attestation via `ProofBuilder.waitUntilHeightAttested`, request proof via `getProof`, sanity check `verifySingle`, submit to `TRUUniversalContract.executeObligationCreated` / `executeObligationCompleted` with `sourceTxHash`, parse verified event, check registry status.
 - `listen` now queries `LoanRepaid`, `LoanCreated`, `ObligationCreated`, `ObligationCompleted` per range, merges and sorts by block/logIndex, dispatches via `processLog`.
 - `--tx` path auto-detects all four event types in the target block.
 
@@ -98,7 +98,7 @@ The worker still never decides; proof verification gates everything.
 `creditcoin/src/deploy-production.mjs` now deploys five contracts (was four):
 
 1. `SourceLoanMarket` (Sepolia)
-1b. `SourceObligationMarket` (Sepolia) — new
+1b. `SourceObligationMarket` (Sepolia), new
 2. `TRUCreditRegistry` (CC3)
 3. `TRUUniversalContract` (CC3) with `decoder`, `registry`, `sourceLoanMarket`; then `setSourceObligationMarket` to the just-deployed obligation market
 4. `TRUFinancing` (CC3) with `registry`
@@ -153,7 +153,7 @@ The full live cross-chain obligation flow was executed for real on the current d
   - Create `0x5a2757cdc55494c2f591b517c253f3543e8b736e9f6ab6124a26495f0a049771` block `11663734` -> worker waited `371.1s`, proof header `11663734` txIndex `54` cached true, `verifySingle` true, submitted via `executeObligationCreated` `0x720a42a950e42fa0e54ab443638ffbce07ec6b1f964fb6c3fc2586bf014f3ff1` block `5454297` -> `ObligationCreatedVerified` matched, `obligationStatus 0xACTIVE`.
   - Complete `0x9eb3725ae6e58db7b0926af5174e911396b8dd1a6765d6ff08508f355efb3707` block `11663735` -> worker `2.3s` (already attested), proof header `11663735` txIndex `81`, `verifySingle` true, `executeObligationCompleted` `0xf342b72c36413471674122fe318cc5b0afbf8be13d75d29613830cc6b576ce2c` block `5454298` -> `ObligationCompletedVerified` matched, `obligationStatus COMPLETED`. Agent Passport for `0x2b37…`: `verified 1, completed 1, active 0, settlement 8000, rate 10000`, history `2` (`Created` + `Completed`), `chains [1]`.
 
-* Autonomous agent obligation (requester `0x2b374aDd…`, executor `0x8FC1b779592De32B507014103ebBEbbE91566FB1` — a wallet representing an autonomous agent, value `9000`, deadline `1788992128`):
+* Autonomous agent obligation (requester `0x2b374aDd…`, executor `0x8FC1b779592De32B507014103ebBEbbE91566FB1`, a wallet representing an autonomous agent, value `9000`, deadline `1788992128`):
   - Create `0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617` block `11663848` -> worker `464.0s`, header `11663848` txIndex `73`, `verifySingle` true, `executeObligationCreated` `0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1` block `5454388` -> `ACTIVE`.
   - Complete `0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c` block `11663849` -> worker `2.3s`, header `11663849` txIndex `70`, `verifySingle` true, `executeObligationCompleted` `0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8` block `5454391` -> `COMPLETED`. Agent Passport for `0x8FC1…`: `verified 1, completed 1, active 0, settlement 9000, rate 10000`, history `2`, `chains [1]`.
 
@@ -195,11 +195,11 @@ No frontend redesign was necessary to demonstrate the primitive. The existing hu
 
 ## 9. Remaining Work
 
-**Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (73 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it — it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
+**Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (73 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it, it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
 
 **Implemented but not yet run live in this deployment:** A unified `VerifiedEconomicEvent` timeline that merges loan `borrowerEvents` and obligation `subjectObligationHistory` into a single `getEconomicHistory` view. The current `getCreditPassport` (loans) and `getAgentPassport` (obligations) already provide clean, separate histories, so the unified view is optional and was not faked.
 
-**Future work:** Frontend — add `Agent Passport` page and obligation detail with verification evidence links (source tx hash, proof header, Creditcoin verification tx, and `AgentPassport` fields). No new cryptography is needed; it is a read-only view over `getAgentPassport` / `getObligationEvents`.
+**Future work:** Frontend, add `Agent Passport` page and obligation detail with verification evidence links (source tx hash, proof header, Creditcoin verification tx, and `AgentPassport` fields). No new cryptography is needed; it is a read-only view over `getAgentPassport` / `getObligationEvents`.
 
 All of the above can be done without inventing reputation numbers or trusting off-chain reports; every new field will continue to trace to a `queryId`-verified event.
 

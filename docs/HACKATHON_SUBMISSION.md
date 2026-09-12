@@ -1,4 +1,4 @@
-# TRU — Hackathon Submission Package
+# TRU: Hackathon Submission Package
 
 Copy and positioning for submission. Every claim below is sourced from the
 implemented, tested system. Nothing here invents functionality.
@@ -7,9 +7,9 @@ implemented, tested system. Nothing here invents functionality.
 
 Options:
 
-1. **TRU — Verifiable Economic History for Humans & Autonomous Agents**
-2. **TRU — Verifiable Economic History**
-3. **TRU — Don't Trust the History. Verify the Event.**
+1. **TRU, Verifiable Economic History for Humans & Autonomous Agents**
+2. **TRU, Verifiable Economic History**
+3. **TRU, Don't Trust the History. Verify the Event.**
 
 **Recommended: option 1.** It states the full scope (both applications) in a
 single line and separates TRU from every credit-only submission.
@@ -21,15 +21,15 @@ single line and separates TRU from every credit-only submission.
 ## 3. 1-Sentence Description
 
 TRU turns cross-chain economic events into cryptographically verified,
-reusable on-chain records — loan repayments for humans, obligation
-completions for autonomous agents — through one shared proof architecture.
+reusable on-chain records, loan repayments for humans, obligation
+completions for autonomous agents, through one shared proof architecture.
 
 ## 4. Short Description (68 words)
 
 TRU is verifiable economic history infrastructure on Creditcoin. A loan
 repayment or agent obligation on Ethereum Sepolia is proven by Merkle proof
 against an attested block, verified on-chain by the BlockProver precompile,
-and recorded as reusable history — no oracle, no reporter to trust. Humans
+and recorded as reusable history, no oracle, no reporter to trust. Humans
 accrue verified credit history; autonomous agents accrue a deterministic
 Agent Passport. 81 Forge tests passing, live on Sepolia + Creditcoin CC3
 testnet.
@@ -62,7 +62,7 @@ completion rate) that any protocol can query and interpret under its own
 policy.
 
 **Why it matters.** Any system that needs to know what an actor actually did
-— lending, underwriting, delegation, agent commerce — can consume TRU
+, lending, underwriting, delegation, agent commerce, can consume TRU
 evidence instead of trusting a reporter. TRU supplies verified facts;
 applications decide what they mean.
 
@@ -74,7 +74,7 @@ that fulfilled an obligation elsewhere cannot prove it here. So applications
 fall back on three substitutes, all weak: asking the actor (forgeable),
 asking a centralized API (single point of trust and failure), or buying an
 opaque score (inputs unverifiable, methodology hidden). The missing piece is
-not another score — it is a way to prove the underlying event happened.
+not another score, it is a way to prove the underlying event happened.
 
 ## 7. The Solution
 
@@ -100,8 +100,7 @@ Source-chain event (Sepolia: LoanCreated / LoanRepaid / ObligationCreated / Obli
 ### Relayer model (who runs the worker)
 
 The worker is unprivileged infrastructure, not a trusted party. All four
-`execute*` entry points on `TRUUniversalContract` carry no access control —
-only proof-validity and `queryId` replay checks — so anyone holding CC3
+`execute*` entry points on `TRUUniversalContract` carry no access control, only proof-validity and `queryId` replay checks, so anyone holding CC3
 testnet tokens can construct and submit a valid proof; duplicate submissions
 revert harmlessly on `Query already processed`. A malicious or faulty relayer
 cannot invent, alter, or duplicate history: verification lives in the native
@@ -117,7 +116,7 @@ report. With TRU, the counterparty instead reads the agent's verified
 history: was an `ObligationCompleted` event for this agent proven against an
 attested block and recorded on-chain? The completion becomes checkable
 evidence rather than a claim. This is infrastructure an agent economy can
-build on — not an AI agent itself. TRU contains no models, no autonomy, no
+build on, not an AI agent itself. TRU contains no models, no autonomy, no
 judgment; it is the layer agents query before they decide whom to trust.
 
 ## 10. Human + Agent Model
@@ -128,7 +127,7 @@ Agent → obligation completion → verified economic history (passport, complet
 ```
 
 Same primitive. Different application. One proof path, one replay guard
-design, one registry trust boundary — with per-type decode branches and
+design, one registry trust boundary, with per-type decode branches and
 isolated history stores. The obligation extension reused the loan pipeline
 without changing any loan code path.
 
@@ -148,7 +147,7 @@ without changing any loan code path.
 - **Emitter validation:** per-market source binding with fail-closed unset
   state for obligations.
 - **Deterministic Agent Passport metrics:** counts, sums, and
-  `completed*10000/verified` recomputed live from storage — explainable to
+  `completed*10000/verified` recomputed live from storage, explainable to
   the event.
 
 ## 12. Why This Is Different
@@ -158,13 +157,13 @@ be: a score, a tier, a badge, computed by its own opaque rules from inputs
 you cannot audit. TRU verifies what an economic actor actually did: a
 specific transaction, in a specific attested block, from a specific contract,
 guarded against replay and forgery. A score asks for trust in the scorer; a
-verified event asks only that you check the proof. Applications — including
-scoring systems — can then be built on evidence instead of assertion. (No
+verified event asks only that you check the proof. Applications, including
+scoring systems, can then be built on evidence instead of assertion. (No
 competitor claims are made; the repository contains no comparative research.)
 
 ## 13. Current Demo
 
-**Can an agent prove it kept its promise?** Yes — live on testnet:
+**Can an agent prove it kept its promise?** Yes, live on testnet:
 
 - Requester `0x2b37…` creates obligation `1` for agent `0x8FC1…`
   (value 9000): Sepolia tx
@@ -178,7 +177,7 @@ competitor claims are made; the repository contains no comparative research.)
   `0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8`
   block `5454391` → `COMPLETED`.
 - Result: `getAgentPassport` returns verified 1, completed 1, active 0,
-  settlement 9000, rate 10000 — every field traceable to the two verified
+  settlement 9000, rate 10000, every field traceable to the two verified
   events above.
 - The same path also verified a self-obligation end to end, and the loan
   path is independently live (repayment `0xc21ea7d1…` → `0xe0a48f58…`,
@@ -199,8 +198,8 @@ AI/autonomous agent → decision
 ```
 
 An AI agent deciding whether to transact, delegate, or extend credit can
-consume facts TRU has verified — completion counts, settlement volume,
-credit tiers — and apply its own policy. TRU itself remains deterministic
+consume facts TRU has verified, completion counts, settlement volume,
+credit tiers, and apply its own policy. TRU itself remains deterministic
 verification infrastructure: same inputs, same outputs, every value
 explainable to a verified event.
 
@@ -220,8 +219,8 @@ TRU is built directly on Creditcoin/Attestcoin infrastructure: attestation,
 the proof builder, the BlockProver precompile, and CC3 testnet execution.
 It demonstrates cross-chain verification doing real work (not a toy
 integration), produces reusable economic history both chains can build on,
-and lays programmable financial infrastructure — deterministic credit state
-plus agent-native history — that the Creditcoin ecosystem can compose into
+and lays programmable financial infrastructure, deterministic credit state
+plus agent-native history, that the Creditcoin ecosystem can compose into
 lending, underwriting, and agent commerce. No judging criteria are presumed;
 the fit is technical: TRU exercises the Attestcoin stack end to end.
 
@@ -234,13 +233,13 @@ the fit is technical: TRU exercises the Attestcoin stack end to end.
 - Live contracts (CC3 testnet, chain `102031`): registry
   `0x0D2707D258A87b971fd4cd78232304a672CA43c0`, universal contract
   `0xa33fd898502de87aA52C5992483b74f471613Ef0`, financing
-  `0xd971aeaAc0D7216c41CccEdc5F4d6EF539Cad0bB` — viewable at
+  `0xd971aeaAc0D7216c41CccEdc5F4d6EF539Cad0bB`, viewable at
   `https://creditcoin-testnet.blockscout.com/` (base URL confirmed in
   `docs/usc-research.md`; full per-tx links follow the standard
   `/tx/<hash>` pattern).
 - Source markets (Sepolia, chain `11155111`): `0x9953AC50803f85EaA666B7724a7B165504B9c2e1`,
   `0x133A8Fe8408066B95034Ed638f5C7083Be94d14F`.
-- Demo video / frontend / screenshots: [PLACEHOLDER — not yet produced; no
+- Demo video / frontend / screenshots: [PLACEHOLDER, not yet produced; no
   frontend exists in the repository].
 
 ## 18. Judge Takeaway

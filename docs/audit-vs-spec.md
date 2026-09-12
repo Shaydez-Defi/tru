@@ -1,15 +1,15 @@
 # Audit: Implementation Map and Gap Checklist vs. Acceptance Criteria
 
 > Addendum (2026-09-10): point-in-time audit; the implementation has moved on.
-> Gap #2 (`activeLoans` stub) is resolved — the field was removed from the
+> Gap #2 (`activeLoans` stub) is resolved, the field was removed from the
 > struct, ABI, worker log, and tests, and contracts were redeployed. The
 > obligation extension (`SourceObligationMarket`, `AgentPassport`) and all
 > redeploys after this audit postdate it; current addresses and test counts
 > are in `README.md` §§9–10/15. The verdicts below describe the system as of
 > the audit date, not the current deployment.
 
-Audit task (no code changes). Assesses the current TRU implementation — every
-component, every acceptance-criterion — against what is actually live/testnet,
+Audit task (no code changes). Assesses the current TRU implementation, every
+component, every acceptance-criterion, against what is actually live/testnet,
 what is simulated/mocked, and what is inherited USC infrastructure. Nothing is
 described as live unless it is.
 
@@ -27,12 +27,12 @@ deployment JSONs, `contracts/src/**`, `contracts/test/**`,
 | Component | Address | What it does | Status |
 | --- | --- | --- | --- |
 | SourceLoanMarket | `0x3e1FF41C2fBb3f6D8Cb787A7f4EF9891ABaBfe84` (Sepolia) | Creates loans (`loanCounter`), emits `LoanCreated`/`LoanRepaid`. `repayLoan` requires active + owner + `msg.value>0`; amount = `msg.value`. Knows nothing about Creditcoin/TRU. | **Live on testnet** (Sepolia testnet). Fresh deployment each `deploy-production.mjs` run (phase-4 `0x74d2BFEa…`, phase-5 `0x3f6379b5…`, phase-6+ `0x3e1FF41C…`). |
-| USC query mechanism | — | Worker (`creditcoin/src/worker.mjs`) calls `proofProvider.service.ProofBuilder(chainKey, PROOF_BUILDER_URL).getProof(txHash)`; SDK hits `POST /api/v1/proof-by-tx/{chainKey}/{txHash}` on `https://prover.cc3-testnet.creditcoin.network`. `waitUntilHeightAttested` polls `/api/v1/attested-height/1`. | **Live USC infrastructure** (official Gluwa proof-builder service for CC3 testnet) — inherited, not ours, not mocked. |
-| Attestation | — | Creditcoin network block-height attestation of Sepolia blocks; surfaced via proof-builder cache and on-chain chain-info precompile. Cold wait ~7–9 min (structural ~35-block lag); already-attested blocks instant. | **Live on testnet** (real CC3-testnet attestation; timing measured in `docs/attestation-timing.md`). Not simulated. |
-| Creditcoin verifier | BlockProver precompile `0x…0FD2` (CC3) | Native USC precompile `verify`/`verifyAndEmit`; called by TRUUniversalContract and (eth_call) by worker. | **Live on testnet** — inherited USC infrastructure, not mocked. |
-| TRUUniversalContract | `0x80eCf7F95F3ECbBDdA29C2260342D9B77124BF0a` (CC3) | `execute(...)` = replay guard (`processedQueries` on `keccak(chainKey,height,txIndex)`), calls BlockProver `verifyAndEmit`, decodes `LoanRepaid` from verified receipt via EvmV1Decoder `0x731c345d…` (in-contract log filter — deployed decoder's `getLogsByEventSignature` is broken), requires emitter == configured `sourceLoanMarket` (`Not SourceLoanMarket emitter`), emits `RepaymentVerified`, forwards verified `(borrower, loanId, amount)` to registry. No credit logic. | **Live on testnet** (CC3 testnet). |
+| USC query mechanism |, | Worker (`creditcoin/src/worker.mjs`) calls `proofProvider.service.ProofBuilder(chainKey, PROOF_BUILDER_URL).getProof(txHash)`; SDK hits `POST /api/v1/proof-by-tx/{chainKey}/{txHash}` on `https://prover.cc3-testnet.creditcoin.network`. `waitUntilHeightAttested` polls `/api/v1/attested-height/1`. | **Live USC infrastructure** (official Gluwa proof-builder service for CC3 testnet), inherited, not ours, not mocked. |
+| Attestation |, | Creditcoin network block-height attestation of Sepolia blocks; surfaced via proof-builder cache and on-chain chain-info precompile. Cold wait ~7–9 min (structural ~35-block lag); already-attested blocks instant. | **Live on testnet** (real CC3-testnet attestation; timing measured in `docs/attestation-timing.md`). Not simulated. |
+| Creditcoin verifier | BlockProver precompile `0x…0FD2` (CC3) | Native USC precompile `verify`/`verifyAndEmit`; called by TRUUniversalContract and (eth_call) by worker. | **Live on testnet**, inherited USC infrastructure, not mocked. |
+| TRUUniversalContract | `0x80eCf7F95F3ECbBDdA29C2260342D9B77124BF0a` (CC3) | `execute(...)` = replay guard (`processedQueries` on `keccak(chainKey,height,txIndex)`), calls BlockProver `verifyAndEmit`, decodes `LoanRepaid` from verified receipt via EvmV1Decoder `0x731c345d…` (in-contract log filter, deployed decoder's `getLogsByEventSignature` is broken), requires emitter == configured `sourceLoanMarket` (`Not SourceLoanMarket emitter`), emits `RepaymentVerified`, forwards verified `(borrower, loanId, amount)` to registry. No credit logic. | **Live on testnet** (CC3 testnet). |
 | TRUCreditRegistry | `0x52B7eAd2769B3449Fa213B9fb40f94B4f17915bA` (CC3) | `recordVerifiedRepayment` (only-UC) = replay guard (`processedRepayments[queryId]`) + duplicate guard (`countedLoans[borrower][loanId]`) + updates `CreditProfile`: `repayments += 1`, `totalRepaid += amount`, `creditLimit = 0 + repayments*100`. Emits `RepaymentRecorded`. | **Live on testnet** (CC3 testnet). |
-| Credit-state transition | — | Trigger: `TRUUniversalContract.execute` → BlockProver `verifyAndEmit` (status 1 required) → decoder extracts `LoanRepaid` → emitter check → `TRUCreditRegistry.recordVerifiedRepayment`. Formula: `creditLimit = BASE_LIMIT(0) + repayments × INCREMENT_PER_REPAYMENT(100)`, same base unit (wei) as `totalRepaid`. | **Live on testnet**; deterministic, explainable, no AI/black-box. |
+| Credit-state transition |, | Trigger: `TRUUniversalContract.execute` → BlockProver `verifyAndEmit` (status 1 required) → decoder extracts `LoanRepaid` → emitter check → `TRUCreditRegistry.recordVerifiedRepayment`. Formula: `creditLimit = BASE_LIMIT(0) + repayments × INCREMENT_PER_REPAYMENT(100)`, same base unit (wei) as `totalRepaid`. | **Live on testnet**; deterministic, explainable, no AI/black-box. |
 
 **Nothing in the final path is mocked or simulated.** Every component is either a
 live CC3-testnet/Sepolia-testnet deployment or live inherited USC infrastructure.
@@ -52,7 +52,7 @@ Legend: **SATISFIED** = implemented + evidenced (doc/test/on-chain) ·
 | Criterion | Status | Evidence |
 | --- | --- | --- |
 | Real external event | SATISFIED | Real `LoanRepaid` on real Sepolia testnet; live E2E txs in `docs/phase-4-e2e.md`, `docs/phase-6-credit-logic.md`, `docs/attestation-timing.md`. |
-| Real attestation | SATISFIED | `docs/attestation-timing.md` — real CC3-testnet attestation measured (pb cache == on-chain attested height exactly). |
+| Real attestation | SATISFIED | `docs/attestation-timing.md`, real CC3-testnet attestation measured (pb cache == on-chain attested height exactly). |
 | Real proof | SATISFIED | `docs/phase-4-e2e.md` (proof header/txIndex/cached), `docs/attestation-timing.md` (cached proofs). Real proof-builder service. |
 | Real Creditcoin verification | SATISFIED | Precompile `verifySingle` eth_call `true` + in-contract `verifyAndEmit` status 1 (phase 4/5/6 reports). |
 | No mocked proof in final path | SATISFIED | Final path uses real proofs end-to-end; spike/probes confined to `src/spike/` + throwaway deployments, never called by worker/driver. |
@@ -78,7 +78,7 @@ Legend: **SATISFIED** = implemented + evidenced (doc/test/on-chain) ·
 | --- | --- | --- |
 | Credit state exists on Creditcoin | SATISFIED | `CreditProfile` stored in CC3-testnet `TRUCreditRegistry`; readable via `profiles(address)`. |
 | State transition occurs on Creditcoin | SATISFIED | `recordVerifiedRepayment` (CC3) updates `repayments/totalRepaid/creditLimit`; state-change tx mined on CC3 (e.g. `0xea7808a4…`, block 5321469). |
-| Transaction/state transition publicly demonstrable | SATISFIED | CC3 txs + `RepaymentRecorded` events on CC3 testnet blockscout; worker logs + reports cite tx hashes/blocks. (Public *on mainnet* is a GAP below — testnet-only today.) |
+| Transaction/state transition publicly demonstrable | SATISFIED | CC3 txs + `RepaymentRecorded` events on CC3 testnet blockscout; worker logs + reports cite tx hashes/blocks. (Public *on mainnet* is a GAP below, testnet-only today.) |
 
 ### Security
 
@@ -99,19 +99,19 @@ Legend: **SATISFIED** = implemented + evidenced (doc/test/on-chain) ·
 **Confirmed: `activeLoans` is still an unfilled stub.**
 
 - Declared in `CreditProfile` (`contracts/src/creditcoin/TRUCreditRegistry.sol:18`)
-  but **never written** anywhere — `recordVerifiedRepayment` updates only
+  but **never written** anywhere, `recordVerifiedRepayment` updates only
   `repayments`, `totalRepaid`, `creditLimit`. No setter exists.
 - It **is exposed through the public `profiles(address)` getter** (the struct
   returns a 4-tuple including `activeLoans`; confirmed in the deployed ABI at
   `contracts/deployments/creditcoin/TRUCreditRegistry.json`), so any caller of
   `profiles()` reads `activeLoans = 0` always.
 - The worker logs it as `activeLoans=0` in its registry check
-  (`creditcoin/src/worker.mjs:156`) — display-only, derived from the stub field.
+  (`creditcoin/src/worker.mjs:156`), display-only, derived from the stub field.
 - Forge tests explicitly assert it stays `0` and label it a stub
   (`contracts/test/TRUCreditRegistry.t.sol:33` `// stub, build-order step 6`).
 
 **Exposure risk assessment (as requested):** it is *nominally* exposed via the
-`profiles` getter tuple and echoed in worker logs, always as `0` — but it is
+`profiles` getter tuple and echoed in worker logs, always as `0`, but it is
 **not exposed as if it were real data**: no frontend exists yet, no code
 computes or assigns it, and no report presents it as a live metric. The residual
 risk is that a future frontend might read `profiles().activeLoans` and display
@@ -136,7 +136,7 @@ mocked verification). **Gaps for honest reporting:**
 3. **No production frontend/demo exists** yet (build order step 7 is undefined);
    attestation UX implications are documented in `docs/attestation-timing.md`.
 4. The deployed `EvmV1Decoder.getLogsByEventSignature` on CC3 testnet is broken;
-   the contracts correctly avoid it (in-contract filtering) — worth re-checking
+   the contracts correctly avoid it (in-contract filtering), worth re-checking
    on future releases/testnets.
 
 No gaps were fixed in this audit.

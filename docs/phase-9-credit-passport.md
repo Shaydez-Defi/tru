@@ -1,4 +1,4 @@
-# Phase 9 — Credit Passport (Loan Lifecycle)
+# Phase 9: Credit Passport (Loan Lifecycle)
 
 Closes the Outstanding Obligations gap (backend upgrade brief section 6) by
 verifying loan origination through the same USC pipeline as repayment, per
@@ -6,14 +6,14 @@ AGENTS.md rules 1-3. Every outstanding obligation traces to a verified on-chain
 fact, exactly like every other field in the system. This is new scope, not a
 stub.
 
-Section 4 (evidence exposure) required no new code — `getEvents` +
+Section 4 (evidence exposure) required no new code, `getEvents` +
 `getCreditEvidence` from phases 7 and 8 already answer "why did state change"
-— so it is not re-implemented here. This phase builds directly on that
+, so it is not re-implemented here. This phase builds directly on that
 foundation and adds lifecycle state and the CreditPassport view.
 
 ## Changes
 
-### SourceLoanMarket.sol — check
+### SourceLoanMarket.sol: check
 
 `createLoan()` already emits
 `LoanCreated(uint256 indexed loanId, address indexed borrower, uint256 principal, uint256 due)`.
@@ -33,7 +33,7 @@ rule 6). Verified by inspection of `contracts/src/sepolia/SourceLoanMarket.sol`.
   `borrower = topics[2]`, `principal, dueTimestamp = abi.decode(data)`.
 - Added `executeLoanOrigination(chainKey, blockHeight, encodedTransaction,
   sourceTxHash, merkleRoot, siblings, lowerEndpointDigest, continuityRoots)`:
-  same USC proof path as `execute` — computes `txIndex` via precompile,
+  same USC proof path as `execute`, computes `txIndex` via precompile,
   `queryId = keccak(chainKey, height, txIndex)`, checks
   `processedQueries[queryId]` replay guard, calls `verifyAndEmit`, decodes
   LoanCreated, emits `LoanOriginationVerified`, forwards to
@@ -58,7 +58,7 @@ rule 6). Verified by inspection of `contracts/src/sepolia/SourceLoanMarket.sol`.
   - `outstandingObligations[borrower] -> uint256` (count of ACTIVE)
   - `processedOriginations[queryId] -> bool` (replay for originations)
 - `recordVerifiedLoanOrigination(queryId, borrower, loanId, principal,
-  dueTimestamp, sourceChain, sourceTxHash, sourceBlock)` — `onlyUniversalContract`,
+  dueTimestamp, sourceChain, sourceTxHash, sourceBlock)`, `onlyUniversalContract`,
   checks `!processedOriginations[queryId]` ("Loan origination already recorded"),
   checks `loanStatus == NONE` ("Loan already originated"), sets ACTIVE,
   increments `outstandingObligations`, emits `LoanOriginationRecorded`. Origination
@@ -98,26 +98,26 @@ rule 6). Verified by inspection of `contracts/src/sepolia/SourceLoanMarket.sol`.
 
 Eight new registry tests plus three new UC decode tests:
 
-- `test_loanOriginationMovesToActive` — origination query marks status ACTIVE
+- `test_loanOriginationMovesToActive`, origination query marks status ACTIVE
   and outstanding 1.
-- `test_repaymentMovesToRepaidAndDecrementsOutstanding` — origination then
+- `test_repaymentMovesToRepaidAndDecrementsOutstanding`, origination then
   repayment moves status REPAID and outstanding 0.
-- `test_repaymentWithoutPriorOriginationStillAllowed` — documents edge case:
+- `test_repaymentWithoutPriorOriginationStillAllowed`, documents edge case:
   repayment with status NONE is still allowed, becomes REPAID, outstanding
   stays 0, repayments still counted. Comment in test and in
   `recordVerifiedRepayment` explains the decision.
-- `test_originationReplayGuard` — same origination queryId replay reverts
+- `test_originationReplayGuard`, same origination queryId replay reverts
   "Loan origination already recorded", outstanding unchanged.
-- `test_originationDuplicateGuard` — same loanId origination via different
+- `test_originationDuplicateGuard`, same loanId origination via different
   queryId reverts "Loan already originated".
-- `test_repaymentReplayGuardStillHoldsWithLifecycle` — repayment replay still
+- `test_repaymentReplayGuardStillHoldsWithLifecycle`, repayment replay still
   reverts "Repayment already recorded".
-- `test_outstandingObligationsMultiple` — three originations → 3, two
+- `test_outstandingObligationsMultiple`, three originations → 3, two
   repayments → 1 remaining.
-- `test_creditPassportAfterOriginationAndRepayment` — passport before any
+- `test_creditPassportAfterOriginationAndRepayment`, passport before any
   state (0/0/0), after origination (outstanding 1, loanHistory 0, chains 0),
   after repayment (outstanding 0, history 1, chains [1]).
-- `test_verifiedSourceChainsDistinct` — two repayments on same chain → chains
+- `test_verifiedSourceChainsDistinct`, two repayments on same chain → chains
   `[1]`, history 2.
 
 UC decoder tests (MockDecoder):
@@ -177,7 +177,7 @@ Replay checks: resubmitting either proof is rejected by `processedQueries`
 ("Query already processed"); distinct origination for same loanId rejected by
 "Loan already originated".
 
-## Evidence Exposure — No New Code
+## Evidence Exposure: No New Code
 
 `getEvents` (paginated, reverse chronological) and `getCreditEvidence`
 already answer "why did state change" with verified facts. `getCreditPassport`

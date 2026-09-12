@@ -1,4 +1,4 @@
-# TRU — Project Constitution
+# TRU: Project Constitution
 
 ## What this is
 TRU turns verified financial behavior on any supported blockchain into reusable 
@@ -7,10 +7,10 @@ Ethereum Sepolia → Creditcoin USC (Universal Smart Contracts) cryptographicall
 verifies that repayment → TRU records it on Creditcoin → the borrower's credit 
 profile updates.
 
-## Hard rules — never violate these
+## Hard rules: never violate these
 1. NEVER build a fake or simulated "verification" layer. All repayment facts 
    must flow through real Creditcoin USC proof verification. If USC integration 
-   isn't working yet, say so explicitly — do not stub it with a fake success path 
+   isn't working yet, say so explicitly, do not stub it with a fake success path 
    and move on silently.
 2. NEVER let business logic (credit scoring) run before USC verification confirms 
    the source-chain event. Verification gates everything.
@@ -20,7 +20,7 @@ profile updates.
    explainable in one sentence (e.g. "base $100, +$100 per verified repayment").
 5. NEVER let the same source-chain event (same txHash + logIndex, or same USC 
    query ID) be credited twice. Replay protection is mandatory.
-6. Keep strict separation across three components — do not merge their 
+6. Keep strict separation across three components, do not merge their 
    responsibilities:
    - SourceLoanMarket (Ethereum Sepolia): emits LoanRepaid events. Knows nothing 
      about Creditcoin or TRU.
@@ -34,7 +34,7 @@ profile updates.
   tooling) must be written in TypeScript (.ts/.tsx), not plain JS/.mjs.
 - Existing working .mjs files (worker.mjs, deploy-production.mjs, 
   prove-and-verify.mjs, security-tests.mjs, and similar proven/tested files) 
-  are NOT to be migrated to TS. They are stable and evidenced — do not touch 
+  are NOT to be migrated to TS. They are stable and evidenced, do not touch 
   them for a language-only rewrite. Only modify them for actual functional 
   changes, and even then keep the existing file as .mjs unless a functional 
   change already requires touching most of the file.
@@ -50,9 +50,9 @@ profile updates.
 5. Security hardening: replay protection, borrower binding, loan binding, 
    amount integrity, duplicate protection.
 6. Credit logic (deterministic).
-7. Whatever comes after credit logic — to be defined.
+7. Whatever comes after credit logic, to be defined.
 
 ## When in doubt
 Stop and ask rather than assume SDK behavior, contract interfaces, or endpoint 
-names — reference docs, don't guess. If a step in the build order isn't done yet, 
+names, reference docs, don't guess. If a step in the build order isn't done yet, 
 do not skip ahead to a later step. 

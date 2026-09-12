@@ -1,4 +1,4 @@
-# Phase 7 — Verified Financial Event History
+# Phase 7: Verified Financial Event History
 
 Build-order step 7 (after credit logic): implement a per-borrower append-only log
 of every USC-verified source-chain event. This is the foundation for the credit
@@ -10,16 +10,16 @@ model upgrade, evidence exposure, and Credit Passport that follow.
 
 - Added `EventType` enum (extensible; `Repayment` is the only value today).
 - Added `VerifiedFinancialEvent` struct with fields:
-  - `eventId` (bytes32) — derived from the existing `queryId` (keccak of
+  - `eventId` (bytes32), derived from the existing `queryId` (keccak of
     chainKey, blockHeight, txIndex).
   - `borrower` (address)
-  - `sourceChain` (uint64) — chainKey (e.g., 1 = Sepolia on CC3 testnet).
-  - `sourceTxHash` (bytes32) — the source-chain transaction hash.
-  - `sourceBlock` (uint64) — the source-chain block number.
+  - `sourceChain` (uint64), chainKey (e.g., 1 = Sepolia on CC3 testnet).
+  - `sourceTxHash` (bytes32), the source-chain transaction hash.
+  - `sourceBlock` (uint64), the source-chain block number.
   - `loanId` (uint256)
   - `eventType` (EventType)
   - `amount` (uint256)
-  - `verifiedAt` (uint256) — `block.timestamp` at registry write.
+  - `verifiedAt` (uint256), `block.timestamp` at registry write.
 - Added `borrowerEvents` mapping: `address => VerifiedFinancialEvent[]`
   (append-only per borrower).
 - Modified `recordVerifiedRepayment` to accept three new parameters
@@ -52,18 +52,18 @@ model upgrade, evidence exposure, and Credit Passport that follow.
 
 New tests in `TRUCreditRegistryTest`:
 
-- `test_verifiedRepaymentCreatesEventRecord` — single repayment creates
+- `test_verifiedRepaymentCreatesEventRecord`, single repayment creates
   exactly one event with all fields correct.
-- `test_multipleRepaymentsCreateMultipleEventRecords` — multiple repayments
+- `test_multipleRepaymentsCreateMultipleEventRecords`, multiple repayments
   append multiple events; order is reverse chronological (most recent first).
-- `test_eventHistoryPagination` — pagination with offset/limit works
+- `test_eventHistoryPagination`, pagination with offset/limit works
   correctly; offset beyond length returns empty; limit larger than remaining
   returns remaining.
-- `test_replayGuardStillWorksWithEventHistory` — replay of same queryId
+- `test_replayGuardStillWorksWithEventHistory`, replay of same queryId
   reverts and does not create a duplicate event.
-- `test_duplicateLoanGuardStillWorksWithEventHistory` — same loanId via
+- `test_duplicateLoanGuardStillWorksWithEventHistory`, same loanId via
   different queryId reverts and does not create a duplicate event.
-- `test_differentBorrowersHaveSeparateEventHistories` — each borrower has
+- `test_differentBorrowersHaveSeparateEventHistories`, each borrower has
   isolated event history.
 
 All existing phase 5/6 tests still pass (replay, duplicate, borrower binding,
@@ -101,26 +101,26 @@ amount integrity, credit limit formula).
 **Replay test:**
 - Resubmitting the same proof was rejected by TRUUniversalContract with
   `"Query already processed"`.
-- Registry `getEventCount` remained 1 — no duplicate event created.
+- Registry `getEventCount` remained 1, no duplicate event created.
 
 ## Security Properties Maintained
 
 | Property | Status |
 | --- | --- |
-| Replay protection | ✅ — `processedQueries` in UC + `processedRepayments` in registry |
-| Borrower binding | ✅ — no borrower input; derived from verified tx |
-| Loan binding | ✅ — emitter check + source contract logic |
-| Amount integrity | ✅ — no amount input; derived from verified tx |
-| Duplicate protection | ✅ — `countedLoans[borrower][loanId]` |
+| Replay protection | ✅, `processedQueries` in UC + `processedRepayments` in registry |
+| Borrower binding | ✅, no borrower input; derived from verified tx |
+| Loan binding | ✅, emitter check + source contract logic |
+| Amount integrity | ✅, no amount input; derived from verified tx |
+| Duplicate protection | ✅, `countedLoans[borrower][loanId]` |
 
 All enforced exactly as in phase 5/6; the new event storage is appended only
 after all guards pass.
 
 ## Notes
 
-- No second entry point added — event creation happens inside the existing
+- No second entry point added, event creation happens inside the existing
   UC-gated `recordVerifiedRepayment`, per AGENTS.md rule 6.
-- No speculative/derived fields stored — only raw data tied to an actual
+- No speculative/derived fields stored, only raw data tied to an actual
   USC-verified event.
 - `EventType` enum and `VerifiedFinancialEvent` struct are defined in the
   interface for ABI compatibility; the contract inherits them (no duplicate

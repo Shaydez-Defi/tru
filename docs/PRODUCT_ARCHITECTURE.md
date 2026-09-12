@@ -6,7 +6,7 @@ verified in the repository. No new features, no code changes, no UI changes.
 
 ## 1. Product Definition
 
-TRU — Verifiable Economic History for Humans and Autonomous Agents.
+TRU, Verifiable Economic History for Humans and Autonomous Agents.
 
 Core statement: TRU turns cross-chain economic events into cryptographically
 verified, reusable records.
@@ -48,8 +48,7 @@ Source-chain event
 
 Evidence from `TRUUniversalContract.sol`: all four entry points (`execute`,
 `executeLoanOrigination`, `executeObligationCreated`,
-`executeObligationCompleted`) run the same five-step sequence —
-`calculateTxIndex` → shared `_computeQueryId` → shared `processedQueries`
+`executeObligationCompleted`) run the same five-step sequence, `calculateTxIndex` → shared `_computeQueryId` → shared `processedQueries`
 replay guard → shared `_verifyProof` → per-type decode branch → per-type
 `*Verified` event → per-type UC-gated registry call. Only the decode branch
 (event signature, topic layout, emitter address) and the registry call differ.
@@ -136,7 +135,7 @@ Fields that currently exist (`ITRUCreditRegistry.sol`):
 - `subject`: the queried address.
 - `verifiedObligations`: distinct `Created` obligationIds in the subject's history.
 - `completedObligations`: distinct `Completed` obligationIds.
-- `failedObligations`: distinct `Failed` obligationIds — always `0` today;
+- `failedObligations`: distinct `Failed` obligationIds, always `0` today;
   no verified failure path exists (see §12).
 - `activeObligations`: distinct `Created` whose global status is still `ACTIVE`.
 - `verifiedSettlementVolume`: sum of `Completed` values where
@@ -199,7 +198,7 @@ TRU → provides cryptographically verified facts
 
 An AI agent is a *consumer* of TRU evidence, never a component of TRU
 verification. The live demo executor (`0x8FC1…`) was a fresh wallet acting as
-an autonomous executor address — the code treats every executor uniformly as
+an autonomous executor address, the code treats every executor uniformly as
 an address with a verifiable history. No other agent capability is claimed.
 
 ## 10. Current Capabilities
@@ -239,15 +238,15 @@ Each would reuse the same five-step primitive without new trust assumptions.
 
 ### B. CLAIM CAREFULLY (enabled/demonstrated, word precisely)
 
-- "Autonomous agents can build verifiable history" — true in the sense that
+- "Autonomous agents can build verifiable history", true in the sense that
   any address, including an agent-controlled wallet, accrues history as
   executor; the live executor was a wallet representing an agent, not an
   autonomous AI operating on-chain. Say "agent address," not "AI agent."
-- "Completion rate / settlement volume" — always with "derived from verified
+- "Completion rate / settlement volume", always with "derived from verified
   on-chain events" and the exact formula.
-- Cold-attestation latency (~7–9 min, predictable, not reducible) — state the
+- Cold-attestation latency (~7–9 min, predictable, not reducible), state the
   numbers with the mechanism.
-- `failedObligations` exists as a field but is always `0` — never present it
+- `failedObligations` exists as a field but is always `0`, never present it
   as measured data.
 
 ### C. DO NOT CLAIM
@@ -266,7 +265,7 @@ Each would reuse the same five-step primitive without new trust assumptions.
 
 Economic history is fragmented: what you repay or complete on one chain means
 nothing on another, and every existing score asks you to trust its reporter.
-TRU verifies the underlying cross-chain economic event instead — a Merkle
+TRU verifies the underlying cross-chain economic event instead, a Merkle
 proof that the exact transaction happened in an attested block, checked
 on-chain, bound to its emitter, and guarded against replay. Verified events
 become reusable economic history: humans use it for credit (repayment history

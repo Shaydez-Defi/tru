@@ -1,4 +1,4 @@
-# Phase 5 — Security Hardening
+# Phase 5: Security Hardening
 
 Build-order step 5: verify/implement the security properties of the real wired
 pipeline (SourceLoanMarket → worker → TRUUniversalContract → TRUCreditRegistry)
@@ -48,15 +48,15 @@ Repayment used: `0xc8cec9bdc43f977afab3f2a50e1997fd95b720cd3ea518e4e9fb1d6834457
 `0x2b374aDd4b86Ab1bf6196D1f698Eeb77156aA0F0`). Raw output:
 `docs/phase-5-raw.json`.
 
-### P1 — borrower/amount/loanId by construction
+### P1: borrower/amount/loanId by construction
 
 `execute` ABI: `uint64, uint64, bytes, bytes32, tuple[], bytes32, bytes32[]`.
-No borrower/amount/loanId inputs exist — `has_borrower_input: false`,
+No borrower/amount/loanId inputs exist, `has_borrower_input: false`,
 `has_amount_input: false`, `has_loanId_input: false`. Only proof bytes are
 forwarded; the three fields are derived on-chain from the USC-verified
 transaction.
 
-### P3 — loan binding (emitter check)
+### P3: loan binding (emitter check)
 
 `uc.decodeRepayment(txBytes)` returned borrower `0x2b374aDd...`, loanId `2`,
 amount `987654321` with `emitter_matches_SourceLoanMarket: true`. The view only
@@ -66,14 +66,14 @@ returns if the verified log's `address_` equals the configured
 real loan of the borrower (Creditcoin cannot read Sepolia state directly; this
 is the binding mechanism).
 
-### P1/P3/P4 — valid submission through the real pipeline
+### P1/P3/P4: valid submission through the real pipeline
 
 Submit `0x95f635f8...` (CC3 block 5321385, status 1) → registry
 repayments 2 → 3 (delta +1), totalRepaid 2962962963. queryId
 `0xfc5bcadef84099cd0d689426e2454738dede81476a22f31e820888edd92db30c` parsed from
 the `RepaymentRecorded` event.
 
-### P1 — replay protection (explicit check)
+### P1: replay protection (explicit check)
 
 Resubmitting the same proof reverted; exact reason captured via `staticCall`:
 **"Query already processed"**. Final state confirms
@@ -81,7 +81,7 @@ Resubmitting the same proof reverted; exact reason captured via `staticCall`:
 `registry.processedRepayments[queryId] = true`, and the profile was not
 incremented twice.
 
-### P2 — borrower binding (tampered borrower topic)
+### P2: borrower binding (tampered borrower topic)
 
 Flipping the borrower topic to `0xdeaddead...` (same txBytes, tampered) →
 verifier rejects with **"Merkle proof validation failed"**, and a fresh
@@ -89,17 +89,17 @@ deployment of the real TRUUniversalContract artifact rejects with the same
 error via `staticCall`. (Tamper tests run on a fresh UC instance so the replay
 guard cannot pre-empt the verification rejection.)
 
-### P4 — amount integrity (tampered amount word)
+### P4: amount integrity (tampered amount word)
 
 Flipping the amount word to `...3ade68b2` (987654322) → verifier rejects with
 **"Merkle proof validation failed"**; fresh UC instance rejects identically.
 
-### P2 — direct registry call (bypass UC)
+### P2: direct registry call (bypass UC)
 
 `TRUCreditRegistry.recordVerifiedRepayment` called directly from a non-UC
 address reverted with **"Only TRUUniversalContract"**.
 
-### P5 — duplicate protection
+### P5: duplicate protection
 
 Unreachable via the real pipeline (a loanId repays once at the source), so it
 is proven by the explicit `countedLoans` check in the Foundry tests: crediting

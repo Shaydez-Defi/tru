@@ -3,7 +3,7 @@
 > Note (2026-09-10): this document describes the loan-repayment path as
 > deployed 2026-08-16. The obligation path (`ObligationCreated` /
 > `ObligationCompleted` → `VerifiedObligationEvent` history) mirrors it
-> exactly through the same proof and emitter checks — see
+> exactly through the same proof and emitter checks, see
 > `docs/VERIFIABLE_ECONOMIC_HISTORY.md`. Deployment addresses below are
 > superseded; current addresses are in `README.md` §15.
 
@@ -100,12 +100,12 @@ are in `README.md` §15 and `contracts/deployments/*`.
 USC SDK: **`@gluwa/usc-sdk` 0.18.0** (ethers v6 peer dependency). The functions
 actually used:
 
-- `proofProvider.service.ProofBuilder(chainKey, url).getProof(txHash)` — returns
+- `proofProvider.service.ProofBuilder(chainKey, url).getProof(txHash)`, returns
   `{headerNumber, txIndex, txBytes, merkleProof, continuityProof, cached}`.
   Backed by `POST /api/v1/proof-by-tx/{chainKey}/{txHash}` on
   `https://prover.cc3-testnet.creditcoin.network`.
 - `proofProvider.service.ProofBuilder(...).waitUntilHeightAttested(chainKey, height)`
-  — polls `/api/v1/attested-height/{chainKey}` until the target Sepolia block is
+, polls `/api/v1/attested-height/{chainKey}` until the target Sepolia block is
   attested.
 - On-chain: `VERIFIER.verifyAndEmit(...)` (state-changing, reverts on failure)
   and `VERIFIER.calculateTxIndex(merkleProof)` (precompile calls from the

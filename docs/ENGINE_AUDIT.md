@@ -1,4 +1,4 @@
-# Engine Audit — Verifiable Economic History Primitive
+# Engine Audit: Verifiable Economic History Primitive
 
 **Date:** 2026-09-09
 **Scope:** Backend/protocol/engine only. No frontend, README, submission copy,
@@ -11,9 +11,9 @@ storage, or ABI changes. 81/81 Forge tests pass.
 
 ## 1. The Generalized TRU Verification Primitive
 
-Every state-changing verification in the system — `execute` (repayment),
+Every state-changing verification in the system, `execute` (repayment),
 `executeLoanOrigination`, `executeObligationCreated`,
-`executeObligationCompleted` — runs the identical five-step sequence in
+`executeObligationCompleted`, runs the identical five-step sequence in
 `TRUUniversalContract`:
 
 1. `transactionIndex = VERIFIER.calculateTxIndex(merkleProof)`
@@ -30,7 +30,7 @@ The four execute functions are structurally identical; only the decode branch
 and the registry call differ. This is genuine reuse of one primitive, not
 duplicated special-case logic. The repetition across the four functions is
 intentional explicitness (each path independently readable and live-proven)
-and was deliberately not refactored — collapsing them would touch all four
+and was deliberately not refactored, collapsing them would touch all four
 live paths for zero behavior change.
 
 ## 2. How Loan and Obligation Events Use It
@@ -46,7 +46,7 @@ live paths for zero behavior change.
   `log.address_ == sourceLoanMarket`; obligation decoders additionally require
   `sourceObligationMarket != address(0)` (fail-closed when unset) and equality
   with it. A proof from an arbitrary contract is rejected at decode time even
-  though the Merkle proof itself is valid — verification and authorization are
+  though the Merkle proof itself is valid, verification and authorization are
   separate, consecutive gates.
 - `queryId` replays are guarded once, globally, in `processedQueries`, so one
   source transaction credits at most once even if it carried several events.
@@ -78,7 +78,7 @@ the view can never go stale:
 
 - `verifiedObligations`: distinct `Created` obligationIds in the subject's history
 - `completedObligations` / `failedObligations`: distinct `Completed` / `Failed`
-  obligationIds (dedup loops; `Failed` is 0 today — no verified failure path
+  obligationIds (dedup loops; `Failed` is 0 today, no verified failure path
   exists by design, see §6)
 - `activeObligations`: distinct `Created` whose global status is still `ACTIVE`
 - `verifiedSettlementVolume`: sum of `Completed` values where
@@ -107,7 +107,7 @@ disbursement). Worker remains a relay: it supplies proof bytes plus
 - `ObligationFailedVerified` event and `OBLIGATION_FAILED_EVENT_SIGNATURE`
   are declared but have no execute/record path; `failedObligations` is
   deterministically `0`. Reserved for a future failure path using the same
-  pattern — not wired because failure semantics are not load-bearing today.
+  pattern, not wired because failure semantics are not load-bearing today.
 - Single-market ID namespaces: `loanId`/`obligationId` are globally unique
   per registry only while one market of each type is configured.
 - No deadline enforcement on completion (source-market trust, documented).
@@ -115,14 +115,14 @@ disbursement). Worker remains a relay: it supplies proof bytes plus
 - `O(n²)` view loops are correct at current scale; future high-volume
   subjects want pagination or off-chain indexing.
 - Owner key remains fully trusted (can re-point markets/registry); testnet
-  operator key currently equals owner key — separate before production.
+  operator key currently equals owner key, separate before production.
 
 ## 7. Tests and Verification Results
 
 - `forge build`: clean (only pre-existing `block.timestamp`/typecast lint notes).
 - `forge test`: **81 passed, 0 failed, 0 skipped** across 5 suites
   (7 SourceLoanMarket, 7 SourceObligationMarket, 13 TRUUniversalContract, 47
-  TRUCreditRegistry, 7 TRUFinancing) — identical count to pre-audit baseline;
+  TRUCreditRegistry, 7 TRUFinancing), identical count to pre-audit baseline;
   no test needed changes because this audit made comment-only edits.
 - Fixes in this audit (all NatSpec-only, no logic/storage/ABI change):
   1. `getCreditPassport`: documented `loanHistory` chronological

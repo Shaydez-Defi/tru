@@ -1,4 +1,4 @@
-# TRU — Deck Content
+# TRU: Deck Content
 
 Slide-by-slide content for the hackathon submission deck. Text only, as a
 presenter would speak it. Frontend screenshots are not ready; slides that will
@@ -6,7 +6,7 @@ carry them are marked with `[SCREENSHOT: ...]` placeholders.
 
 ---
 
-## Slide 1 — Title
+## Slide 1: Title
 
 **TRU**
 
@@ -16,7 +16,7 @@ carry them are marked with `[SCREENSHOT: ...]` placeholders.
 
 ---
 
-## Slide 2 — The problem
+## Slide 2: The problem
 
 **Credit history is stranded on one chain**
 
@@ -27,7 +27,7 @@ carry them are marked with `[SCREENSHOT: ...]` placeholders.
 
 ---
 
-## Slide 3 — What TRU does
+## Slide 3: What TRU does
 
 **Repay on any chain. Get verified credit on Creditcoin.**
 
@@ -44,7 +44,7 @@ Demo beat (before/after):
 
 ---
 
-## Slide 4 — Architecture
+## Slide 4: Architecture
 
 **A proof flows from Sepolia to Creditcoin; only verified facts reach the credit registry**
 
@@ -74,7 +74,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 5 — Why Attestcoin is load-bearing
+## Slide 5: Why Attestcoin is load-bearing
 
 **Remove Attestcoin, does it still work? No.**
 
@@ -86,7 +86,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 6 — Security
+## Slide 6: Security
 
 **Every property is enforced either by construction or by an explicit check**
 
@@ -102,7 +102,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 7a — Demo: Borrow
+## Slide 7a: Demo: Borrow
 
 `[SCREENSHOT: Borrow screen, borrower creating a loan on Sepolia, showing loan created + event emitted]`
 
@@ -113,7 +113,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 7b — Demo: Repay and pending verification
+## Slide 7b: Demo: Repay and pending verification
 
 `[SCREENSHOT: Repay screen showing tx confirmed, then "verification pending ~8 min" with a live countdown]`
 
@@ -125,7 +125,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 7c — Demo: Credit profile with proof
+## Slide 7c: Demo: Credit profile with proof
 
 `[SCREENSHOT: Credit Profile screen, repayments=1, totalRepaid, creditLimit=$100, with the verified proof / tx links]`
 
@@ -137,7 +137,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 8 — Honest limitations, as what's next
+## Slide 8: Honest limitations, as what's next
 
 - **Testnet today.** Live on Sepolia and Creditcoin CC3 testnet. The path to mainnet is configuration plus the fixes below, not redesign.
 - **Self-loan gap.** Today a borrower can create and repay a loan to themselves and earn credit. We flag it as a known limitation and it is first on the fix list: require external funding on the source contract, or scale credit with repayment relative to principal.
@@ -146,7 +146,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 9 — What's next
+## Slide 9: What's next
 
 - **Close the self-loan gap**: source contract proves external funding; credit scales with repayment size relative to principal.
 - **Mainnet path**: per-environment config (chainKey, proof builder, decoder), real audit of the source lending contract, re-check inherited decoder behavior on mainnet.
@@ -156,7 +156,7 @@ SourceLoanMarket            BlockProver precompile (native)
 
 ---
 
-## Slide 10 — Team / ask
+## Slide 10: Team / ask
 
 **TRU**
 

@@ -1,4 +1,4 @@
-# Phase 8 — Credit Model Upgrade
+# Phase 8: Credit Model Upgrade
 
 Built on the event history from phase 7. Adds a deterministic state and
 evidence layer on top of the existing creditLimit formula. No AI, no invented
@@ -78,28 +78,28 @@ precision, every output traces to a verified fact.
 Six new registry tests (phase 8), all deterministic and tracing to verified
 facts:
 
-- `test_creditStateBoundaries` — exercises the tier at each boundary in a
+- `test_creditStateBoundaries`, exercises the tier at each boundary in a
   single borrower progression: 0→NEW, 1→BUILDING, 2→BUILDING, 3→ESTABLISHED,
   5→ESTABLISHED (upper boundary), 6→VERIFIED. Uses successive
   `recordVerifiedRepayment` calls with distinct loanIds and queryIds.
 
-- `test_creditStatePureHelper` — directly asserts the pure `getCreditState`
+- `test_creditStatePureHelper`, directly asserts the pure `getCreditState`
   helper at 0,1,2,3,5,6,100 (covers far beyond threshold without state setup).
 
-- `test_getCreditEvidenceReturnsCorrectValues` — two verified repayments;
+- `test_getCreditEvidenceReturnsCorrectValues`, two verified repayments;
   asserts `repayments=2, totalRepaid=800, creditLimit=200, distinctLoansRepaid=2,
   failedOrRejectedEvents=0, creditState=BUILDING`.
 
-- `test_distinctLoansRepaidAcrossMultipleLoans` — three distinct loanIds;
+- `test_distinctLoansRepaidAcrossMultipleLoans`, three distinct loanIds;
   asserts `distinctLoansRepaid=3` and that it equals `repayments` (each loan
   credited once).
 
-- `test_creditLimitFormulaUnchanged` — asserts `BASE_LIMIT==0`,
+- `test_creditLimitFormulaUnchanged`, asserts `BASE_LIMIT==0`,
   `INCREMENT_PER_REPAYMENT==100`, then checks `getCreditEvidence` at 0,1,2
   repayments that `creditLimit` equals `BASE_LIMIT + repayments*100` byte-for-byte
   and also equals the direct `profiles(borrower)` value.
 
-- `test_failedOrRejectedEventsAlwaysZero` — asserts `failedOrRejectedEvents==0`
+- `test_failedOrRejectedEventsAlwaysZero`, asserts `failedOrRejectedEvents==0`
   after one repayment, after two, and for a fresh borrower with no history.
 
 All 17 earlier registry tests still pass unchanged (creditLimit setters,
