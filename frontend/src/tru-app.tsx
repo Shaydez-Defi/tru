@@ -96,7 +96,6 @@ function ExpandIcon({ size = 14, open }: { size?: number; open: boolean }) { ret
 function SearchIcon({ size = 15 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.7" /><path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>); }
 function ArrowLeft({ size = 14 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12l6-6M5 12l6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function ExternalLink({ size = 12 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H10M17 7V14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
-function ShieldGlyph({ size = 15 }: { size?: number }) { return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>); }
 function SidebarToggleIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -186,7 +185,7 @@ function WalletGlyph({ size = 14 }: { size?: number }) { return (<svg width={siz
 
 const NODES: PipelineNodeDatum[] = [
   { label: "Loan repaid", meta: "economic event → verified", icon: EventGlyph, pos: "top-left" },
-  { label: "Obligation completed", meta: "economic event → verified", icon: ShieldGlyph, pos: "top-right" },
+  { label: "Obligation completed", meta: "economic event → verified", icon: NodeCheck, pos: "top-right" },
   { label: "Event happened", meta: "→ proven", icon: ChainGlyph, pos: "bottom-left" },
   { label: "Verified record", meta: "reusable on Creditcoin", icon: LedgerGlyph, pos: "bottom-right" },
 ];
@@ -199,6 +198,7 @@ function PipelineNode({ node }: { node: PipelineNodeDatum }) {
     </div>
   );
 }
+function NodeCheck({ size = 14 }: { size?: number }) { return <CheckGlyph size={size} color="currentColor" />; }
 
 /* ── Scroll reveal: same safe pattern as before, never opacity:0
    by default, only a settle-into-place transform. ────────────── */
@@ -568,7 +568,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="pipeline">
               <div className="pipe-node"><span className="pipe-icon"><EventGlyph size={20} /></span><span className="pipe-label">Economic Activity</span><span className="pipe-sub">loans & obligations</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><ShieldGlyph size={20} /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">attests the source block</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><CheckGlyph size={18} color="currentColor" /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">attests the source block</span></div>
               <span className="pipe-arrow">→</span>
               <div className="pipe-node"><span className="pipe-icon"><TruMark size={18} color="var(--accent-bright)" /></span><span className="pipe-label">TRU</span><span className="pipe-sub">verifies the event</span></div>
               <span className="pipe-arrow">→</span>
@@ -2622,9 +2622,9 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
             <div className="dash-main">
               {/* Chain: same node language as the rest of the product, now shown complete */}
               <div className="proof-chain">
-                <div className="proof-node"><ShieldGlyph size={16} /><span>Ethereum Sepolia</span></div>
+                <div className="proof-node"><ChainGlyph size={16} /><span>Ethereum Sepolia</span></div>
                 <span className="proof-arrow">→</span>
-                <div className="proof-node"><ShieldGlyph size={16} /><span>Attestcoin</span></div>
+                <div className="proof-node"><CheckGlyph size={14} color="currentColor" /><span>Attestcoin</span></div>
                 <span className="proof-arrow">→</span>
                 <div className="proof-node"><TruMark size={14} color="var(--accent-bright)" /><span>TRU</span></div>
                 <span className="proof-arrow">→</span>
@@ -2670,7 +2670,7 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
               </div>
 
               <div className="security-note">
-                <ShieldGlyph size={16} />
+                <CheckGlyph size={15} color="currentColor" />
                 <p>TRU didn't trust a submitted {isLoan ? "borrower" : "executor"}, amount, or {isLoan ? "loan" : "obligation"} ID for this event. The contract read all three directly from the verified source-chain transaction, not from anything typed into a form.</p>
               </div>
             </div>
@@ -3046,9 +3046,9 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
               <div className="detail-panel">
                 <div className="detail-panel-title">Architecture</div>
                 <div className="arch-stack">
-                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Source Chain</div><div className="arch-block-desc">Where the economic event happens</div></div></div>
+                  <div className="arch-block"><ChainGlyph size={16} /><div><div className="arch-block-name">Source Chain</div><div className="arch-block-desc">Where the economic event happens</div></div></div>
                   <span className="arch-arrow">↓</span>
-                  <div className="arch-block"><ShieldGlyph size={16} /><div><div className="arch-block-name">Attestation</div><div className="arch-block-desc">Evidence about the event</div></div></div>
+                  <div className="arch-block"><CheckGlyph size={14} color="currentColor" /><div><div className="arch-block-name">Attestation</div><div className="arch-block-desc">Evidence about the event</div></div></div>
                   <span className="arch-arrow">↓</span>
                   <div className="arch-block"><TruMark size={14} color="var(--accent-bright)" /><div><div className="arch-block-name">TRU Verification Layer</div><div className="arch-block-desc">Cryptographically verifies the event</div></div></div>
                   <span className="arch-arrow">↓</span>
