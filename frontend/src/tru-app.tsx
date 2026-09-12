@@ -475,7 +475,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <a className="nav-link" href="#docs">Documentation</a>
             </div>
             <div className="nav-right">
-              <a className="nav-pill" href="#github"><GitHubGlyph size={14} /> GitHub</a>
+              <a className="nav-pill" href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer"><GitHubGlyph size={14} /> GitHub</a>
               <button className="nav-cta" onClick={() => navigate("connect")}>Connect Wallet</button>
             </div>
           </nav>
@@ -3070,8 +3070,8 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
               <div className="side-widget">
                 <div className="widget-title">Resources</div>
                 <div className="quick-actions">
-                  <a className="qa-btn" href="#docs"><EventsIcon /><span>Docs</span></a>
-                  <a className="qa-btn" href="#github"><ProtocolIcon /><span>GitHub</span></a>
+                  <a className="qa-btn" href="https://github.com/Shaydez-Defi/tru/tree/main/docs" target="_blank" rel="noreferrer"><EventsIcon /><span>Docs</span></a>
+                  <a className="qa-btn" href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer"><ProtocolIcon /><span>GitHub</span></a>
                   <a className="qa-btn" href="#overview" onClick={(e) => { e.preventDefault(); navigate("overview"); }}><OverviewIcon /><span>Overview</span></a>
                   <a className="qa-btn" href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}><CreditIcon /><span>Profile</span></a>
                 </div>
