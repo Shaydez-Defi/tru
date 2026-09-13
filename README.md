@@ -320,7 +320,10 @@ Confirmed by `docs/ENGINE_AUDIT.md` and `docs/SECURITY_AUDIT.md`:
 (7 `SourceLoanMarket`, 7 `SourceObligationMarket`, 7 `TRUFinancing`,
 13 `TRUUniversalContract`, 47 `TRUCreditRegistry`, 11 audit:
 relay-boundary, rotation-immutability, lifecycle-pinning, gas-scaling,
-UC-admin, full-path replay/tamper), solc `0.8.28`.
+UC-admin, full-path replay/tamper), solc `0.8.28`. Obligation coverage is the
+7-test `SourceObligationMarket` suite plus 13 obligation lifecycle and
+passport tests in the registry suite, 4 obligation decode tests in the UC
+suite, and 5 obligation-focused audit tests.
 `forge build` is clean apart from pre-existing `block.timestamp`/typecast
 lint notes. There is no separate typecheck step in this repo; contract
 correctness is covered by the Forge suite plus live testnet runs.
@@ -387,7 +390,7 @@ namespaces (one market per type assumed). Passport views loop in `O(n²)`,
 correct at current volume. The deployment owner key is fully trusted (can
 re-point markets/registry), and on testnet the operator key currently equals
 the owner key, separate before production. Proof submission itself is permissionless (no access control on the UC `execute*` functions, only proof-validity and replay checks), so additional relayers can run without coordination. The known self-loan gap persists
-for loans. Cold attestation takes ~7–9 minutes (predictable from the
+for loans. Its obligation-side analogue is explicitly in scope: self-obligations (`requester == executor`) verify and count like any other event, including toward the creator's own passport, as demonstrated live. The `requester` field keeps this visible on-chain, but the protocol does not discount self-created history. Cold attestation takes ~7–9 minutes (predictable from the
 attested-height gap, not reducible). Active-loan stubs were removed rather
 than faked; `TRUFinancing` approves on eligibility alone with no disbursement.
 Audit additions (2026-09-12, forge-proven, no redeploy): the passport and
