@@ -1273,7 +1273,7 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
                 </div>
                 <div className="credit-basis">{history.loading ? "Loading verified events…" : history.error ? "Couldn't load on-chain history. Check your connection and retry." : `${summary.verifiedEvents} verified events · ${summary.verifiedObligations} obligations · ${summary.completedObligations} completions.`}</div>
                 <div className="credit-derivation">
-                  {!account && "Demo data · Ethereum Sepolia. "}Every figure derives from verified on-chain events recorded through TRU, not assigned. Open a ledger entry below to see the source transaction and attestation behind it.
+                  {!account && "Demo data · Ethereum Sepolia. "}TRU turns verified cross-chain economic events into reusable economic history. Every figure below derives from those events, not assigned. Open a ledger entry to see the source transaction and attestation behind it.
                 </div>
               </div>
 
@@ -1703,7 +1703,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
 
         <div className="content">
           <span className="page-eyebrow">Economic Actor</span>
-          <h1 className="page-title">What this actor can prove</h1>
+          <h1 className="page-title">See the economic history an actor can prove</h1>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -1715,6 +1715,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
                   <span className="credit-verify-chip"><CheckGlyph size={11} color="var(--accent-bright)" /> Verified</span>
                 </div>
                 <div className="credit-status-word">Verified economic history</div>
+                <div className="credit-basis" style={{ marginBottom: 10 }}>An evidence-backed history derived from verified economic events.</div>
                 <div className="credit-highlight">
                   <span className="credit-highlight-k">Verified obligations</span>
                   <span className="credit-highlight-v">{pp ? pp.verifiedObligations.toString() : "…"}</span>
@@ -1791,7 +1792,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
               <div className="section-head" style={{ marginTop: 40 }}>
                 <span className="section-title">Evidence, not judgment</span>
               </div>
-              <p className="section-sub">An Agent Passport does not assign a trust score. It exposes verified economic events so applications and agents can make their own decisions.</p>
+              <p className="section-sub">Reputation says "this actor is trustworthy." TRU says "this actor has completed {pp ? pp.completedObligations.toString() : "…"} verified obligation{pp && pp.completedObligations !== 1n ? "s" : ""}." An Agent Passport does not assign a trust score. It exposes verified economic events so applications and agents can make their own decisions.</p>
 
               <div className="factors-panel">
                 <div className="widget-title">Same verification primitive</div>
@@ -2198,6 +2199,7 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
         <div className="content">
           <span className="page-eyebrow">Verified Events</span>
           <h1 className="page-title">Every event, traced to its proof</h1>
+          <p className="section-sub">A blockchain explorer shows that a transaction happened. TRU shows that it was verified as a meaningful economic event and recorded into reusable history.</p>
 
           <div className="dash-grid">
             <div className="dash-main">
@@ -2277,6 +2279,11 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
                 <div className="summary-row"><span>Total events</span><span className="summary-v">{history.loading ? "…" : entries.length}</span></div>
                 <div className="summary-row"><span>Verified</span><span className="summary-v" style={{ color: "var(--accent-bright)" }}>{history.loading ? "…" : verifiedCount}</span></div>
                 <div className="summary-row"><span>Pending attestation</span><span className="summary-v">{history.loading ? "…" : entries.length - verifiedCount}</span></div>
+              </div>
+
+              <div className="side-widget">
+                <div className="widget-title">How verification reads</div>
+                <p className="section-sub" style={{ marginBottom: 0 }}>Source event → proof → TRU verification → verified event → reusable history.</p>
               </div>
 
               <div className="side-widget side-widget--qa">
@@ -3053,7 +3060,7 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
 
           <div className="dash-grid">
             <div className="dash-main">
-              <p className="protocol-lede">TRU turns verified cross-chain economic events into consumable verified history. Lenders, RWA platforms, and autonomous agents can consume it. Everything below describes the real pipeline.</p>
+              <p className="protocol-lede">TRU's protocol turns cross-chain evidence into reusable economic history. Lenders, RWA platforms, and autonomous agents consume it. Everything below describes the real pipeline.</p>
 
               <div className="detail-panel">
                 <div className="detail-panel-title">Architecture</div>
@@ -3067,6 +3074,13 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
                   <div className="arch-block"><CreditIcon size={16} /><div><div className="arch-block-name">Creditcoin</div><div className="arch-block-desc">Stores the verified economic history</div></div></div>
                   <span className="arch-arrow">↓</span>
                   <div className="arch-block is-done"><CheckGlyph size={13} color="var(--bg)" /><div><div className="arch-block-name">Applications & Agents</div><div className="arch-block-desc">Consume verified facts</div></div></div>
+                </div>
+                <div className="dev-flow" style={{ marginTop: 18, marginBottom: 0 }}>
+                  <span className="dev-chip">Act</span><span className="dev-flow-arrow">→</span>
+                  <span className="dev-chip">Prove</span><span className="dev-flow-arrow">→</span>
+                  <span className="dev-chip">Verify</span><span className="dev-flow-arrow">→</span>
+                  <span className="dev-chip">Record</span><span className="dev-flow-arrow">→</span>
+                  <span className="dev-chip">Reuse</span>
                 </div>
               </div>
 
