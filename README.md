@@ -1,26 +1,43 @@
-# TRU: Verifiable Economic History for Autonomous Agents
+# TRU
 
-TRU makes an agent's economic history verifiable instead of trusted.
+> TRU makes an agent's economic history verifiable instead of trusted.
 
-## The Problem
+## 1. The Problem
 
-Autonomous agents act across chains: completing obligations, repaying loans, performing work for counterparties. But none of that activity becomes reusable, verifiable history. The next agent or protocol that wants to work with them has no way to check what they have actually done. It can only trust what the agent claims, or trust a third-party API that says "this agent is reliable."
+Autonomous agents, protocols, and human borrowers all perform economic activity across multiple chains. But that activity does not automatically become reusable, verifiable history.
 
-TRU solves this by turning cross-chain economic events into cryptographic proof that lives on Creditcoin. An agent's history becomes something other protocols can verify directly, without trusting the agent or any intermediary.
+If Agent A completes an obligation on Ethereum, a protocol on another chain has no way to verify that it happened. It can only trust what Agent A claims, or trust a third-party API that says "this agent is reliable." Both options require trust. Neither provides proof.
 
-## The Agent Passport
+The same problem exists for human borrowers. A repayment on Ethereum Sepolia does not automatically become credit history on Creditcoin. Every existing solution asks you to trust the reporter rather than the evidence.
 
-An Agent Passport is the primary output of TRU. It is a deterministic, on-chain record derived entirely from verified economic events.
+TRU solves this by verifying cross-chain economic events through Attestcoin and recording them on Creditcoin as reusable history. An agent's Passport or a borrower's credit profile becomes something other protocols can verify directly, without trusting anyone.
+
+## 2. The Solution
+
+TRU is a verification pipeline with one output: verified economic history.
 
 ```
-Agent performs economic obligation
-  -> Obligation is completed
-  -> Source-chain event is proven via Attestcoin
-  -> Creditcoin records the verified fact
-  -> Agent Passport updates
+Economic event on source chain (Ethereum Sepolia)
+  -> Attestcoin evidence (Creditcoin attests the source block, proof builder returns Merkle + continuity proof)
+    -> TRU verification (TRUUniversalContract checks proof, emitter, replay)
+      -> Creditcoin record (TRUCreditRegistry stores verified fact)
+        -> Reusable economic history (Agent Passport, Credit Profile)
 ```
 
-A Passport contains:
+The same pipeline handles four event types today:
+
+- **Obligation created** (`ObligationCreated`): a requester assigns an economic obligation to an executor
+- **Obligation completed** (`ObligationCompleted`): the designated executor fulfills the obligation
+- **Loan originated** (`LoanCreated`): a borrower takes out a loan
+- **Loan repaid** (`LoanRepaid`): the borrower repays
+
+Loans are the first application. Obligations generalize the primitive to any economic actor, including autonomous agents. Both flow through identical verification, replay protection, and emitter checks.
+
+## 3. Agent Passport
+
+The Agent Passport is the primary output of TRU. It is a deterministic, on-chain record derived entirely from verified economic events.
+
+### What it contains
 
 | Field | What it means |
 | --- | --- |
@@ -30,94 +47,70 @@ A Passport contains:
 | `activeObligations` | Obligations still in progress |
 | `verifiedSettlementVolume` | Total value settled across completed obligations |
 | `verifiedSourceChains` | Distinct chains where activity was verified |
-| `completionRateBps` | Completion rate in basis points (e.g., 10000 = 100%) |
+| `completionRateBps` | Completion rate in basis points (10000 = 100%) |
 | `obligationHistory` | Full chronological event history |
 
-Every field is recomputed live from on-chain records. No AI, no subjective scoring, no token ownership, no NFT metadata. An agent has a Passport because it did verifiable work, not because someone assigned it a score.
+Every field is recomputed live from on-chain records on every call. The struct is returned by `TRUCreditRegistry.getAgentPassport(subject)` and defined in `ITRUCreditRegistry.sol`.
 
-Other protocols and agents read the Passport and apply their own policy: require a minimum completion rate, a threshold settlement volume, or activity on specific chains. TRU supplies the evidence. The consumer decides what it means.
+### What it is not
 
-## How It Works
+- **Not an AI-generated reputation score.** No LLM, no model calls, no learned parameters anywhere in contracts, worker, or tests.
+- **Not subjective scoring.** Every field traces to a USC-verified event. An agent has a Passport because it did verifiable work, not because someone assigned it a score.
+- **Not self-reported history.** Only events that passed `verifyAndEmit` on-chain are recorded. Self-reported claims, centralized APIs, and third-party scores are not part of the system.
 
-TRU uses the Attestcoin protocol (Creditcoin Universal Smart Contracts) to prove that an event happened on a source chain:
+### How other protocols use it
+
+Another protocol calls `getAgentPassport(B)` (view call, no gas for reads), receives the nine fields, and applies its own policy: require a minimum completion rate, a threshold settlement volume, or activity on specific chains. TRU supplies the evidence. The consumer decides what it means.
 
 ```
-Source Chain (Ethereum Sepolia)
+Agent A wants to transact with Agent B
+  -> calls TRUCreditRegistry.getAgentPassport(B) on Creditcoin
+  -> receives: verifiedObligations, completedObligations, activeObligations,
+     verifiedSettlementVolume, completionRateBps, verifiedSourceChains,
+     obligationHistory
+  -> applies its own policy (e.g. completionRateBps >= 8000 and
+     verifiedSettlementVolume >= threshold and sourceChain == 1)
+  -> decides whether and how to transact
+```
+
+## 4. How It Works
+
+### The verification pipeline
+
+```
+Source Chain (Sepolia)
   SourceObligationMarket emits ObligationCreated / ObligationCompleted
   SourceLoanMarket emits LoanCreated / LoanRepaid
         |
         v
 Attestcoin
-  Creditcoin attests the source block
-  Proof builder returns a Merkle + continuity proof
+  Creditcoin attests the source block (~35-block standing lag,
+  10-block batches; cold attestation ~7-9 min, predictable,
+  already-attested blocks instant)
+  Proof builder returns Merkle + continuity proof for the tx hash
         |
         v
 TRU Worker (off-chain)
-  Waits for attestation, builds proof, submits to TRUUniversalContract
+  Waits for attestation, builds proof
+  Sanity-checks with BlockProver verifySingle (eth_call)
+  Submits to TRUUniversalContract
         |
         v
 TRUUniversalContract (Creditcoin CC3)
-  Verifies proof via BlockProver precompile
-  Checks emitter matches configured source market
-  Forwards verified facts to TRUCreditRegistry
+  txIndex via precompile -> queryId = keccak(chainKey, blockHeight, txIndex)
+  Replay guard -> verify -> decode expected event from verified receipt
+  Emitter check against configured market -> forward to registry
         |
         v
 TRUCreditRegistry (Creditcoin CC3)
-  Records verified events
-  Updates Agent Passport / Credit Profile
+  UC-gated record (replay + duplicate + lifecycle guards)
+  Updates Agent Passport or Credit Profile
+  Appends verified event history
 ```
 
-The worker is a relay. It transports proof bytes and never decides what gets credited. Only proof verification success plus the emitter check can write registry state.
+The worker is a relay and proof-construction component. It transports proof bytes and never decides what gets credited. Only `verifyAndEmit` success plus the emitter check can write registry state.
 
-## Live Testnet Proof
-
-Every entry below was verified against live RPCs. Sepolia links open Etherscan; CC3 links open Creditcoin testnet Blockscout.
-
-| Step | Source tx (Sepolia) | Proof tx (CC3) | Result |
-| --- | --- | --- | --- |
-| Agent `0x8FC1…` creates obligation | [`0x9591e621…`](https://sepolia.etherscan.io/tx/0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617) block `11663848` | [`0xe7961a54…`](https://creditcoin-testnet.blockscout.com/tx/0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1) block `5454388` | `ACTIVE` |
-| Agent `0x8FC1…` completes obligation | [`0x3aa9af68…`](https://sepolia.etherscan.io/tx/0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c) block `11663849` | [`0xc19bc7df…`](https://creditcoin-testnet.blockscout.com/tx/0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8) block `5454391` | `COMPLETED` |
-| Agent Passport for `0x8FC1…` | n/a | n/a | `verified 1, completed 1, active 0, volume 9000, 10000 bps, chains [1]` |
-
-A second self-obligation for `0x2b37…` (create `0x5a2757…`, complete `0x9eb372…`) was also verified live, showing the primitive works for both human and agent addresses.
-
-## Verified Events
-
-TRU supports four event types through the same verification pipeline:
-
-- **Obligation created** (`ObligationCreated`): a requester assigns an economic obligation to an executor
-- **Obligation completed** (`ObligationCompleted`): the designated executor fulfills the obligation
-- **Loan originated** (`LoanCreated`): a borrower takes out a loan
-- **Loan repaid** (`LoanRepaid`): the borrower repays
-
-Loans are the first application of the verification primitive. Obligations generalize it to any economic actor, including autonomous agents.
-
-## Credit History
-
-Loan repayment history for human borrowers is the second product surface. A borrower's profile updates with each verified repayment:
-
-```
-repayments = number of verified repayments
-totalRepaid = sum of verified amounts
-creditLimit = 0 + repayments * 100
-creditState = NEW (0) -> BUILDING (1-2) -> ESTABLISHED (3-5) -> VERIFIED (6+)
-```
-
-`TRUFinancing` gates `requestFinancing` on `creditState >= BUILDING` and `amount <= creditLimit` without disbursing funds.
-
-```mermaid
-flowchart TD
-    SRC["Source Chain: economic event"] --> ATT["Attestcoin: cryptographic proof"]
-    ATT --> BP["Creditcoin BlockProver: verifies the proof"]
-    BP --> TRU["TRU: replay guard, decode, emitter check"]
-    TRU --> HIST["Verified Economic History"]
-    HIST --> PASSPORT["Agent Passport"]
-    HIST --> CREDIT["Credit Profile"]
-    PASSPORT --> APPS["Applications / Agents"]
-    CREDIT --> APPS
-```
-
-## Architecture
+### Architecture diagram
 
 ```
 Sepolia (Ethereum)                               Creditcoin CC3 Testnet
@@ -156,19 +149,137 @@ SourceObligationMarket
                                            Any app/agent (reads getAgentPassport)
 ```
 
-Both loan and obligation events flow through the same `verifyAndEmit` + emitter + replay checks. The worker is a relay and proof-construction component: it transports proof bytes and never decides what gets credited.
+### Mermaid flow
 
-## Security
+```mermaid
+flowchart TD
+    SRC["Source Chain: economic event"] --> ATT["Attestcoin: cryptographic proof"]
+    ATT --> BP["Creditcoin BlockProver: verifies the proof"]
+    BP --> TRU["TRU: replay guard, decode, emitter check"]
+    TRU --> HIST["Verified Economic History"]
+    HIST --> PASSPORT["Agent Passport"]
+    HIST --> CREDIT["Credit Profile"]
+    PASSPORT --> APPS["Applications / Agents"]
+    CREDIT --> APPS
+```
 
-- **Emitter validation:** each decoder requires the log emitter to equal the configured source market; obligation decoders fail closed when the market is unset
-- **Replay protection:** `processedQueries[keccak(chainKey, blockHeight, txIndex)]` in the universal contract plus per-domain replay maps in the registry
-- **Duplicate protection:** `countedLoans[borrower][loanId]`, `loanStatus`, and `obligationStatus` reject second crediting of the same loan or obligation
-- **Source-chain validation:** `chainKey` and `blockHeight` bind the proof to one chain and block
-- **Registry authorization:** all record functions are `onlyUniversalContract`; admin setters are owner-only
-- **Event isolation:** loan and obligation histories use separate mappings and views
-- **Proof verification:** state changes only after `verifyAndEmit` success; tampered bytes revert
+## 5. Live Proofs
 
-## Testing
+Every entry below was verified against live RPCs. Sepolia links open Etherscan; CC3 links open Creditcoin testnet Blockscout.
+
+### Agent obligation flow (0x8FC1...)
+
+| Step | Source tx (Sepolia) | Proof tx (CC3) | Result |
+| --- | --- | --- | --- |
+| Creates obligation | [`0x9591e621…`](https://sepolia.etherscan.io/tx/0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617) block `11663848` | [`0xe7961a54…`](https://creditcoin-testnet.blockscout.com/tx/0xe7961a54e83e2b57a47fd02189fd37ae503f50421798c53cadc2751f208dd5a1) block `5454388` | `ACTIVE` (464.0s cold attestation) |
+| Completes obligation | [`0x3aa9af68…`](https://sepolia.etherscan.io/tx/0x3aa9af68306d2e646d491b48de3878ebc5d093f05414e88dac7e949bf491a40c) block `11663849` | [`0xc19bc7df…`](https://creditcoin-testnet.blockscout.com/tx/0xc19bc7df91805a135d5b4a3a1191c53488cc76ee6f3050b3f56f7bb35d0226b8) block `5454391` | `COMPLETED` (2.3s, already attested) |
+| Agent Passport | n/a | n/a | `verified 1, completed 1, active 0, volume 9000, 10000 bps, chains [1]` |
+
+### Self-obligation (0x2b37...)
+
+| Step | Source tx (Sepolia) | Proof tx (CC3) |
+| --- | --- | --- |
+| Creates obligation | `0x5a2757…` block `11663734` | `0x720a42a9…` block `5454297` |
+| Completes obligation | `0x9eb372…` block `11663735` | `0xf342b72c…` block `5454298` |
+
+Agent Passport: `verified 1, completed 1, active 0, settlement 8000, rate 10000`. This confirms the primitive works for both human and agent addresses.
+
+### Loan flow (0x2b37...)
+
+| Step | Source tx (Sepolia) | Proof tx (CC3) | Result |
+| --- | --- | --- | --- |
+| Loan originated | [`0x74d0e459…`](https://sepolia.etherscan.io/tx/0x74d0e459379fb89894db4d2b7903f15cb18ec27e90669c0f8743380f9749ac8a) block `11580721` | [`0xdd9e4e71…`](https://creditcoin-testnet.blockscout.com/tx/0xdd9e4e7183c816776aab9b69b45f5578406035555181fee24ee5bc09bccfaf3c) block `5385429` | `loanStatus ACTIVE` |
+| Loan repaid | [`0xc21ea7d1…`](https://sepolia.etherscan.io/tx/0xc21ea7d1505fcbbc10ff1ebbf1e5774e3608296652cb0bca17787bd35a34db8e) block `11581259` | [`0xe0a48f58…`](https://creditcoin-testnet.blockscout.com/tx/0xe0a48f58639dcb7aab0d1f84ffe6eeade1df7076eaf9040fb815ee660d5f2b4d) block `5385870` | `repayments 1, totalRepaid 123456789, creditLimit 100, BUILDING` |
+| `requestFinancing(50)` | CC3-only call | [`0xa8117461…`](https://creditcoin-testnet.blockscout.com/tx/0xa8117461a266471e2b67ebccc8d5d7f302d3e6484f31d2698872f0613525b097) block `5385873` | recorded; over-limit and NEW-state requests revert |
+
+## 6. Attestcoin Integration
+
+TRU uses the Attestcoin protocol (Creditcoin Universal Smart Contracts) to prove that a source-chain event actually happened. The integration path:
+
+1. **Source event:** `SourceObligationMarket` or `SourceLoanMarket` on Sepolia emits a log (`ObligationCreated`, `ObligationCompleted`, `LoanCreated`, or `LoanRepaid`).
+
+2. **Attestation:** Creditcoin attests the source block. There is a standing lag of ~35 blocks with 10-block batches. Cold attestation (first event on a new block) takes 7-9 minutes. Already-attested blocks return instantly.
+
+3. **Proof generation:** The proof builder (`ProofBuilder.getProof(txHash)`) returns a Merkle proof plus continuity proof for the transaction. The worker sanity-checks with `BlockProver.verifySingle` (eth_call) before submitting.
+
+4. **On-chain verification:** `TRUUniversalContract` calls the BlockProver precompile (`verifyAndEmit`) at `0x...0FD2`. The precompile proves transaction inclusion in the attested block and reverts on any tampered byte.
+
+5. **Query ID:** `queryId = keccak(chainKey, blockHeight, transactionIndex)`. This is the unique, replay-guarded identifier for every verified event.
+
+6. **Decode and emitter check:** The contract decodes the expected event type from the verified receipt logs. Each decoder checks that `log.address_` matches the configured source market (`Not SourceLoanMarket emitter` / `Not SourceObligationMarket emitter`).
+
+7. **Registry recording:** Verified facts are forwarded to `TRUCreditRegistry` through UC-gated record functions. The registry enforces replay protection (`processedQueries`), duplicate protection (`countedLoans` / `obligationStatus`), and lifecycle guards.
+
+All four entry points (`execute`, `executeLoanOrigination`, `executeObligationCreated`, `executeObligationCompleted`) run the same five-step sequence. Only the decode branch (event signature, topic layout, emitter address) and the registry call differ.
+
+## 7. Security / Verification Guarantees
+
+Confirmed by the Forge test suite (92 tests) and live testnet runs:
+
+- **Proof verification:** state changes only after `verifyAndEmit` success. Tampered bytes, wrong events, failed source transactions, and non-UC callers all revert with explicit reasons.
+- **Emitter validation:** each decoder requires the log emitter to equal the configured source market. Obligation decoders fail closed when the market is unset.
+- **Replay protection:** `processedQueries[keccak(chainKey, blockHeight, txIndex)]` in the universal contract plus per-domain replay maps (`processedRepayments`, `processedOriginations`, `processedObligationCreations`, `processedObligationCompletions`) in the registry. Live replays revert `Query already processed`.
+- **Duplicate protection:** `countedLoans[borrower][loanId]`, `loanStatus`, and `obligationStatus` reject second crediting of the same loan or obligation.
+- **Source-chain validation:** `chainKey` and `blockHeight` passed to `verifyAndEmit` bind the proof to one chain and block. A proof for another chain or block fails verification.
+- **Registry authorization:** all four record functions are `onlyUniversalContract`. Admin setters (`setUniversalContract`, `setRegistry`, `setSourceLoanMarket`, `setSourceObligationMarket`) are owner-only with zero-address rejection.
+- **Event isolation:** loan and obligation histories use separate mappings and views. Loan accounting never reads obligation storage and vice versa (`test_loanAndObligationHistoriesAreIsolated`).
+- **Executor mismatch guard:** obligation completions verify that `msg.sender` (the executor) matches the executor recorded at creation (`Executor mismatch`).
+- **Self-obligation dedup:** when `requester == executor`, the event is pushed only once to the subject's history, preventing double-counting.
+
+## 8. Current Limitations
+
+- **Testnet only.** No mainnet state exists. All contracts are deployed on Sepolia (source) and Creditcoin CC3 testnet (verification).
+- **No verified failure path.** `ObligationFailed` exists as a source event in `SourceObligationMarket` but TRU does not verify it. `failedObligations` is deterministically 0.
+- **No deadline enforcement.** Neither source completion nor the registry enforces the obligation deadline.
+- **Single-market namespaces.** Obligation and loan IDs live in one market per type. IDs are global within each market.
+- **O(n^2) passport views.** `getAgentPassport` and `getCreditEvidence` scan history with nested dedup loops. Gas grows superlinearly: passport 33k at 2 obligations vs 159k at 8; evidence 3.9k at 2 repayments vs 24k at 8. All state-changing writes are O(1).
+- **Owner key fully trusted.** The deployment owner can re-point markets and registry. On testnet the operator key currently equals the owner key. Separate before production.
+- **Permissionless proof submission.** No access control on UC `execute*` functions, only proof-validity and replay checks. Additional relayers can run without coordination.
+- **Self-obligation not discounted.** `requester == executor` obligations verify and count like any other event. The `requester` field keeps this visible on-chain, but the protocol does not discount self-created history.
+- **Cold attestation 7-9 minutes.** Predictable from the attested-height gap, not reducible.
+- **queryId collision risk.** `queryId = keccak(chainKey, blockHeight, txIndex)` carries no event type. Two different event types in one source transaction would collide and the second could never be recorded.
+- **No disbursement.** `TRUFinancing` approves on eligibility alone (`creditState >= BUILDING` and `amount <= creditLimit`) without disbursing funds.
+- **Superlinear view cost.** The passport and evidence views scan history with nested loops. Safe at current volume; first bottleneck to remove in production (incremental counters).
+
+## 9. Roadmap / Future Consumers
+
+The following are not implemented. Each would consume verified history rather than rebuilding verification:
+
+- **Verified failure lifecycle.** `ObligationFailed` source event exists; `executeObligationFailed` path not yet built.
+- **Underwriting against proven histories.** Lenders read Agent Passport or Credit Profile and apply their own risk policy.
+- **Delegated execution gated on track records.** Protocols require a minimum completion rate or settlement volume before delegating work.
+- **Merchant and counterparty risk decisions.** Read verified event history instead of relying on self-reported reputation.
+- **Autonomous finance between agents.** Agents read each other's Passports and apply their own thresholds before transacting.
+- **Unified timeline view.** Merge loan and obligation histories into a single chronological view.
+- **Additional source chains.** Attestcoin already supports Ethereum mainnet; worker queries `getSupportedChains`.
+- **Mainnet deployment.** Current system is testnet only.
+
+## 10. Tech Stack & Contracts
+
+### Source chain (Ethereum Sepolia)
+
+| Contract | Purpose |
+| --- | --- |
+| `SourceLoanMarket` | Creates loans for `msg.sender`, accepts repayment from the owning borrower while active. Emits `LoanCreated` and `LoanRepaid`. Knows nothing about Creditcoin. |
+| `SourceObligationMarket` | Creates obligations naming any executor with a value and deadline; completion restricted to the designated executor while active. Emits `ObligationCreated`, `ObligationCompleted`, `ObligationFailed`. Knows nothing about Creditcoin. |
+
+### Verification chain (Creditcoin CC3 Testnet)
+
+| Contract | Purpose |
+| --- | --- |
+| `TRUUniversalContract` | Verification front door. Four entry points sharing one replay guard and one proof path. Per-type receipt decoders with per-market emitter checks. Contains no credit logic. |
+| `TRUCreditRegistry` | History store. UC-gated record functions with replay, duplicate, lifecycle, and executor-mismatch guards. Deterministic `CreditState` tiers and `creditLimit = 0 + repayments*100`. `getAgentPassport` and paginated history views. Contains no proof logic. |
+| `TRUFinancing` | Read-only consumer of verified credit state. Immutable registry reference. `requestFinancing` records (never disburses). |
+
+### Off-chain
+
+| Component | Purpose |
+| --- | --- |
+| `worker.mjs` | Proof relay for all four event types. Listens for source events, waits for attestation, builds proof, submits to TRUUniversalContract. |
+| `driver.mjs` | Source-chain helper for creating and repaying loans (testing). |
+| `deploy-production.mjs` | Deploys and wires all five contracts. |
+
+### Testing
 
 `forge test`: **92 passed, 0 failed, 0 skipped** across 8 suites:
 - 7 `SourceLoanMarket`
@@ -180,21 +291,7 @@ Both loan and obligation events flow through the same `verifyAndEmit` + emitter 
 
 Obligation coverage: 7-test `SourceObligationMarket` suite, 13 obligation lifecycle and passport tests in the registry suite, 4 obligation decode tests in the UC suite, and 5 obligation-focused audit tests.
 
-## Current Limitations
-
-- Testnet only; no mainnet state exists
-- `failedObligations` is deterministically 0 because `ObligationFailed` has a source event but no verified path yet
-- Neither source completion nor the registry enforces deadlines
-- Obligation and loan IDs live in single-market namespaces (one market per type assumed)
-- Passport views loop in O(n^2), correct at current volume (33k gas at 2 obligations, 159k at 8)
-- The deployment owner key is fully trusted (can re-point markets/registry); separate before production
-- Proof submission is permissionless (no access control on UC `execute*` functions, only proof-validity and replay checks)
-- Self-obligations (`requester == executor`) verify and count like any other event; the `requester` field keeps this visible on-chain, but the protocol does not discount self-created history
-- Cold attestation takes 7-9 minutes (predictable from the attested-height gap, not reducible)
-- `queryId = keccak(chainKey, blockHeight, txIndex)` carries no event type, so two different event types in one source transaction would collide
-- `TRUFinancing` approves on eligibility alone with no disbursement
-
-## Repository Structure
+### Repository structure
 
 ```
 contracts/src/sepolia/        SourceLoanMarket, SourceObligationMarket
@@ -208,7 +305,7 @@ creditcoin/src/deploy-production.mjs  deploys + wires all five contracts
 docs/                         architecture, security, and integration docs
 ```
 
-## Getting Started
+### Getting Started
 
 Requires Sepolia and Creditcoin CC3 testnet RPC endpoints plus funded testnet keys in `creditcoin/.env` (`SOURCE_RPC_URL`, `SEPOLIA_PRIVATE_KEY`, `CREDITCOIN_RPC_URL`, `CREDITCOIN_PRIVATE_KEY`, `PROOF_BUILDER_URL`).
 
@@ -234,13 +331,6 @@ node creditcoin/src/worker.mjs --from-block <N> --process-count 1
 ```
 
 Live frontend: https://tru-ctc.vercel.app
-
-## Future Work
-
-- Verified failure lifecycle (`ObligationFailed` source event exists, TRU verification not yet implemented)
-- Unified loan-plus-obligation timeline view
-- Additional source chains
-- Mainnet deployment
 
 ## Contract Addresses
 
