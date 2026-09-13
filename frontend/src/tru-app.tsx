@@ -423,6 +423,7 @@ function LandingScreen({ navigate }: ScreenProps) {
         .profile-stat-v{ font-family:var(--font-display); font-size:19px; font-weight:700; }
         .profile-stat-k{ font-size:10.5px; color:var(--text-faint); margin-top:3px; }
         .profile-capability{ display:flex; align-items:center; gap:10px; padding:14px 16px; border:1px solid var(--accent-tint); background:rgba(0,255,198,.06); border-radius:10px; font-size:13px; }
+        .profile-note{ font-size:12.5px; color:var(--text-faint); margin:14px auto 0; max-width:52ch; line-height:1.6; }
 
         /* VERIFICATION DETAIL */
         .vdetail{ border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-top:48px; max-width:600px; margin-left:auto; margin-right:auto; background:var(--bg-elevated); }
@@ -522,7 +523,7 @@ function LandingScreen({ navigate }: ScreenProps) {
             <div className="hero-content">
 
               <h1 className="headline">Economic history<b>you can prove.</b></h1>
-              <p className="hero-sub">TRU verifies what economic actors actually do on-chain, from loan repayments to agent obligations.</p>
+              <p className="hero-sub">TRU verifies what economic actors actually do on-chain, from loan repayments to obligations completed by autonomous agents.</p>
 
               <div className="hero-actions">
                 <button className="btn-primary" onClick={() => navigate("connect")}>Connect Wallet <WalletGlyph size={14} /></button>
@@ -556,12 +557,12 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>The Problem</SectionTag><p className="section-title">Economic history doesn't travel with its actor.</p></Reveal>
           <Reveal stagger={1}>
             <div className="problem-envs">
-              <div className="env-card"><div className="env-card-head"><span className="env-name">Ethereum</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">5 loans repaid, on time, in full.</p></div>
-              <div className="env-card"><div className="env-card-head"><span className="env-name">Other chain</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">Active transaction history, unrecognized.</p></div>
-              <div className="env-card"><div className="env-card-head"><span className="env-name">Agent obligations</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">Completed work, with no portable proof it happened.</p></div>
+              <div className="env-card"><div className="env-card-head"><span className="env-name">Human borrower</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">Repayment history exists on another chain, but isn't automatically reusable elsewhere.</p></div>
+              <div className="env-card"><div className="env-card-head"><span className="env-name">Autonomous agent</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">Completed obligations exist on-chain, but other protocols have no portable proof of that history.</p></div>
+              <div className="env-card"><div className="env-card-head"><span className="env-name">Another ecosystem</span><span className="env-frag"><XGlyph /></span></div><p className="env-fact">The actor arrives with activity, but the history isn't independently verified.</p></div>
             </div>
           </Reveal>
-          <Reveal stagger={2}><p className="problem-line">The history is real. Most systems just have no way to check it.</p></Reveal>
+          <Reveal stagger={2}><p className="problem-line">The history is real. What's missing is portable proof.</p></Reveal>
         </div>
       </section>
 
@@ -571,16 +572,18 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>The TRU Model</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Verify events where they happened.</p></Reveal>
           <Reveal stagger={1}>
             <div className="pipeline">
-              <div className="pipe-node"><span className="pipe-icon"><EventGlyph size={20} /></span><span className="pipe-label">Economic Activity</span><span className="pipe-sub">loans & obligations</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><EventGlyph size={20} /></span><span className="pipe-label">Economic Activity</span><span className="pipe-sub">loans • repayments • obligations</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><CheckGlyph size={18} color="currentColor" /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">attests the source block</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><CheckGlyph size={18} color="currentColor" /></span><span className="pipe-label">Attestcoin</span><span className="pipe-sub">cryptographic evidence</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><TruMark size={18} color="var(--accent-bright)" /></span><span className="pipe-label">TRU</span><span className="pipe-sub">verifies the event</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><TruMark size={18} color="var(--accent-bright)" /></span><span className="pipe-label">TRU</span><span className="pipe-sub">verification</span></div>
               <span className="pipe-arrow">→</span>
-              <div className="pipe-node"><span className="pipe-icon"><LedgerGlyph size={20} /></span><span className="pipe-label">Creditcoin</span><span className="pipe-sub">records verified history</span></div>
+              <div className="pipe-node"><span className="pipe-icon"><LedgerGlyph size={20} /></span><span className="pipe-label">Creditcoin</span><span className="pipe-sub">verified economic history</span></div>
+              <span className="pipe-arrow">→</span>
+              <div className="pipe-node"><span className="pipe-icon"><CodeGlyph size={20} /></span><span className="pipe-label">Humans • Agents • Applications</span><span className="pipe-sub">consume the history</span></div>
             </div>
           </Reveal>
-          <Reveal stagger={2}><p className="problem-line">Same proof. Different economic events: loans were the starting point, obligations generalize the primitive.</p></Reveal>
+          <Reveal stagger={2}><p className="problem-line">Same proof. Different economic events.</p><p className="problem-line" style={{ marginTop: 10 }}>Loans were the starting use case. Obligations generalize the same verification primitive.</p></Reveal>
         </div>
       </section>
 
@@ -590,10 +593,10 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>How It Works</SectionTag><p className="section-title">What happens between an event and a record.</p></Reveal>
           <Reveal stagger={1}>
             <div className="steps-grid">
-              <div className="step-card"><span className="step-n">01</span><h3 className="step-title">Activity Happens</h3><p className="step-body">An actor takes a loan or accepts an obligation on a supported chain.</p></div>
+              <div className="step-card"><span className="step-n">01</span><h3 className="step-title">Activity Happens</h3><p className="step-body">An economic actor performs an on-chain action: repaying a loan, creating an obligation, or completing one.</p></div>
               <div className="step-card"><span className="step-n">02</span><h3 className="step-title">Attestcoin Attests</h3><p className="step-body">Attestcoin provides cross-chain proof that the event actually occurred.</p></div>
-              <div className="step-card"><span className="step-n">03</span><h3 className="step-title">TRU Verifies</h3><p className="step-body">TRU checks the attested event against the conditions for a valid economic event.</p></div>
-              <div className="step-card"><span className="step-n">04</span><h3 className="step-title">Creditcoin Records</h3><p className="step-body">The resulting verified history is written to Creditcoin, reusable by other apps and agents.</p></div>
+              <div className="step-card"><span className="step-n">03</span><h3 className="step-title">TRU Verifies</h3><p className="step-body">TRU verifies the event, its source, and its proof context.</p></div>
+              <div className="step-card"><span className="step-n">04</span><h3 className="step-title">Creditcoin Records</h3><p className="step-body">The verified event becomes reusable economic history for applications, lenders, and agents.</p></div>
             </div>
           </Reveal>
         </div>
@@ -602,35 +605,34 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* LIVE PROOF */}
       <section className="section">
         <div className="wrap">
-          <Reveal><SectionTag>Live Proof</SectionTag><p className="section-title">A real repayment, traced end to end.</p></Reveal>
+          <Reveal><SectionTag>Live Proof</SectionTag><p className="section-title">A real agent obligation, traced end to end.</p></Reveal>
           <Reveal stagger={1}>
             <div className="proof-panel">
               <div className="proof-stage">
                 <div className="proof-cell">
                   <div className="proof-cell-label">Source Activity</div>
-                  <div className="proof-row"><span className="proof-k">Chain</span><span className="proof-v">Ethereum</span></div>
-                  <div className="proof-row"><span className="proof-k">Loan</span><span className="proof-v">$100</span></div>
-                  <div className="proof-row"><span className="proof-k">Status</span><span className="proof-v">Repaid</span></div>
-                  <div className="proof-row"><span className="proof-k">Tx</span><span className="proof-v">0x8f2a...c94d</span></div>
+                  <div className="proof-row"><span className="proof-k">Chain</span><span className="proof-v">Ethereum Sepolia</span></div>
+                  <div className="proof-row"><span className="proof-k">Event</span><span className="proof-v">Obligation Created</span></div>
+                  <div className="proof-row"><span className="proof-k">Status</span><span className="proof-v">Completed</span></div>
+                  <div className="proof-row"><span className="proof-k">Actor</span><span className="proof-v">0x8FC1...66FB1</span></div>
                 </div>
                 <div className="proof-cell">
                   <div className="proof-cell-label">Attestation</div>
                   <div className="proof-row"><span className="proof-k">Provider</span><span className="proof-v">Attestcoin</span></div>
                   <div className="proof-row"><span className="proof-k">Status</span><span className="proof-v proof-v--ok"><CheckGlyph size={11} /> Verified</span></div>
-                  <div className="proof-row"><span className="proof-k">Proof</span><span className="proof-v">0x4b19...2e0a</span></div>
                 </div>
                 <div className="proof-cell">
                   <div className="proof-cell-label">TRU</div>
                   <div className="proof-row"><span className="proof-k">Verification</span><span className="proof-v proof-v--ok"><CheckGlyph size={11} /> Valid</span></div>
-                  <div className="proof-row"><span className="proof-k">Event type</span><span className="proof-v">LoanRepaid</span></div>
+                  <div className="proof-row"><span className="proof-k">Event type</span><span className="proof-v">ObligationCompleted</span></div>
                 </div>
                 <div className="proof-cell">
                   <div className="proof-cell-label">Creditcoin</div>
-                  <div className="proof-row"><span className="proof-k">Credit state</span><span className="proof-v proof-v--ok"><CheckGlyph size={11} /> Updated</span></div>
-                  <div className="proof-row"><span className="proof-k">Record</span><span className="proof-v">0x1c7e...9a04</span></div>
+                  <div className="proof-row"><span className="proof-k">History</span><span className="proof-v proof-v--ok"><CheckGlyph size={11} /> Updated</span></div>
+                  <div className="proof-row"><span className="proof-k">Record</span><span className="proof-v">0xc19b...26b8</span></div>
                 </div>
               </div>
-              <div className="proof-cmd"><code>node creditcoin/src/worker.mjs --tx 0x8f2a...c94d</code><button className="proof-copy">Copy</button></div>
+              <div className="proof-cmd"><code>node creditcoin/src/worker.mjs --tx 0x9591e6219585e73fc1c3e10421e5a818347b50254d6e9cf99e2cdfdd71677617</code><button className="proof-copy">Copy</button></div>
             </div>
           </Reveal>
         </div>
@@ -639,7 +641,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* CREDIT PROFILE PREVIEW */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>Credit Profile</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>A verifiable record, not a score.</p></Reveal>
+          <Reveal><SectionTag>Economic Actor</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>A verifiable record, not a reputation score.</p></Reveal>
           <Reveal stagger={1}>
             <div className="profile-panel">
               <span className="profile-example-tag">Example profile</span>
@@ -653,6 +655,8 @@ function LandingScreen({ navigate }: ScreenProps) {
               </div>
               <div className="profile-capability"><CheckGlyph size={15} /> Sample capacity: $200 of verified limit. The contract derives capacity as repayments × $100</div>
             </div>
+            <p className="profile-note">Every figure derives from verified on-chain events recorded through TRU.</p>
+            <p className="profile-note">Not an AI-generated score. Not an NFT. Not a token. Not a subjective reputation score.</p>
           </Reveal>
         </div>
       </section>
@@ -663,28 +667,31 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>Verification Detail</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Every field here traces back to something real.</p></Reveal>
           <Reveal stagger={1}>
             <div className="vdetail">
-              <h3 className="vdetail-title">Repayment #003</h3>
+              <h3 className="vdetail-title">Obligation Completed</h3>
               <div className="vdetail-row"><span className="vdetail-k">Source chain</span><span className="vdetail-v">Ethereum Sepolia</span></div>
-              <div className="vdetail-row"><span className="vdetail-k">Source transaction</span><span className="vdetail-v">0x8f2a...c94d</span></div>
-              <div className="vdetail-row"><span className="vdetail-k">Event</span><span className="vdetail-v">LoanRepaid</span></div>
-              <div className="vdetail-row"><span className="vdetail-k">Amount</span><span className="vdetail-v">100 USDC</span></div>
-              <div className="vdetail-row"><span className="vdetail-k">Attestation reference</span><span className="vdetail-v">0x4b19...2e0a</span></div>
-              <div className="vdetail-row"><span className="vdetail-k">Creditcoin record</span><span className="vdetail-v">0x1c7e...9a04</span></div>
+              <div className="vdetail-row"><span className="vdetail-k">Source transaction</span><span className="vdetail-v">0x3aa9...a40c</span></div>
+              <div className="vdetail-row"><span className="vdetail-k">Event</span><span className="vdetail-v">ObligationCompleted</span></div>
+              <div className="vdetail-row"><span className="vdetail-k">Amount</span><span className="vdetail-v">9000 units</span></div>
+              <div className="vdetail-row"><span className="vdetail-k">Attested block</span><span className="vdetail-v">11663849</span></div>
+              <div className="vdetail-row"><span className="vdetail-k">Creditcoin record</span><span className="vdetail-v">0xc19b...26b8</span></div>
               <div className="vdetail-row"><span className="vdetail-k">Status</span><span className="vdetail-v vdetail-status"><CheckGlyph size={12} /> Verified</span></div>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* CREDITCOIN STATE */}
+      {/* VERIFIED HISTORY */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>Creditcoin State</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>What actually changes when a repayment clears.</p></Reveal>
+          <Reveal><SectionTag>Verified History</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>From isolated event to reusable economic history.</p></Reveal>
           <Reveal stagger={1}>
-            <div className="state-compare">
-              <div className="state-box"><div className="state-k">Before</div><div className="state-v state-v--before">$0</div></div>
-              <span className="state-arrow">→</span>
-              <div className="state-box"><div className="state-k">After verified repayment</div><div className="state-v state-v--after">$200</div></div>
+            <div className="vision-flow">
+              <span className="vision-step">Source event</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Attestation</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">TRU verification</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Verified event</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Economic history</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Applications / Agents</span>
             </div>
           </Reveal>
         </div>
@@ -700,11 +707,11 @@ function LandingScreen({ navigate }: ScreenProps) {
               <span className="arch-arrow">↓</span>
               <div className="arch-block"><div className="arch-block-title">Attestcoin</div><div className="arch-block-sub">cryptographic attestation</div></div>
               <span className="arch-arrow">↓</span>
-              <div className="arch-block"><div className="arch-block-title">TRU Verification Layer</div><div className="arch-block-sub">validated credit event</div></div>
+              <div className="arch-block"><div className="arch-block-title">TRU Verification Layer</div><div className="arch-block-sub">validated economic event</div></div>
               <span className="arch-arrow">↓</span>
-              <div className="arch-block"><div className="arch-block-title">Creditcoin</div><div className="arch-block-sub">credit state</div></div>
+              <div className="arch-block"><div className="arch-block-title">Creditcoin</div><div className="arch-block-sub">verified economic history</div></div>
               <span className="arch-arrow">↓</span>
-              <div className="arch-block"><div className="arch-block-title">Applications</div><div className="arch-block-sub">lenders, RWA, risk engines</div></div>
+              <div className="arch-block"><div className="arch-block-title">Applications</div><div className="arch-block-sub">lenders, agents, RWA, risk engines</div></div>
             </div>
           </Reveal>
         </div>
@@ -716,9 +723,9 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>Why Each Layer Matters</SectionTag><p className="section-title">Why each layer is needed.</p></Reveal>
           <Reveal stagger={1}>
             <div className="dep-grid">
-              <div className="dep-card"><div className="dep-role">Proof</div><div className="dep-name">Attestcoin</div><p className="dep-body">Without it, TRU cannot reliably know what happened on another chain.</p></div>
-              <div className="dep-card"><div className="dep-role">Verification</div><div className="dep-name">TRU</div><p className="dep-body">Without it, the attested event stays raw data. It never becomes verified, replay-guarded history.</p></div>
-              <div className="dep-card"><div className="dep-role">Record</div><div className="dep-name">Creditcoin</div><p className="dep-body">Without it, TRU has nowhere to turn verified history into reusable infrastructure.</p></div>
+              <div className="dep-card"><div className="dep-role">Proof</div><div className="dep-name">Attestcoin</div><p className="dep-body">Without it, TRU cannot reliably establish what happened on another chain.</p></div>
+              <div className="dep-card"><div className="dep-role">Verification</div><div className="dep-name">TRU</div><p className="dep-body">Without it, attested events remain raw evidence instead of verified, replay-guarded history.</p></div>
+              <div className="dep-card"><div className="dep-role">Record</div><div className="dep-name">Creditcoin</div><p className="dep-body">Without it, verified events have nowhere to become reusable economic history.</p></div>
             </div>
           </Reveal>
         </div>
@@ -750,10 +757,10 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>Use Cases</SectionTag><p className="section-title">Where verified history actually matters.</p></Reveal>
           <Reveal stagger={1}>
             <div className="cases-list">
-              <div className="case-row"><span className="case-n">01</span><div><h3 className="case-title">Cross-chain lending</h3><p className="case-body">A lender can weigh repayment history that happened on a chain they never touch.</p></div></div>
-              <div className="case-row"><span className="case-n">02</span><div><h3 className="case-title">RWA and private credit</h3><p className="case-body">Real-world loan performance becomes part of an auditable, on-chain record.</p></div></div>
-              <div className="case-row"><span className="case-n">03</span><div><h3 className="case-title">Credit portability</h3><p className="case-body">A borrower's track record travels with them, instead of resetting at the border of a new ecosystem.</p></div></div>
-              <div className="case-row"><span className="case-n">04</span><div><h3 className="case-title">Agent obligations</h3><p className="case-body">An agent's completed obligations become portable, verifiable history another protocol can read before delegating work.</p></div></div>
+              <div className="case-row"><span className="case-n">01</span><div><h3 className="case-title">Autonomous agents</h3><p className="case-body">Agents can build verifiable economic history from completed obligations instead of relying on unverifiable reputation.</p></div></div>
+              <div className="case-row"><span className="case-n">02</span><div><h3 className="case-title">Cross-chain lending</h3><p className="case-body">Lenders can consume repayment history verified from chains they don't directly operate on.</p></div></div>
+              <div className="case-row"><span className="case-n">03</span><div><h3 className="case-title">Credit portability</h3><p className="case-body">An actor's verified economic history can be reused across ecosystems.</p></div></div>
+              <div className="case-row"><span className="case-n">04</span><div><h3 className="case-title">RWA and private credit</h3><p className="case-body">Verified loan performance can become part of an auditable, on-chain record.</p></div></div>
             </div>
           </Reveal>
         </div>
@@ -765,10 +772,10 @@ function LandingScreen({ navigate }: ScreenProps) {
           <Reveal><SectionTag>Future Vision</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>Grows as the history grows.</p></Reveal>
           <Reveal stagger={1}>
             <div className="vision-flow">
-              <span className="vision-step">One chain</span><span className="vision-arrow">↓</span>
-              <span className="vision-step">Multiple chains</span><span className="vision-arrow">↓</span>
-              <span className="vision-step">Multiple protocols</span><span className="vision-arrow">↓</span>
-              <span className="vision-step">Verifiable economic infrastructure</span>
+              <span className="vision-step">One verified event</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Reusable economic history</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Multiple chains & protocols</span><span className="vision-arrow">↓</span>
+              <span className="vision-step">Humans + autonomous agents</span>
             </div>
           </Reveal>
         </div>
