@@ -641,7 +641,7 @@ function LandingScreen({ navigate }: ScreenProps) {
       {/* CREDIT PROFILE PREVIEW */}
       <section className="section">
         <div className="wrap" style={{ textAlign: "center" }}>
-          <Reveal><SectionTag>Economic Actor</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>A verifiable record, not a reputation score.</p></Reveal>
+          <Reveal><SectionTag>Agent Passport</SectionTag><p className="section-title" style={{ margin: "0 auto", textAlign: "center" }}>A verifiable record, not a reputation score.</p></Reveal>
           <Reveal stagger={1}>
             <div className="profile-panel">
               <span className="profile-example-tag">Example profile</span>
@@ -801,7 +801,7 @@ function LandingScreen({ navigate }: ScreenProps) {
               <p className="footer-brand-desc">Verifiable economic history infrastructure.</p>
             </div>
             <div className="footer-col"><div className="footer-col-title">Protocol</div>
-              <a href="#how">How It Works</a><a href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>Economic Actors</a><a href="#verifying" onClick={(e) => { e.preventDefault(); navigate("verifying"); }}>Verification</a>
+              <a href="#how">How It Works</a><a href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>Agent Passports</a><a href="#verifying" onClick={(e) => { e.preventDefault(); navigate("verifying"); }}>Verification</a>
             </div>
             <div className="footer-col"><div className="footer-col-title">Developers</div>
               <a href="#docs">Documentation</a><a href="https://github.com/Shaydez-Defi/tru" target="_blank" rel="noreferrer">GitHub</a><a href="https://github.com/Shaydez-Defi/tru/tree/main/contracts/src" target="_blank" rel="noreferrer">Contracts</a>
@@ -1221,8 +1221,8 @@ function OverviewScreen({ navigate, active, account, onSelectEvent }: ScreenProp
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className="sb-link" href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className="sb-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
@@ -1669,8 +1669,8 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className={`sb-link ${active === "credit" ? "is-active" : ""}`} href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className="sb-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
@@ -1702,7 +1702,7 @@ function CreditProfileScreen({ navigate, active, account, onSelectEvent }: Scree
         </div>
 
         <div className="content">
-          <span className="page-eyebrow">Economic Actor</span>
+          <span className="page-eyebrow">Agent Passport</span>
           <h1 className="page-title">See the economic history an actor can prove</h1>
 
           <div className="dash-grid">
@@ -2164,8 +2164,8 @@ function VerifiedEventsScreen({ navigate, active, account, onSelectEvent }: Scre
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className={`sb-link ${active === "credit" ? "is-active" : ""}`} href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className={`sb-link ${active === "events" ? "is-active" : ""}`} href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
@@ -2587,8 +2587,8 @@ function EventDetailScreen({ navigate, active, account, selectedEvent }: ScreenP
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className={`sb-link ${active === "credit" ? "is-active" : ""}`} href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className={`sb-link ${active === "events" ? "is-active" : ""}`} href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
@@ -3022,8 +3022,8 @@ function ProtocolScreen({ navigate, active, account }: ScreenProps) {
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className={`sb-link ${active === "credit" ? "is-active" : ""}`} href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className={`sb-link ${active === "events" ? "is-active" : ""}`} href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
@@ -3321,8 +3321,8 @@ function ConnectWalletScreen({ navigate, onConnect }: ScreenProps) {
             {collapsed && <span className="sb-tooltip">Overview</span>}
           </a>
           <a className="sb-link" href="#credit" onClick={(e) => { e.preventDefault(); navigate("credit"); }}>
-            <CreditIcon /> <span className="sb-label">Economic Actor</span>
-            {collapsed && <span className="sb-tooltip">Economic Actor</span>}
+            <CreditIcon /> <span className="sb-label">Agent Passport</span>
+            {collapsed && <span className="sb-tooltip">Agent Passport</span>}
           </a>
           <a className="sb-link" href="#events" onClick={(e) => { e.preventDefault(); navigate("events"); }}>
             <EventsIcon /> <span className="sb-label">Verified Events</span>
