@@ -1,4 +1,4 @@
-# TRU — Verification Infrastructure for Cross-Chain Economic History
+# TRU: Verification Infrastructure for Cross-Chain Economic History
 
 TRU turns cross-chain economic events into cryptographically verified, reusable on-chain history.
 
@@ -156,7 +156,7 @@ Every entry below was re-verified against live RPCs: the Sepolia
 transactions exist at the stated blocks, and all five CC3 execute
 transactions carry receipts with status 1 at the stated blocks. Sepolia links
 open Etherscan; CC3 links open the Creditcoin testnet Blockscout instance
-cited in `docs/usc-research.md`. Registry state grows as new events verify;
+cited in the Creditcoin testnet docs. Registry state grows as new events verify;
 figures describe these runs.
 
 | Step | Source tx (Sepolia) | Proof tx (CC3) | Result |
@@ -170,15 +170,11 @@ figures describe these runs.
 
 A second self-obligation for `0x2b37…` (create `0x5a2757…`, complete
 `0x9eb372…`) was also verified live, showing the primitive works for both
-human and agent addresses. Earlier independent runs (phases 0, 4, 6,
-attestation timing) used superseded deployments and are historical proof, not
-live state.
+human and agent addresses.
 
 ## Demo Flow
 
-Create → Complete → Prove → Passport Update. The reproducible script is
-`creditcoin/src/demo-obligation.mjs` (`npm run demo:obligation --
-<agentAddress>`); the full click-by-click script is `docs/DEMO_PLAN.md`. Live
+Create → Complete → Prove → Passport Update. Live
 frontend: https://tru-ctc.vercel.app. No wallet is needed to browse verified
 history; connecting one shows live state for that address.
 
@@ -211,7 +207,7 @@ paginated event views
 ```
 
 Each step is evidenced in `docs/ATTESTCOIN-INTEGRATION.md` (timing) and
-`docs/phase-5-security.md` (rejection cases).
+the Forge security test suite (rejection cases).
 
 ## Architecture
 
@@ -262,7 +258,7 @@ The worker is a relay and proof-construction component: it transports proof
 bytes and never decides what gets credited. Only `verifyAndEmit` success plus
 the emitter check can write registry state. All four execute paths share one
 primitive (identical verify → guard → decode → forward structure; see
-`docs/ENGINE_AUDIT.md` §1).
+`docs/ENGINE_AUDIT.md`).
 
 ## Technical Implementation
 
@@ -339,8 +335,7 @@ contracts/deployments/        current addresses + ABIs (single source of truth)
 creditcoin/src/worker.mjs     proof relay for all four event types
 creditcoin/src/driver.mjs     source-chain helper (create/repay loans)
 creditcoin/src/deploy-production.mjs  deploys + wires all five contracts
-creditcoin/src/demo-obligation.mjs    reproducible obligation demo (npm run demo:obligation)
-docs/                         phase reports, audits, integration + product docs
+docs/                         architecture, security, and integration docs
 ```
 
 ## Getting Started
@@ -373,12 +368,6 @@ node creditcoin/src/worker.mjs --tx <sepoliaTxHash>
 
 # listen from a block
 node creditcoin/src/worker.mjs --from-block <N> --process-count 1
-```
-
-```bash
-# from creditcoin/: reproducible obligation demo against live registry state
-cd creditcoin
-npm run demo:obligation -- <agentAddress>
 ```
 
 ## Current Limitations
@@ -450,4 +439,5 @@ Current deployment only (previous phase addresses superseded):
   explicit trust assumptions.
 - `docs/PRODUCT_ARCHITECTURE.md`, product mapping, core primitive evidence,
   claims audit (claim now / carefully / do not claim), canonical narrative.
-- `docs/phase-*.md`, `docs/attestation-timing.md`, `docs/usc-research.md`,   per-phase build evidence and protocol research.
+- `docs/agent-domain-audit.md`, obligation struct, passport fields, test
+  coverage, live evidence, and security comparison.
