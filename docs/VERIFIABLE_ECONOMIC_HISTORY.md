@@ -8,7 +8,7 @@
 
 TRU originally proved: a loan repayment on Sepolia can be cryptographically verified on Creditcoin and become reusable credit history. This phase generalizes that primitive: any economic obligation between actors (requester and executor, where the executor may be an autonomous agent identified by its address) can be represented as an on-chain event, verified through the same cross-chain proof architecture, and recorded as part of the subject's verifiable economic history. The reusable primitive remains: TRU proves what happened, history stores the verified fact, and applications or agents interpret it.
 
-The extension is minimal, production-minded, and preserves all existing loan functionality (73 tests passing, no loan code path changed).
+The extension is minimal, production-minded, and preserves all existing loan functionality (92 tests passing, no loan code path changed).
 
 Positioning within TRU: verification infrastructure first.
 
@@ -154,12 +154,12 @@ What remains trusted and what is removed:
 
 ## 5. Tests
 
-`forge test` as of this phase: 80 tests passing (previous 54 + 19 new).
+`forge test` as of this phase: 92 tests passing across 8 suites.
 
 - `SourceLoanMarket` 7 tests (unchanged)
 - `SourceObligationMarket` 7 new tests: create, emits event, complete, only executor can complete, fail, requires value, requires future deadline.
-- `TRUUniversalContract` 11 tests (was 8): existing 5 loan decode plus 3 `LoanCreated` decode plus 3 new `ObligationCreated` / `ObligationCompleted` decode (accepts source market, rejects foreign emitter, rejects wrong signature).
-- `TRUCreditRegistry` 42 tests (was 33): existing loan, credit state, passport, financing plus 9 new obligation lifecycle tests:
+- `TRUUniversalContract` 13 tests: existing 5 loan decode plus 3 `LoanCreated` decode plus 3 new `ObligationCreated` / `ObligationCompleted` decode (accepts source market, rejects foreign emitter, rejects wrong signature).
+- `TRUCreditRegistry` 47 tests: existing loan, credit state, passport, financing plus obligation lifecycle tests:
   - `test_obligationCreatedMovesToActive`
   - `test_obligationCompletedMovesToCompleted`
   - `test_obligationCompletedWithoutActiveReverts`
@@ -169,7 +169,7 @@ What remains trusted and what is removed:
   - `test_agentPassportDeterministicMetrics` (3 created, 2 completed -> 3 verified, 2 completed, 1 active, 3000 volume, 6666 bps)
   - `test_agentPassportEmptyForFreshAddress`
   - `test_loanAndObligationHistoriesAreIsolated` (loan repayment and obligation histories do not interfere)
-- `TRUFinancing` 6 tests (unchanged)
+- `TRUFinancing` 7 tests (unchanged)
 
 No existing loan test was modified in a way that changes its expectation; loan functionality is preserved.
 
@@ -229,7 +229,7 @@ Update (2026-09-12): implemented after this phase. `frontend/` now has live Econ
 
 ## 9. Remaining Work
 
-**Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (73 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it, it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
+**Implemented and verified:** `ObligationCreated` and `ObligationCompleted` creation, verification, history, and `AgentPassport` are live and tested (92 tests, two live agents verified). `ObligationFailed` source event exists in `SourceObligationMarket` but TRU does not yet verify it, it can be added with the identical `decode`/`execute`/`recordVerified` pattern as the other two, no new trust boundary.
 
 **Implemented but not yet run live in this deployment:** A unified `VerifiedEconomicEvent` timeline that merges loan `borrowerEvents` and obligation `subjectObligationHistory` into a single `getEconomicHistory` view. The current `getCreditPassport` (loans) and `getAgentPassport` (obligations) already provide clean, separate histories, so the unified view is optional and was not faked.
 

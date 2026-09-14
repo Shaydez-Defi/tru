@@ -60,7 +60,7 @@ Every field is recomputed live from on-chain records on every call. The struct i
 
 ### How other protocols use it
 
-Another protocol calls `getAgentPassport(B)` (view call, no gas for reads), receives the nine fields, and applies its own policy: require a minimum completion rate, a threshold settlement volume, or activity on specific chains. TRU supplies the evidence. The consumer decides what it means.
+Another protocol calls `getAgentPassport(B)` (view call, no gas for reads), receives the fields, and applies its own policy: require a minimum completion rate, a threshold settlement volume, or activity on specific chains. TRU supplies the evidence. The consumer decides what it means.
 
 ```
 Agent A wants to transact with Agent B
@@ -289,7 +289,7 @@ The following are not implemented. Each would consume verified history rather th
 - 47 `TRUCreditRegistry`
 - 11 audit (relay-boundary, rotation-immutability, lifecycle-pinning, gas-scaling, UC-admin, full-path replay/tamper)
 
-Obligation coverage: 7-test `SourceObligationMarket` suite, 13 obligation lifecycle and passport tests in the registry suite, 4 obligation decode tests in the UC suite, and 5 obligation-focused audit tests.
+Obligation coverage: 7-test `SourceObligationMarket` suite, 13 obligation lifecycle and passport tests in the registry suite, 4 obligation decode tests in the UC suite, and 3 obligation-focused audit tests.
 
 ### Repository structure
 

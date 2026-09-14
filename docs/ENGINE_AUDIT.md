@@ -7,7 +7,7 @@ introduced. Existing loan repayment flow and live obligation-completion flow
 preserved intact.
 **Result:** Primitive confirmed sound. Both flows genuinely share one
 verification primitive. Three documentation-only fixes applied; no logic,
-storage, or ABI changes. 81/81 Forge tests pass.
+storage, or ABI changes. 92/92 Forge tests pass.
 
 ## 1. The Generalized TRU Verification Primitive
 
@@ -120,7 +120,7 @@ disbursement). Worker remains a relay: it supplies proof bytes plus
 ## 7. Tests and Verification Results
 
 - `forge build`: clean (only pre-existing `block.timestamp`/typecast lint notes).
-- `forge test`: **81 passed, 0 failed, 0 skipped** across 5 suites
+- `forge test`: **92 passed, 0 failed, 0 skipped** across 8 suites
   (7 SourceLoanMarket, 7 SourceObligationMarket, 13 TRUUniversalContract, 47
   TRUCreditRegistry, 7 TRUFinancing), identical count to pre-audit baseline;
   no test needed changes because this audit made comment-only edits.

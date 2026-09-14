@@ -284,15 +284,9 @@ describe a source-chain event. It does not eliminate the assumptions above.
 
 ## 18. Test Coverage
 
-- `forge test`: **81 passing, 0 failed, 0 skipped** (was 73; +8 new audit
-  regression tests), across 5 suites: 7 `SourceLoanMarket`, 7
-  `SourceObligationMarket`, 13 `TRUUniversalContract` (+`test_setRegistryRejectsZeroAddress`,
-  +`test_decodeObligationCompletedRejectsForeignEmitter`), 47
-  `TRUCreditRegistry` (+`test_obligationDoubleCompletionReverts`,
-  +`test_obligationZeroAddressReverts`, +`test_selfObligationNotDoubleCounted`,
-  +`test_sourceTxHashStoredAsRelayProvided`,
-  +`test_setUniversalContractRejectsZeroAddress`), 7 `TRUFinancing`
-  (+`test_requestRevertsForZeroAmount`).
+- `forge test`: **92 passing, 0 failed, 0 skipped**, across 8 suites: 7 `SourceLoanMarket`, 7
+  `SourceObligationMarket`, 13 `TRUUniversalContract`, 47
+  `TRUCreditRegistry`, 7 `TRUFinancing`, and 11 audit tests (in `TRUAudit.t.sol`).
 - `forge build`: clean (only pre-existing `block.timestamp` and typecast lint
   notes).
 - Live evidence reused (no new live transactions in this audit phase):
